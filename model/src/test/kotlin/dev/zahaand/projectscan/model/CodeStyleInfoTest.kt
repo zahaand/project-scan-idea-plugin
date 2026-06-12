@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class CodeStyleInfoTest {
-
     @Test
     fun `empty-state CodeStyleInfo has empty list`() {
         val info = CodeStyleInfo()
@@ -22,11 +21,12 @@ class CodeStyleInfoTest {
 
     @Test
     fun `minByOrNull on mixed list returns a linter-type source`() {
-        val sources = listOf(
-            StyleSource(StyleSourceType.EDITOR_CONFIG, ".editorconfig"),
-            StyleSource(StyleSourceType.CHECKSTYLE, "config/checkstyle/checkstyle.xml"),
-            StyleSource(StyleSourceType.IDE_CODE_STYLE, ".idea/codeStyle.xml")
-        )
+        val sources =
+            listOf(
+                StyleSource(StyleSourceType.EDITOR_CONFIG, ".editorconfig"),
+                StyleSource(StyleSourceType.CHECKSTYLE, "config/checkstyle/checkstyle.xml"),
+                StyleSource(StyleSourceType.IDE_CODE_STYLE, ".idea/codeStyle.xml"),
+            )
         val highest = sources.minByOrNull { it.type.priority }
         assertNotNull(highest)
         assertEquals(StyleSourceType.CHECKSTYLE, highest!!.type)

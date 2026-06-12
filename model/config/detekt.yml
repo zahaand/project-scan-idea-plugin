@@ -1,0 +1,8 @@
+style:
+  MagicNumber:
+    # Priority constants in StyleSourceType enum are intentional, named by the enum constant itself
+    ignoreEnums: true
+  WildcardImport:
+    # Allow JUnit Assertions.* wildcard — standard JUnit 5 test pattern
+    excludeImports:
+      - 'org.junit.jupiter.api.Assertions.*'

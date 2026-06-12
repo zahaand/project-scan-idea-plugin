@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class StackInfoTest {
-
     @Test
     fun `empty-state StackInfo has empty list and null fields`() {
         val info = StackInfo()
@@ -18,12 +17,13 @@ class StackInfoTest {
     fun `populated StackInfo round-trips all fields`() {
         val dep1 = Dependency("org.junit.jupiter", "junit-jupiter", "5.10.0")
         val dep2 = Dependency("org.mockito", "mockito-core", "5.4.0")
-        val info = StackInfo(
-            dependencies = listOf(dep1, dep2),
-            jdkVersion = "21",
-            languageLevel = "21",
-            buildSystem = BuildSystem.GRADLE
-        )
+        val info =
+            StackInfo(
+                dependencies = listOf(dep1, dep2),
+                jdkVersion = "21",
+                languageLevel = "21",
+                buildSystem = BuildSystem.GRADLE,
+            )
         assertEquals(listOf(dep1, dep2), info.dependencies)
         assertEquals("21", info.jdkVersion)
         assertEquals("21", info.languageLevel)

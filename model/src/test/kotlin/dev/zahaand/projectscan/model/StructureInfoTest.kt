@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class StructureInfoTest {
-
     @Test
     fun `empty-state StructureInfo has empty lists and null packageOrganisation`() {
         val info = StructureInfo()
@@ -26,21 +25,24 @@ class StructureInfoTest {
     @Test
     fun `multi-module with inter-module links and external dependencies`() {
         val dep = Dependency("com.google.guava", "guava", "32.1.2-jre")
-        val coreModule = Module(
-            name = "core",
-            declaredDependencies = listOf(dep),
-            moduleDependencies = emptyList()
-        )
-        val appModule = Module(
-            name = "app",
-            declaredDependencies = emptyList(),
-            moduleDependencies = listOf("core")
-        )
-        val info = StructureInfo(
-            modules = listOf(coreModule, appModule),
-            packageOrganisation = PackageOrganisation.BY_FEATURE,
-            rootPackages = listOf("dev.zahaand.projectscan")
-        )
+        val coreModule =
+            Module(
+                name = "core",
+                declaredDependencies = listOf(dep),
+                moduleDependencies = emptyList(),
+            )
+        val appModule =
+            Module(
+                name = "app",
+                declaredDependencies = emptyList(),
+                moduleDependencies = listOf("core"),
+            )
+        val info =
+            StructureInfo(
+                modules = listOf(coreModule, appModule),
+                packageOrganisation = PackageOrganisation.BY_FEATURE,
+                rootPackages = listOf("dev.zahaand.projectscan"),
+            )
         assertEquals(2, info.modules.size)
         val app = info.modules.find { it.name == "app" }!!
         assertEquals(listOf("core"), app.moduleDependencies)

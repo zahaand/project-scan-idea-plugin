@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class TestInfoTest {
-
     @Test
     fun `empty-state TestInfo has empty lists and null nullable fields`() {
         val info = TestInfo()
@@ -25,12 +24,13 @@ class TestInfoTest {
     fun `populated TestInfo round-trips all fields`() {
         val junit5 = TestFramework("JUnit 5", "5.10.0")
         val mockito = TestFramework("Mockito", "5.4.0")
-        val info = TestInfo(
-            frameworks = listOf(junit5, mockito),
-            sourceRoots = listOf("src/test/kotlin"),
-            namingPattern = "**/*Test.kt",
-            coverageThreshold = 80.0
-        )
+        val info =
+            TestInfo(
+                frameworks = listOf(junit5, mockito),
+                sourceRoots = listOf("src/test/kotlin"),
+                namingPattern = "**/*Test.kt",
+                coverageThreshold = 80.0,
+            )
         assertEquals(listOf(junit5, mockito), info.frameworks)
         assertEquals(listOf("src/test/kotlin"), info.sourceRoots)
         assertEquals("**/*Test.kt", info.namingPattern)

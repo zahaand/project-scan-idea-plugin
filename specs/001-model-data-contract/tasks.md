@@ -105,8 +105,8 @@
 
 **Independent Test**: `./gradlew :model:test --tests "*ProjectScanModelTest"` — all-empty construction and fully-populated round-trip pass.
 
-- [ ] T014 [US1] Create `model/src/main/kotlin/dev/zahaand/projectscan/model/ProjectScanModel.kt` — define `ProjectScanModel(stack: StackInfo, codeStyle: CodeStyleInfo, linters: LinterInfo, tests: TestInfo, structure: StructureInfo)` with NO default values (all five sections must be explicitly provided per data-model.md invariant)
-- [ ] T015 [US1] Create `model/src/test/kotlin/dev/zahaand/projectscan/model/ProjectScanModelTest.kt` — test: (1) all-empty `ProjectScanModel(StackInfo(), CodeStyleInfo(), LinterInfo(), TestInfo(), StructureInfo())` constructs without error and all sections are non-null; (2) fully-populated model round-trips all fields via data class equality; (3) `.copy(stack = StackInfo())` produces a new instance with the replaced section and all other sections unchanged
+- [x] T014 [US1] Create `model/src/main/kotlin/dev/zahaand/projectscan/model/ProjectScanModel.kt` — define `ProjectScanModel(stack: StackInfo, codeStyle: CodeStyleInfo, linters: LinterInfo, tests: TestInfo, structure: StructureInfo)` with NO default values (all five sections must be explicitly provided per data-model.md invariant)
+- [x] T015 [US1] Create `model/src/test/kotlin/dev/zahaand/projectscan/model/ProjectScanModelTest.kt` — test: (1) all-empty `ProjectScanModel(StackInfo(), CodeStyleInfo(), LinterInfo(), TestInfo(), StructureInfo())` constructs without error and all sections are non-null; (2) fully-populated model round-trips all fields via data class equality; (3) `.copy(stack = StackInfo())` produces a new instance with the replaced section and all other sections unchanged
 
 **Checkpoint**: `./gradlew :model:test` — full suite (all six test classes) passes.
 
@@ -116,10 +116,10 @@
 
 **Purpose**: Constitution-required tooling and final validation.
 
-- [ ] T016 [P] Apply detekt static analysis plugin to cover `:model` sources — add `id("io.gitlab.arturbosch.detekt")` to `model/build.gradle.kts` (or root `build.gradle.kts` with subproject configuration) and verify `./gradlew :model:detekt` passes with no violations; constitution requires this to fail the build on violation
-- [ ] T017 [P] Apply ktlint code style plugin to cover `:model` sources — add ktlint plugin to `model/build.gradle.kts` (or root) and verify `./gradlew :model:ktlintCheck` passes; constitution requires ktlint to own formatting, not detekt
-- [ ] T018 Verify classpath isolation and FR-010 (SC-004): (1) run `./gradlew :model:dependencies --configuration compileClasspath` and confirm no `com.jetbrains.intellij` or `org.jetbrains.intellij` artifact appears; (2) grep `model/src/main` for any import of IntelliJ Platform APIs (`com.intellij`, `org.jetbrains.annotations` excluded), data-collection logic, prompt-generation logic, or UI components — confirm zero matches (FR-010)
-- [ ] T019 Verify test suite timing (SC-005): run `./gradlew :model:test` with `--info` flag and confirm total test execution completes in < 5 seconds on a local developer workstation
+- [x] T016 [P] Apply detekt static analysis plugin to cover `:model` sources — add `id("io.gitlab.arturbosch.detekt")` to `model/build.gradle.kts` (or root `build.gradle.kts` with subproject configuration) and verify `./gradlew :model:detekt` passes with no violations; constitution requires this to fail the build on violation
+- [x] T017 [P] Apply ktlint code style plugin to cover `:model` sources — add ktlint plugin to `model/build.gradle.kts` (or root) and verify `./gradlew :model:ktlintCheck` passes; constitution requires ktlint to own formatting, not detekt
+- [x] T018 Verify classpath isolation and FR-010 (SC-004): (1) run `./gradlew :model:dependencies --configuration compileClasspath` and confirm no `com.jetbrains.intellij` or `org.jetbrains.intellij` artifact appears; (2) grep `model/src/main` for any import of IntelliJ Platform APIs (`com.intellij`, `org.jetbrains.annotations` excluded), data-collection logic, prompt-generation logic, or UI components — confirm zero matches (FR-010)
+- [x] T019 Verify test suite timing (SC-005): run `./gradlew :model:test` with `--info` flag and confirm total test execution completes in < 5 seconds on a local developer workstation
 
 ---
 
