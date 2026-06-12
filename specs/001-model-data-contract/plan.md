@@ -30,7 +30,7 @@ Create a `:model` Gradle submodule containing 15 plain Kotlin data classes and e
 | III — Never fabricate | ✅ PASS | Every section has an explicit empty/not-detected state |
 | IV — Curated baseline rule set | ✅ N/A | No baseline in this sprint |
 | Tech Stack: Kotlin, Gradle+Kotlin DSL, JDK 21 | ✅ PASS | Confirmed from build files |
-| Code Style: detekt + ktlint configured | ⚠️ DEFERRED | T016/T017 wire plugins for **local checks** only. CI integration (pipeline fail-on-violation) is intentionally deferred to the root CI setup sprint — this is a known, explicit deferral, not a violation. |
+| Code Style: detekt + ktlint configured | ⚠️ DEFERRED | T016/T017 wire plugins for **local checks** only. CI integration (`./gradlew :model:detekt :model:ktlintCheck` with build-fail-on-violation) is intentionally deferred to the root CI setup sprint — must be closed no later than the final pre-deploy sprint. Sprint 1 delivers local check wiring only. |
 | Testing: JUnit 5 for pure logic | ✅ PASS | Constitution mandates JUnit 5 for `model`; confirmed |
 | Structure: root pkg `dev.zahaand.projectscan` | ✅ PASS | All types in `dev.zahaand.projectscan.model` |
 | Dependency direction: model has NO outgoing deps | ✅ PASS | Enforced by Gradle submodule isolation |

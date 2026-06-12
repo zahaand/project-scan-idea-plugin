@@ -2,7 +2,7 @@
 
 **Feature Branch**: `001-model-data-contract`  
 **Created**: 2026-06-12  
-**Status**: Draft  
+**Status**: Implemented (T001–T013)  
 **Input**: User description: "Sprint 1 — `model`: the structured data contract for project-scan."
 
 ## User Scenarios & Testing *(mandatory)*
@@ -47,7 +47,7 @@ A style consumer (prompt generator or baseline rule engine) needs to determine w
 
 **Acceptance Scenarios**:
 
-1. **Given** style sources of types Checkstyle, EditorConfig, and IdeCodeStyle, **When** a consumer sorts them by `StyleSourceType.priority`, **Then** Checkstyle comes first, EditorConfig second, IdeCodeStyle last.
+1. **Given** style sources of types Checkstyle, EditorConfig, and IdeCodeStyle, **When** a consumer sorts them ascending by `StyleSourceType.priority` (lower rank = higher precedence, e.g., `sortedBy { it.type.priority }`), **Then** Checkstyle(1) comes first, EditorConfig(2) second, IdeCodeStyle(3) last.
 2. **Given** a project with no style files detected, **When** the Code Style section is built, **Then** `sources` is an empty list.
 
 ---

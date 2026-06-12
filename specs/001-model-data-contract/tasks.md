@@ -5,6 +5,8 @@
 
 **Tests**: Included — unit tests are part of the sprint acceptance criteria (FR-009, SC-001–SC-007), not optional.
 
+> **Governance note**: SC-006 (contract stability across Sprints 2–5) and SC-007 (additive-only changes) are governance invariants enforced by code review and constitution governance — they are not buildable sprint tasks and intentionally have no associated task IDs.
+
 **Implementation note on priority vs. ordering**: US1 (root aggregate) is P1 in the spec because the type shape must be decided first — and it has been (see data-model.md). In *implementation* order, US1 is last because `ProjectScanModel` depends on all five section types existing. US2 and US3 are both P1 and fully independent of each other.
 
 ## Format: `[ID] [P?] [Story] Description`

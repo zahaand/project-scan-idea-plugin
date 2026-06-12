@@ -45,4 +45,15 @@ class CodeStyleInfoTest {
         assertEquals("config/pmd/ruleset.xml", source.path)
         assertEquals(StyleSourceType.PMD, source.type)
     }
+
+    @Test
+    fun `multiple StyleSource entries with same type but different paths coexist`() {
+        val root = StyleSource(StyleSourceType.EDITOR_CONFIG, ".editorconfig")
+        val sub = StyleSource(StyleSourceType.EDITOR_CONFIG, "module/.editorconfig")
+        val info = CodeStyleInfo(sources = listOf(root, sub))
+        assertEquals(2, info.sources.size)
+        assertEquals(".editorconfig", info.sources[0].path)
+        assertEquals("module/.editorconfig", info.sources[1].path)
+        assertTrue(info.sources.all { it.type == StyleSourceType.EDITOR_CONFIG })
+    }
 }
