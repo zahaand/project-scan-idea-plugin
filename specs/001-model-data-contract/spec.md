@@ -93,7 +93,7 @@ A prompt consumer reads the module list, their inter-dependencies, package organ
 **Acceptance Scenarios**:
 
 1. **Given** a single-module project with no detectable package pattern, **When** the Structure section is built, **Then** `modules` has one entry, `packageOrganisation` is null, and `rootPackages` is an empty list.
-2. **Given** a multi-module project with a by-feature layout, **When** the Structure section is built, **Then** `packageOrganisation` is `BY_FEATURE` and `rootPackages` contains the detected packages.
+2. **Given** a multi-module project with a by-feature layout where `app` depends on `core`, **When** the Structure section is built, **Then** `packageOrganisation` is `BY_FEATURE`, `rootPackages` contains the detected packages, and the `app` module's `moduleDependencies` contains `"core"` while its `declaredDependencies` contains only external Maven/Gradle coordinates.
 
 ---
 
@@ -101,7 +101,8 @@ A prompt consumer reads the module list, their inter-dependencies, package organ
 
 - What happens when a dependency has a resolved version of `null` (e.g., BOM-managed without explicit version declaration)? → `resolvedVersion` is nullable.
 - What happens when the same style source type appears more than once (e.g., two `.editorconfig` files)? → Multiple `StyleSource` entries with the same type but different paths are allowed.
-- What happens when a module declares no dependencies? → `declaredDependencies` on the module is an empty list.
+- What happens when a module declares no external dependencies? → `declaredDependencies` on the module is an empty list; `moduleDependencies` may still be non-empty.
+- What happens when a module has no inter-module links? → `moduleDependencies` on the module is an empty list.
 - How does the model handle a project that is neither Maven nor Gradle? → `buildSystem` is null.
 
 ## Requirements *(mandatory)*
@@ -110,11 +111,11 @@ A prompt consumer reads the module list, their inter-dependencies, package organ
 
 - **FR-001**: The model MUST expose a root aggregate type `ProjectScanModel` that holds exactly five typed sections: Stack, CodeStyle, Linters, Tests, and Structure.
 - **FR-002**: Every section MUST be representable in an empty / not-detected state using empty collections and nullable fields — no sealed Present/Empty wrapper.
-- **FR-003**: The `StackInfo` section MUST carry a list of `Dependency` (groupId, artifactId, resolvedVersion), a nullable `jdkVersion`, a nullable `languageLevel`, and a nullable `buildSystem` enum (`MAVEN`, `GRADLE`).
+- **FR-003**: The `StackInfo` section MUST carry a `dependencies: List<Dependency>` representing the flat union of all modules' declared dependencies, deduplicated by groupId + artifactId (no transitive dependencies). It also carries a nullable `jdkVersion`, a nullable `languageLevel`, and a nullable `buildSystem` enum (`MAVEN`, `GRADLE`).
 - **FR-004**: The `CodeStyleInfo` section MUST carry a list of `StyleSource`, where each source has a `StyleSourceType` and a `path`. `StyleSourceType` MUST encode a `priority` rank such that Checkstyle/Spotless/PMD < EditorConfig < IdeCodeStyle.
 - **FR-005**: The `LinterInfo` section MUST carry a list of `ActiveRule`. Each rule MUST have a `ruleId`, a `tool` (string), a `severity` enum (`ERROR`, `WARNING`, `INFO`), and a `breaksBuild` boolean.
 - **FR-006**: The `TestInfo` section MUST carry a list of `TestFramework` (name + version), a list of `sourceRoots` (strings), a nullable `namingPattern`, and a nullable `coverageThreshold` (Double).
-- **FR-007**: The `StructureInfo` section MUST carry a list of `Module` (name + declaredDependencies list), a nullable `packageOrganisation` enum (`BY_LAYER`, `BY_FEATURE`), and a list of `rootPackages` (strings).
+- **FR-007**: The `StructureInfo` section MUST carry a list of `Module`, a nullable `packageOrganisation` enum (`BY_LAYER`, `BY_FEATURE`), and a list of `rootPackages` (strings). Each `Module` MUST carry its `name`, a `declaredDependencies: List<Dependency>` for external Maven/Gradle coordinates specific to that module, and a `moduleDependencies: List<String>` for inter-module references (sibling module names). Both lists may be empty.
 - **FR-008**: All model types MUST be plain Kotlin data classes with no IntelliJ Platform dependencies.
 - **FR-009**: The model MUST be covered by unit tests that verify construction, field access, empty-state representability, and style-source priority ordering.
 - **FR-010**: The model definition MUST NOT include any data collection, prompt generation, or UI logic.
@@ -134,7 +135,7 @@ A prompt consumer reads the module list, their inter-dependencies, package organ
 - **TestInfo**: Test frameworks, source locations, naming pattern, coverage threshold.
 - **TestFramework**: Framework name + version string.
 - **StructureInfo**: Modules, package organisation, root packages.
-- **Module**: Module name + its declared dependencies.
+- **Module**: Module name + `declaredDependencies` (external `List<Dependency>`) + `moduleDependencies` (inter-module `List<String>` of sibling module names).
 - **PackageOrganisation**: Enum — `BY_LAYER`, `BY_FEATURE`.
 
 ## Success Criteria *(mandatory)*
@@ -146,14 +147,23 @@ A prompt consumer reads the module list, their inter-dependencies, package organ
 - **SC-003**: Style source priority order is verified by at least one dedicated test that exercises all five source types.
 - **SC-004**: No IntelliJ Platform class appears in the model module's compile or runtime classpath.
 - **SC-005**: The entire model test suite completes in under 5 seconds on a developer workstation.
-- **SC-006**: Adding a new consumer of `ProjectScanModel` in a later sprint requires zero changes to the model source files.
+- **SC-006**: The five-section structure of `ProjectScanModel` and the meaning of all existing fields remain stable across Sprints 2–5; no consumer written against Sprint 1's model requires changes due to field renames, removals, or semantic redefinitions.
+- **SC-007**: Additive refinements to the model (new fields, new enum values, new source types) driven by Sprint 2 scan findings are acceptable without violating this contract, provided they do not alter the interpretation of any field that already exists.
 
 ## Assumptions
 
 - The model module is a standard Kotlin/JVM module inside the existing Gradle build; the IntelliJ plugin SDK is a dependency only of the plugin shell module, not of the model module.
 - `resolvedVersion` on `Dependency` may be null for BOM-managed or otherwise unresolved versions — this is an intentional design choice, not a defect.
-- Style source `path` is a project-relative string (e.g., `config/checkstyle/checkstyle.xml`); absolute path resolution is the responsibility of the scan layer (Sprint 2).
+- Style source `path` is a project-relative string (e.g., `config/checkstyle/checkstyle.xml`); absolute path resolution is the responsibility of the scan layer (Sprint 2). Inline style configuration embedded in build scripts (no separate file) is not representable in `StyleSource` in Sprint 1 — it is out of scope until the scan layer confirms it is encountered.
 - `namingPattern` in `TestInfo` is a simple glob or regex string (e.g., `"**/*Test.kt"`); pattern syntax validation is out of scope for the model.
-- Module dependency lists in `StructureInfo` include only declared (non-transitive) dependencies, mirroring the same contract as `StackInfo.dependencies`.
+- `StackInfo.dependencies` is the project-wide flat union (deduplicated by groupId + artifactId) of all modules' declared external dependencies. Per-module breakdowns are available via `StructureInfo.Module.declaredDependencies`. Deduplication keeps the highest resolved version when two modules declare the same coordinate at different versions; version conflict resolution is the scan layer's responsibility.
 - `coverageThreshold` is a percentage value in the range 0.0–100.0; enforcement of this range is the responsibility of the scan layer.
 - The model is immutable by convention (Kotlin data classes); defensive copying of list fields is not required in Sprint 1 but may be added later if mutation is observed.
+
+## Clarifications
+
+### Session 2026-06-12
+
+- Q: Should `Module.declaredDependencies` include inter-module references (sibling module names) alongside external Maven/Gradle coordinates, or are they separate? → A: Separate — `declaredDependencies: List<Dependency>` for external coords only; add `moduleDependencies: List<String>` for inter-module links.
+- Q: For multi-module projects, should `StackInfo.dependencies` be root/parent-level only, a flat union across all modules, or omitted? → A: Flat union (deduplicated by groupId + artifactId) across all modules — the full project dependency fingerprint.
+- Q: Should `StyleSource` represent inline build-script style configs (no file path), or file-based only? → A: File-based only; inline style config is out of scope for Sprint 1.

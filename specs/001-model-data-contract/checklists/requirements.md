@@ -35,3 +35,5 @@
 - Priority encoding (FR-004) is explicitly called out in both requirements and acceptance scenarios.
 - Empty-state representability is covered by dedicated acceptance scenarios in every user story.
 - SC-004 (no IntelliJ Platform on model classpath) is non-standard for a spec but was an explicit constraint in the feature description — retained as a measurable outcome.
+- Clarification session 2026-06-12 resolved three data-model ambiguities: Module dependency separation (Q1), StackInfo aggregation scope (Q2), StyleSource inline config scope (Q3).
+- SC-006/SC-007 now capture the additive-stability contract: existing field semantics are frozen; new fields and enum values are allowed.
