@@ -116,7 +116,7 @@
 
 - [ ] T016 [P] Apply detekt static analysis plugin to cover `:model` sources — add `id("io.gitlab.arturbosch.detekt")` to `model/build.gradle.kts` (or root `build.gradle.kts` with subproject configuration) and verify `./gradlew :model:detekt` passes with no violations; constitution requires this to fail the build on violation
 - [ ] T017 [P] Apply ktlint code style plugin to cover `:model` sources — add ktlint plugin to `model/build.gradle.kts` (or root) and verify `./gradlew :model:ktlintCheck` passes; constitution requires ktlint to own formatting, not detekt
-- [ ] T018 Verify classpath isolation (SC-004): run `./gradlew :model:dependencies --configuration compileClasspath` and confirm no `com.jetbrains.intellij` or `org.jetbrains.intellij` artifact appears in the output
+- [ ] T018 Verify classpath isolation and FR-010 (SC-004): (1) run `./gradlew :model:dependencies --configuration compileClasspath` and confirm no `com.jetbrains.intellij` or `org.jetbrains.intellij` artifact appears; (2) grep `model/src/main` for any import of IntelliJ Platform APIs (`com.intellij`, `org.jetbrains.annotations` excluded), data-collection logic, prompt-generation logic, or UI components — confirm zero matches (FR-010)
 - [ ] T019 Verify test suite timing (SC-005): run `./gradlew :model:test` with `--info` flag and confirm total test execution completes in < 5 seconds on a local developer workstation
 
 ---
@@ -127,13 +127,13 @@
 
 ```
 Phase 1 (Setup)
-    └── Phase 2 (US2 – Stack)  ←── defines shared Dependency type
-    └── Phase 3 (US3 – CodeStyle)  [can run in parallel with Phase 2]
-            └── Phase 4 (US4 – Linters)  [can run in parallel with Phase 5]
-            └── Phase 5 (US5 – Tests)
-            └── Phase 6 (US6 – Structure)  [depends on Phase 2 for Dependency]
-                    └── Phase 7 (US1 – Root Aggregate)  [depends on ALL section phases]
-                            └── Phase 8 (Polish)
+    ├── Phase 2 (US2 – Stack)       ←── defines shared Dependency type
+    ├── Phase 3 (US3 – CodeStyle)   [parallel with Phase 2]
+    ├── Phase 4 (US4 – Linters)     [parallel with Phase 5; depends only on Phase 1]
+    ├── Phase 5 (US5 – Tests)       [parallel with Phase 4; depends only on Phase 1]
+    └── Phase 6 (US6 – Structure)   [depends on Phase 2 for Dependency type]
+            └── Phase 7 (US1 – Root Aggregate)  [depends on ALL of Phases 2–6]
+                    └── Phase 8 (Polish)
 ```
 
 ### User Story Dependencies
@@ -183,11 +183,15 @@ Task T011: "Create TestInfoTest.kt"
 
 ### MVP First
 
+> ⚠️ `ProjectScanModel` (Phase 7) cannot compile until all five section types exist. Phases 4, 5, and 6 are compile-required, not skippable. The correct minimum path to a compiling root aggregate is: **1 → 2+3 → 4+5 → 6 → 7**.
+
 1. Complete **Phase 1** (Setup) — mandatory gate
-2. Complete **Phases 2 + 3** in parallel (US2 + US3 — both P1)
-3. Complete **Phase 7** (US1 root aggregate) with all sections using empty defaults
-4. **STOP and validate**: `./gradlew :model:test` — P1 stories fully tested
-5. Add P2 stories (Phases 4, 5, 6) — each independently testable
+2. Complete **Phases 2 + 3** in parallel (US2 Stack + US3 CodeStyle — both P1)
+3. Complete **Phases 4 + 5** in parallel (US4 Linters + US5 Tests — both P2)
+4. Complete **Phase 6** (US6 Structure — depends on Phase 2 for `Dependency`)
+5. Complete **Phase 7** (US1 root aggregate — depends on all five section types)
+6. **STOP and validate**: `./gradlew :model:test` — full suite green
+7. Proceed to Phase 8 (Polish)
 
 ### Full Sprint Delivery
 
