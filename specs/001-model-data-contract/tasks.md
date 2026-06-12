@@ -20,9 +20,9 @@
 
 **⚠️ CRITICAL**: All subsequent phases depend on this setup completing successfully.
 
-- [ ] T001 Create `model/build.gradle.kts` with only `org.jetbrains.kotlin.jvm` plugin, `testImplementation(libs.junit)` dependency, and NO `intellijPlatform { }` block (SC-004 isolation requirement)
-- [ ] T002 Update `settings.gradle.kts` — add `include(":model")` after the existing `rootProject.name` assignment
-- [ ] T003 Update root `build.gradle.kts` — add `implementation(project(":model"))` to the `dependencies { }` block
+- [x] T001 Create `model/build.gradle.kts` with only `org.jetbrains.kotlin.jvm` plugin, `testImplementation(libs.junit.jupiter)` dependency, `tasks.test { useJUnitPlatform() }`, and NO `intellijPlatform { }` block (SC-004 isolation requirement)
+- [x] T002 Update `settings.gradle.kts` — add `include(":model")` after the existing `rootProject.name` assignment
+- [x] T003 Update root `build.gradle.kts` — add `implementation(project(":model"))` to the `dependencies { }` block
 
 **Checkpoint**: Run `./gradlew :model:dependencies` — must resolve without any IntelliJ Platform artifact appearing.
 
