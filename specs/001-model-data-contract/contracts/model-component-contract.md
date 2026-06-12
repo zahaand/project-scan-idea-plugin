@@ -38,6 +38,7 @@ A producer (`scan` component) MUST:
 6. Populate `Module.moduleDependencies` with sibling module names (strings), not with external coordinates.
 7. Set `StyleSource.path` to a project-relative path string. Inline build-script style config MUST NOT be represented in Sprint 1 (no path = not a `StyleSource`).
 8. Set `StyleSource` entries only for file-based configuration files that actually exist in the project.
+8a. Populate `StructureInfo.rootPackages` as the union of root packages across ALL modules (project-wide). Per-module root package data is not in scope for MVP; do not attempt to populate it.
 9. Set `LinterInfo.activeRules` to the empty list when no linter is wired into the build — never fabricate rules.
 10. Set `TestInfo.coverageThreshold` to non-null only when JaCoCo is configured with an explicit threshold value.
 
@@ -50,6 +51,7 @@ A consumer MUST:
 1. Treat any section's empty state as valid and meaningful — "not detected" is not an error.
 2. Sort `CodeStyleInfo.sources` by `StyleSourceType.priority` (ascending) to determine precedence. Do NOT re-implement priority logic independently.
 3. Never mutate model instances. Data classes are treated as immutable; produce a modified copy via `.copy()` if transformation is needed.
+4. When multiple `StyleSource` entries share the same priority rank (e.g., Checkstyle + Spotless both at rank 1), the model provides no ordering between them. The consumer is responsible for conflict resolution among same-rank sources. The model guarantees only the linter-configs-over-EditorConfig-over-IdeCodeStyle ordering.
 4. Not depend on list ordering within sections unless the ordering is explicitly documented here. Currently, no ordering guarantee is given for any list field.
 
 ---

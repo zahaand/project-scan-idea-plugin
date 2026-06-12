@@ -81,6 +81,8 @@ enum class StyleSourceType(val priority: Int) {
 
 **Priority rule**: lower `priority` integer = higher precedence. Consumers that need the highest-priority source call `sources.minByOrNull { it.type.priority }`. Multiple entries with the same type (e.g., two `.editorconfig` files at different paths) are allowed.
 
+**Equal-rank linter sources**: `CHECKSTYLE`, `SPOTLESS`, and `PMD` intentionally share rank 1. The model does NOT impose any ordering among these three. When two or more same-rank linter sources are present, the consumer (e.g., the Sprint 4 prompt generator) is responsible for conflict resolution — the model never invents a hierarchy the project itself did not define.
+
 **Scope**: `StyleSource` models file-based configuration only. Inline style configuration embedded in build scripts is out of scope for Sprint 1.
 
 **Empty state**: `CodeStyleInfo()` — empty source list.
@@ -140,7 +142,7 @@ data class TestFramework(
 data class StructureInfo(
     val modules: List<Module> = emptyList(),
     val packageOrganisation: PackageOrganisation? = null,
-    val rootPackages: List<String> = emptyList()
+    val rootPackages: List<String> = emptyList()  // project-wide aggregation across all modules
 )
 ```
 
@@ -158,6 +160,8 @@ data class Module(
 ```kotlin
 enum class PackageOrganisation { BY_LAYER, BY_FEATURE }
 ```
+
+`rootPackages` — the union of root packages detected across ALL modules in the project. This is a project-wide aggregate, consistent with the `StackInfo.dependencies` aggregation design (Q2 clarification). Per-module root package breakdown is explicitly out of MVP scope (post-MVP tech debt).
 
 **Empty state**: `StructureInfo()` — empty module list, null organisation, empty root packages.
 

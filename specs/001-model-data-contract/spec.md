@@ -104,6 +104,7 @@ A prompt consumer reads the module list, their inter-dependencies, package organ
 - What happens when a module declares no external dependencies? → `declaredDependencies` on the module is an empty list; `moduleDependencies` may still be non-empty.
 - What happens when a module has no inter-module links? → `moduleDependencies` on the module is an empty list.
 - How does the model handle a project that is neither Maven nor Gradle? → `buildSystem` is null.
+- When multiple linter style sources of the same rank (Checkstyle, Spotless, PMD) are present simultaneously, which takes precedence? → The model does NOT resolve this. Equal-rank linter sources are peers; conflict resolution between them is the consumer's responsibility. The plugin invents no hierarchy the project itself did not define.
 
 ## Requirements *(mandatory)*
 
@@ -115,7 +116,7 @@ A prompt consumer reads the module list, their inter-dependencies, package organ
 - **FR-004**: The `CodeStyleInfo` section MUST carry a list of `StyleSource`, where each source has a `StyleSourceType` and a `path`. `StyleSourceType` MUST encode a `priority` rank such that Checkstyle/Spotless/PMD < EditorConfig < IdeCodeStyle.
 - **FR-005**: The `LinterInfo` section MUST carry a list of `ActiveRule`. Each rule MUST have a `ruleId`, a `tool` (string), a `severity` enum (`ERROR`, `WARNING`, `INFO`), and a `breaksBuild` boolean.
 - **FR-006**: The `TestInfo` section MUST carry a list of `TestFramework` (name + version), a list of `sourceRoots` (strings), a nullable `namingPattern`, and a nullable `coverageThreshold` (Double).
-- **FR-007**: The `StructureInfo` section MUST carry a list of `Module`, a nullable `packageOrganisation` enum (`BY_LAYER`, `BY_FEATURE`), and a list of `rootPackages` (strings). Each `Module` MUST carry its `name`, a `declaredDependencies: List<Dependency>` for external Maven/Gradle coordinates specific to that module, and a `moduleDependencies: List<String>` for inter-module references (sibling module names). Both lists may be empty.
+- **FR-007**: The `StructureInfo` section MUST carry a list of `Module`, a nullable `packageOrganisation` enum (`BY_LAYER`, `BY_FEATURE`), and a `rootPackages: List<String>` representing the union of root packages detected across ALL modules (project-wide aggregate). Each `Module` MUST carry its `name`, a `declaredDependencies: List<Dependency>` for external Maven/Gradle coordinates specific to that module, and a `moduleDependencies: List<String>` for inter-module references (sibling module names). Both module lists may be empty. Per-module root package breakdown is out of MVP scope.
 - **FR-008**: All model types MUST be plain Kotlin data classes with no IntelliJ Platform dependencies.
 - **FR-009**: The model MUST be covered by unit tests that verify construction, field access, empty-state representability, and style-source priority ordering.
 - **FR-010**: The model definition MUST NOT include any data collection, prompt generation, or UI logic.
@@ -157,6 +158,7 @@ A prompt consumer reads the module list, their inter-dependencies, package organ
 - Style source `path` is a project-relative string (e.g., `config/checkstyle/checkstyle.xml`); absolute path resolution is the responsibility of the scan layer (Sprint 2). Inline style configuration embedded in build scripts (no separate file) is not representable in `StyleSource` in Sprint 1 — it is out of scope until the scan layer confirms it is encountered.
 - `namingPattern` in `TestInfo` is a simple glob or regex string (e.g., `"**/*Test.kt"`); pattern syntax validation is out of scope for the model.
 - `StackInfo.dependencies` is the project-wide flat union (deduplicated by groupId + artifactId) of all modules' declared external dependencies. Per-module breakdowns are available via `StructureInfo.Module.declaredDependencies`. Deduplication keeps the highest resolved version when two modules declare the same coordinate at different versions; version conflict resolution is the scan layer's responsibility.
+- `StructureInfo.rootPackages` is the project-wide union of root packages detected across all modules — consistent with the `StackInfo.dependencies` aggregation principle. Per-module root package breakdown is post-MVP scope.
 - `coverageThreshold` is a percentage value in the range 0.0–100.0; enforcement of this range is the responsibility of the scan layer.
 - The model is immutable by convention (Kotlin data classes); defensive copying of list fields is not required in Sprint 1 but may be added later if mutation is observed.
 
