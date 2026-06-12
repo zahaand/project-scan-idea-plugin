@@ -2,7 +2,7 @@
 
 **Feature Branch**: `001-model-data-contract`  
 **Created**: 2026-06-12  
-**Status**: Implemented (T001–T013)  
+**Status**: Implemented (T001–T019)  
 **Input**: User description: "Sprint 1 — `model`: the structured data contract for project-scan."
 
 ## User Scenarios & Testing *(mandatory)*
