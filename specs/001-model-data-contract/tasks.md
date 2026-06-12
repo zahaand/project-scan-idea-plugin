@@ -34,8 +34,8 @@
 
 **Independent Test**: `./gradlew :model:test --tests "*StackInfoTest"` — populated + empty scenarios pass, `Dependency` fields round-trip correctly.
 
-- [ ] T004 [P] [US2] Create `model/src/main/kotlin/dev/zahaand/projectscan/model/StackInfo.kt` — define `Dependency(groupId, artifactId, resolvedVersion: String?)`, `BuildSystem` enum (MAVEN, GRADLE), and `StackInfo(dependencies, jdkVersion?, languageLevel?, buildSystem?)` with empty-state defaults per data-model.md
-- [ ] T005 [P] [US2] Create `model/src/test/kotlin/dev/zahaand/projectscan/model/StackInfoTest.kt` — test: (1) empty-state `StackInfo()` has empty list + null fields; (2) populated `StackInfo` with two `Dependency` entries round-trips all fields; (3) `Dependency.resolvedVersion` accepts null (BOM-managed case)
+- [x] T004 [P] [US2] Create `model/src/main/kotlin/dev/zahaand/projectscan/model/StackInfo.kt` — define `Dependency(groupId, artifactId, resolvedVersion: String?)`, `BuildSystem` enum (MAVEN, GRADLE), and `StackInfo(dependencies, jdkVersion?, languageLevel?, buildSystem?)` with empty-state defaults per data-model.md
+- [x] T005 [P] [US2] Create `model/src/test/kotlin/dev/zahaand/projectscan/model/StackInfoTest.kt` — test: (1) empty-state `StackInfo()` has empty list + null fields; (2) populated `StackInfo` with two `Dependency` entries round-trips all fields; (3) `Dependency.resolvedVersion` accepts null (BOM-managed case)
 
 **Checkpoint**: `./gradlew :model:test --tests "*StackInfoTest"` passes.
 
@@ -49,8 +49,8 @@
 
 > ⚠️ **Phase 2 and Phase 3 can run in parallel** — `StackInfo.kt` and `CodeStyleInfo.kt` are independent files.
 
-- [ ] T006 [P] [US3] Create `model/src/main/kotlin/dev/zahaand/projectscan/model/CodeStyleInfo.kt` — define `StyleSourceType` enum with `val priority: Int` constructor parameter (CHECKSTYLE=1, SPOTLESS=1, PMD=1, EDITOR_CONFIG=2, IDE_CODE_STYLE=3), `StyleSource(type, path: String)`, and `CodeStyleInfo(sources)` with empty-state default per data-model.md
-- [ ] T007 [P] [US3] Create `model/src/test/kotlin/dev/zahaand/projectscan/model/CodeStyleInfoTest.kt` — test: (1) empty-state `CodeStyleInfo()` has empty list; (2) all five `StyleSourceType` values carry the correct `priority` integer; (3) `minByOrNull { it.type.priority }` on a mixed list returns a linter-type source; (4) Checkstyle/Spotless/PMD share rank 1 (tie — verify equality, not ordering among them); (5) `StyleSource` path field round-trips
+- [x] T006 [P] [US3] Create `model/src/main/kotlin/dev/zahaand/projectscan/model/CodeStyleInfo.kt` — define `StyleSourceType` enum with `val priority: Int` constructor parameter (CHECKSTYLE=1, SPOTLESS=1, PMD=1, EDITOR_CONFIG=2, IDE_CODE_STYLE=3), `StyleSource(type, path: String)`, and `CodeStyleInfo(sources)` with empty-state default per data-model.md
+- [x] T007 [P] [US3] Create `model/src/test/kotlin/dev/zahaand/projectscan/model/CodeStyleInfoTest.kt` — test: (1) empty-state `CodeStyleInfo()` has empty list; (2) all five `StyleSourceType` values carry the correct `priority` integer; (3) `minByOrNull { it.type.priority }` on a mixed list returns a linter-type source; (4) Checkstyle/Spotless/PMD share rank 1 (tie — verify equality, not ordering among them); (5) `StyleSource` path field round-trips
 
 **Checkpoint**: `./gradlew :model:test --tests "*CodeStyleInfoTest"` passes; SC-003 satisfied.
 
@@ -64,8 +64,8 @@
 
 > ⚠️ **Phase 4 and Phase 5 can run in parallel** — `LinterInfo.kt` and `TestInfo.kt` are independent files.
 
-- [ ] T008 [P] [US4] Create `model/src/main/kotlin/dev/zahaand/projectscan/model/LinterInfo.kt` — define `RuleSeverity` enum (ERROR, WARNING, INFO), `ActiveRule(ruleId: String, tool: String, severity: RuleSeverity, breaksBuild: Boolean)`, and `LinterInfo(activeRules)` with empty-state default per data-model.md
-- [ ] T009 [P] [US4] Create `model/src/test/kotlin/dev/zahaand/projectscan/model/LinterInfoTest.kt` — test: (1) empty-state `LinterInfo()` has empty `activeRules`; (2) `ActiveRule` with `severity=ERROR` and `breaksBuild=true` round-trips all four fields; (3) `ActiveRule` with `severity=WARNING` and `breaksBuild=false` round-trips correctly
+- [x] T008 [P] [US4] Create `model/src/main/kotlin/dev/zahaand/projectscan/model/LinterInfo.kt` — define `RuleSeverity` enum (ERROR, WARNING, INFO), `ActiveRule(ruleId: String, tool: String, severity: RuleSeverity, breaksBuild: Boolean)`, and `LinterInfo(activeRules)` with empty-state default per data-model.md
+- [x] T009 [P] [US4] Create `model/src/test/kotlin/dev/zahaand/projectscan/model/LinterInfoTest.kt` — test: (1) empty-state `LinterInfo()` has empty `activeRules`; (2) `ActiveRule` with `severity=ERROR` and `breaksBuild=true` round-trips all four fields; (3) `ActiveRule` with `severity=WARNING` and `breaksBuild=false` round-trips correctly
 
 **Checkpoint**: `./gradlew :model:test --tests "*LinterInfoTest"` passes.
 
@@ -77,8 +77,8 @@
 
 **Independent Test**: `./gradlew :model:test --tests "*TestInfoTest"` — null coverage and 80.0 coverage scenarios pass.
 
-- [ ] T010 [P] [US5] Create `model/src/main/kotlin/dev/zahaand/projectscan/model/TestInfo.kt` — define `TestFramework(name: String, version: String?)`, and `TestInfo(frameworks, sourceRoots, namingPattern?, coverageThreshold?)` with empty-state defaults per data-model.md
-- [ ] T011 [P] [US5] Create `model/src/test/kotlin/dev/zahaand/projectscan/model/TestInfoTest.kt` — test: (1) empty-state `TestInfo()` has empty lists and null nullable fields; (2) `TestFramework.version` accepts null (BOM-managed); (3) populated `TestInfo` with JUnit 5 + Mockito, source root, naming pattern, and `coverageThreshold=80.0` round-trips all fields; (4) `coverageThreshold=null` represents "JaCoCo absent" case
+- [x] T010 [P] [US5] Create `model/src/main/kotlin/dev/zahaand/projectscan/model/TestInfo.kt` — define `TestFramework(name: String, version: String?)`, and `TestInfo(frameworks, sourceRoots, namingPattern?, coverageThreshold?)` with empty-state defaults per data-model.md
+- [x] T011 [P] [US5] Create `model/src/test/kotlin/dev/zahaand/projectscan/model/TestInfoTest.kt` — test: (1) empty-state `TestInfo()` has empty lists and null nullable fields; (2) `TestFramework.version` accepts null (BOM-managed); (3) populated `TestInfo` with JUnit 5 + Mockito, source root, naming pattern, and `coverageThreshold=80.0` round-trips all fields; (4) `coverageThreshold=null` represents "JaCoCo absent" case
 
 **Checkpoint**: `./gradlew :model:test --tests "*TestInfoTest"` passes.
 
@@ -90,8 +90,8 @@
 
 **Independent Test**: `./gradlew :model:test --tests "*StructureInfoTest"` — single-module and multi-module scenarios pass.
 
-- [ ] T012 [US6] Create `model/src/main/kotlin/dev/zahaand/projectscan/model/StructureInfo.kt` — define `PackageOrganisation` enum (BY_LAYER, BY_FEATURE), `Module(name: String, declaredDependencies: List<Dependency>, moduleDependencies: List<String>)` with empty-list defaults, and `StructureInfo(modules, packageOrganisation?, rootPackages)` with empty-state defaults per data-model.md; `Dependency` is already in the same package (no import needed)
-- [ ] T013 [US6] Create `model/src/test/kotlin/dev/zahaand/projectscan/model/StructureInfoTest.kt` — test: (1) empty-state `StructureInfo()` has empty lists and null packageOrganisation; (2) single-module project: one `Module` with empty deps lists; (3) multi-module: `app` module has non-empty `moduleDependencies=["core"]` and external `declaredDependencies`; (4) `rootPackages` is project-wide list; (5) `PackageOrganisation.BY_FEATURE` round-trips
+- [x] T012 [US6] Create `model/src/main/kotlin/dev/zahaand/projectscan/model/StructureInfo.kt` — define `PackageOrganisation` enum (BY_LAYER, BY_FEATURE), `Module(name: String, declaredDependencies: List<Dependency>, moduleDependencies: List<String>)` with empty-list defaults, and `StructureInfo(modules, packageOrganisation?, rootPackages)` with empty-state defaults per data-model.md; `Dependency` is already in the same package (no import needed)
+- [x] T013 [US6] Create `model/src/test/kotlin/dev/zahaand/projectscan/model/StructureInfoTest.kt` — test: (1) empty-state `StructureInfo()` has empty lists and null packageOrganisation; (2) single-module project: one `Module` with empty deps lists; (3) multi-module: `app` module has non-empty `moduleDependencies=["core"]` and external `declaredDependencies`; (4) `rootPackages` is project-wide list; (5) `PackageOrganisation.BY_FEATURE` round-trips
 
 **Checkpoint**: `./gradlew :model:test --tests "*StructureInfoTest"` passes.
 
