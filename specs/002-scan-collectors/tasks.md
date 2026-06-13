@@ -118,13 +118,13 @@
 
 ### Fakes
 
-- [ ] T026 [P] [US3] Create `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeLinterPort.kt` — constructor takes `tools: List<LinterToolDescriptor>`; implements `LinterPort`
-- [ ] T027 [P] [US3] Create `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeLinterConfigParser.kt` — constructor takes `rulesByPath: Map<String, List<ParsedRule>>`; implements `LinterConfigParser`; throws for paths not in map
+- [X] T026 [P] [US3] Create `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeLinterPort.kt` — constructor takes `tools: List<LinterToolDescriptor>`; implements `LinterPort`
+- [X] T027 [P] [US3] Create `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeLinterConfigParser.kt` — constructor takes `rulesByPath: Map<String, List<ParsedRule>>`; implements `LinterConfigParser`; throws for paths not in map
 
 ### Config Parsers
 
-- [ ] T028 [P] [US3] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/CheckstyleConfigParser.kt` — DOM parse via `DocumentBuilderFactory`; walk `<module>` elements recursively; skip `Checker` and `TreeWalker` containers; `ruleId` = `name` attribute; severity from `<property name="severity">`, inherit from nearest ancestor, default `INFO`; mapping: `"error"→ERROR`, `"warning"→WARNING`, `"info"/"ignore"→INFO` per research.md R-006
-- [ ] T029 [P] [US3] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/PmdConfigParser.kt` — DOM parse; enumerate `<rule>` elements; `ruleId` = `ref` attribute; `<priority>` → severity: 1–2=`ERROR`, 3=`WARNING`, 4–5=`INFO`; absent priority → `INFO` (per FR-009 and research.md R-007)
+- [X] T028 [P] [US3] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/CheckstyleConfigParser.kt` — DOM parse via `DocumentBuilderFactory`; walk `<module>` elements recursively; skip `Checker` and `TreeWalker` containers; `ruleId` = `name` attribute; severity from `<property name="severity">`, inherit from nearest ancestor, default `INFO`; mapping: `"error"→ERROR`, `"warning"→WARNING`, `"info"/"ignore"→INFO` per research.md R-006
+- [X] T029 [P] [US3] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/PmdConfigParser.kt` — DOM parse; enumerate `<rule>` elements; `ruleId` = `ref` attribute; `<priority>` → severity: 1–2=`ERROR`, 3=`WARNING`, 4–5=`INFO`; absent priority → `INFO` (per FR-009 and research.md R-007)
 
 ### Collector + Tests
 
