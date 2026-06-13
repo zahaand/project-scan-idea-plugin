@@ -40,7 +40,7 @@
 ### Model Changes
 
 - [X] T004 [P] Create `model/src/main/kotlin/dev/zahaand/projectscan/model/ScanResult.kt` — `sealed class SectionResult<out T>` with `Ok`, `Empty`, `Error` variants, and `data class ScanResult` with five `SectionResult` fields (stack, codeStyle, linters, tests, structure) per data-model.md §1.1
-- [X] T005 [P] Update `model/src/main/kotlin/dev/zahaand/projectscan/model/StructureInfo.kt` — remove `packageOrganisation: PackageOrganisation?` field and `PackageOrganisation` enum; add `packageSegments: List<String>` field; update `model/src/test/kotlin/dev/zahaand/projectscan/model/StructureInfoTest.kt` to remove assertions on removed field and add `packageSegments` construction
+- [X] T005 [P] Update `model/src/main/kotlin/dev/zahaand/projectscan/model/StructureInfo.kt` — remove `packageOrganisation: PackageOrganisation?` field and `PackageOrganisation` enum; add `rootPackages: List<String>` and `packageSegments: List<String>` fields (both required — T038/T039 rely on `rootPackages` for raw root package data; T038 maps `PackageTreeData.secondLevelSegments` → `packageSegments`); update `model/src/test/kotlin/dev/zahaand/projectscan/model/StructureInfoTest.kt` to remove assertions on removed field and add `rootPackages` and `packageSegments` construction
 - [X] T006 [P] Update `model/src/main/kotlin/dev/zahaand/projectscan/model/LinterInfo.kt` — widen `breaksBuild: Boolean` to `breaksBuild: Boolean?` in `ActiveRule`; add `toolsWithUnresolvableConfig: List<String> = emptyList()` to `LinterInfo`; update `model/src/test/kotlin/dev/zahaand/projectscan/model/LinterInfoTest.kt` to construct `ActiveRule` with null/non-null `breaksBuild` and `LinterInfo` with `toolsWithUnresolvableConfig`
 - [X] T007 [P] Update `model/src/main/kotlin/dev/zahaand/projectscan/model/TestInfo.kt` — add `unknownTestDependencies: List<Dependency> = emptyList()` to `TestInfo`; update `model/src/test/kotlin/dev/zahaand/projectscan/model/TestInfoTest.kt` to include `unknownTestDependencies` in construction
 
@@ -133,7 +133,7 @@
 
 ### Adapter
 
-- [X] T032 [US3] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/IjLinterAdapter.kt` — Maven: `MavenProject.findPlugin("com.puppycrawl.tools", "maven-checkstyle-plugin")` + `findPlugin("org.apache.maven.plugins", "maven-pmd-plugin")`; `breaksBuild` from `getConfigurationElement()?.getChildText("failsOnError"/"failOnViolation")`; Gradle: scan task names for `checkstyleMain`/`checkstyleTest`/`pmdMain`/`pmdTest` in ExternalProjectDataCache; Gradle `breaksBuild = null` always per research.md R-005; Wiring of `linterConfigParsers` into `LinterCollector` happens in T041; this adapter is unaffected.
+- [X] T032 [US3] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/IjLinterAdapter.kt` — Maven: `MavenProject.findPlugin("org.apache.maven.plugins", "maven-checkstyle-plugin")` + `findPlugin("org.apache.maven.plugins", "maven-pmd-plugin")`; `breaksBuild` from `getConfigurationElement()?.getChildText("failOnViolation")` (not `failsOnError` per CHK013); Gradle: scan task names for `checkstyleMain`/`checkstyleTest`/`pmdMain`/`pmdTest` in ExternalProjectDataCache; Gradle `breaksBuild = null` always per research.md R-005; Wiring of `linterConfigParsers` into `LinterCollector` happens in T041; this adapter is unaffected.
 
 **Checkpoint**: `./gradlew :scan:test --tests "*.LinterCollectorTest"` passes.
 

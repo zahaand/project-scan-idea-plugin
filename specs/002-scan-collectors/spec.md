@@ -2,7 +2,7 @@
 
 **Feature Branch**: `002-scan-collectors`
 **Created**: 2026-06-12
-**Status**: Draft
+**Status**: In Progress
 **Input**: User description: "Sprint 2 — `scan`. Collectors that populate the data model from Sprint 1 by reading the IntelliJ project model."
 
 ## User Scenarios & Testing *(mandatory)*
@@ -74,7 +74,7 @@ The plugin identifies which test frameworks and companion libraries appear in th
 1. **Given** a project with JUnit 5, Mockito, and AssertJ declared as test dependencies, **When** the test collector runs, **Then** all three frameworks appear in the result.
 2. **Given** a project where JaCoCo is applied with a minimum coverage threshold of 80%, **When** the test collector runs, **Then** the threshold is recorded as `0.8` (a ratio in the range 0.0–1.0, not a percentage integer).
 3. **Given** a project where JaCoCo is applied for reporting only (no threshold/check rule configured), **When** the test collector runs, **Then** the `coverageThreshold` field is `null`.
-4. **Given** a project with no testing dependencies, **When** the test collector runs, **Then** the frameworks list is empty and the coverage threshold is absent.
+4. **Given** a project with no testing dependencies and no test source roots, **When** the test collector runs, **Then** the tests section is `Empty` — the frameworks list is empty and the coverage threshold is absent.
 5. **Given** a project with a test-scoped dependency that is not on the known framework list, **When** the test collector runs, **Then** it is recorded as "unknown test dependency" and does not appear in the named frameworks list.
 
 ---
@@ -113,11 +113,11 @@ For multi-module projects, the plugin records each module's build-system identif
 
 - **FR-003**: When the same dependency coordinate (groupId + artifactId) appears at different versions across modules, the scan layer MUST place the **maximum version** in the flat `StackInfo.dependencies` aggregate. Version ordering MUST follow Maven ComparableVersion semantics; for version strings that cannot be compared by ComparableVersion, lexicographic ordering is used as a deterministic fallback. Per-module version divergence is preserved separately in `StructureInfo.Module.declaredDependencies` and is NOT collapsed.
 
-- **FR-004**: The scan layer MUST identify the project's primary build system (Maven or Gradle), the effective JDK version (`jdkVersion`), and the effective Java language level (`languageLevel`) as **two distinct facts**. These are separate fields in `StackInfo` and MUST NOT be conflated into a single value.
+- **FR-004**: The scan layer MUST identify the project's primary build system (Maven or Gradle), the effective JDK version (`jdkVersion`), and the effective Java language level (`languageLevel`) as **two distinct facts**. These are separate fields in `StackInfo` and MUST NOT be conflated into a single value. The `jdkVersion` string is the raw value returned by `Sdk.versionString` from the IntelliJ project SDK; its format is vendor-determined (e.g., `"temurin-21"`) and MUST NOT be normalised.
 
 - **FR-005**: When modules have differing language levels, the scan layer MUST record the maximum level as the project-level `languageLevel`. Modules with no explicit language level setting inherit the project-level default before aggregation. If no language level can be determined at all (neither module-level nor project-level), the `languageLevel` field is `null`.
 
-- **FR-006**: The scan layer MUST discover code style configuration sources present in the project and record each source's type and project-relative path (relative to the project root directory returned by `ProjectUtil.guessProjectDir()`, using `/` separators). Sources are recognized per the **Style Source Recognition Table** below. All `.editorconfig` files found anywhere under the project root are collected — not only the root-level one. All files under `.idea/codeStyles/` are collected as `IDE_CODE_STYLE` sources.
+- **FR-006**: The scan layer MUST discover code style configuration sources present in the project and record each source's type and project-relative path (relative to the project root via `project.basePath`, equivalent to `ProjectUtil.guessProjectDir()` for standard Maven/Gradle projects, using `/` separators). Sources are recognized per the **Style Source Recognition Table** below. All `.editorconfig` files found anywhere under the project root are collected — not only the root-level one. All files under `.idea/codeStyles/` are collected as `IDE_CODE_STYLE` sources.
 
 **Style Source Recognition Table**:
 
@@ -172,7 +172,7 @@ For multi-module projects, the plugin records each module's build-system identif
 | `org.spockframework` | — | Spock |
 | `org.testng` | — | TestNG |
 
-- **FR-013**: The scan layer MUST record test source directory paths (project-relative, relative to the project root directory returned by `ProjectUtil.guessProjectDir()` — the identical anchor used by FR-006 for CodeStyle, ensuring consistent path roots across sections for the consumer) and the file-naming suffixes found in **Java and Kotlin test source files** (`.java` and `.kt` only; non-source resources such as `SomeTest.xml` or `SomeTest.json` MUST be excluded before suffix extraction), recognised against the closed suffix set: `Test`, `Tests`, `IT`, `ITCase`, `Spec`. Each recognised suffix is recorded verbatim — "raw observed" means the token value is unmodified (e.g., `IT` recorded as `"IT"`, not normalised into a regex or pattern), NOT an unbounded enumeration of arbitrary endings. Class names that do not end with a known token contribute nothing. The plugin does not classify the team's naming convention — it records the set of observed known suffixes and leaves convention classification to the downstream consumer (LLM). This aligns with the closed-list approach used for test framework detection (FR-012).
+- **FR-013**: The scan layer MUST record test source directory paths (project-relative, relative to the project root via `project.basePath` — the identical anchor used by FR-006 for CodeStyle, equivalent to `ProjectUtil.guessProjectDir()` for standard Maven/Gradle projects, ensuring consistent path roots across sections for the consumer) and the file-naming suffixes found in **Java and Kotlin test source files** (`.java` and `.kt` only; non-source resources such as `SomeTest.xml` or `SomeTest.json` MUST be excluded before suffix extraction), recognised against the closed suffix set: `Test`, `Tests`, `IT`, `ITCase`, `Spec`. Each recognised suffix is recorded verbatim — "raw observed" means the token value is unmodified (e.g., `IT` recorded as `"IT"`, not normalised into a regex or pattern), NOT an unbounded enumeration of arbitrary endings. Class names that do not end with a known token contribute nothing. The plugin does not classify the team's naming convention — it records the set of observed known suffixes and leaves convention classification to the downstream consumer (LLM). This aligns with the closed-list approach used for test framework detection (FR-012).
 
 - **FR-014**: When JaCoCo is applied, the scan layer MUST record the coverage threshold as a single representative `Double` value in the range 0.0–1.0 (ratio, not percentage). When JaCoCo is applied for reporting only (no threshold/check rule configured), `coverageThreshold` MUST be `null`. When the threshold value is present but cannot be read from the project model, it MUST also be `null`.
 
@@ -244,7 +244,7 @@ For multi-module projects, the plugin records each module's build-system identif
 - **CHK003** (language-level fallback): A module with no explicit language level inherits the project-level default before aggregation. If neither is set, `languageLevel` is `null`. Applied to FR-005.
 - **CHK004** (version comparison): Max-version aggregation uses Maven ComparableVersion semantics; lexicographic ordering is the deterministic fallback for strings that cannot be compared by ComparableVersion. Applied to FR-003.
 - **CHK005** (scope in Dependency): `Dependency` model carries no scope field. Scope is modeled only in the test collector's port DTO to select test-scoped entries. Assumptions updated to remove the incorrect "scope is recorded as a fact" statement.
-- **CHK006** (path reference point): Project-relative means relative to the project root directory (`ProjectUtil.guessProjectDir()`), using `/` separators. Applied to FR-006.
+- **CHK006** (path reference point): Project-relative means relative to the project root via `project.basePath` (equivalent to `ProjectUtil.guessProjectDir()` for standard Maven/Gradle projects), using `/` separators. Applied to FR-006.
 - **CHK007** (style source recognition table): Recognition table added to spec immediately after FR-006.
 - **CHK008** (Spotless detection): A `StyleSource` of type `SPOTLESS` is produced only when a standalone external Spotless config file exists. Inline Gradle Spotless configuration is not modeled; FR-020 updated accordingly.
 - **CHK009** (multiple .editorconfig): All `.editorconfig` files under the project root are collected — not only the root-level one. Applied to FR-006.
