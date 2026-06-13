@@ -70,18 +70,18 @@
 
 ### Fakes
 
-- [ ] T016 [P] [US1] Create `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeBuildSystemPort.kt` — constructor takes `buildSystem: BuildSystem?` and `moduleLevels: Map<String, String>`; implements `BuildSystemPort`
-- [ ] T017 [P] [US1] Create `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeDependencyPort.kt` — constructor takes `moduleMap: Map<String, List<Dependency>>`; implements `DependencyPort`
+- [X] T016 [P] [US1] Create `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeBuildSystemPort.kt` — constructor takes `buildSystem: BuildSystem?` and `moduleLevels: Map<String, String>`; implements `BuildSystemPort`
+- [X] T017 [P] [US1] Create `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeDependencyPort.kt` — constructor takes `moduleMap: Map<String, List<Dependency>>`; implements `DependencyPort`
 
 ### Collector + Tests
 
-- [ ] T018 [US1] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/collector/StackCollector.kt` — aggregate per-module deps: dedup by groupId+artifactId, max version via ComparableVersion (lexicographic fallback); resolve per-module language levels (null → project default from BuildSystemPort); take max across modules; return `SectionResult.Ok(StackInfo(...))` when any fact present, `SectionResult.Empty` when no build system and no modules
-- [ ] T019 [US1] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/collector/StackCollectorTest.kt` — covers: 5-dep single-module project; multi-module same-dep max-version selection; zero-dependency project (Empty); max language level aggregation; null version preserved; Gradle vs Maven build system identification
+- [X] T018 [US1] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/collector/StackCollector.kt` — aggregate per-module deps: dedup by groupId+artifactId, max version via ComparableVersion (lexicographic fallback); resolve per-module language levels (null → project default from BuildSystemPort); take max across modules; return `SectionResult.Ok(StackInfo(...))` when any fact present, `SectionResult.Empty` when no build system and no modules
+- [X] T019 [US1] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/collector/StackCollectorTest.kt` — covers: 5-dep single-module project; multi-module same-dep max-version selection; zero-dependency project (Empty); max language level aggregation; null version preserved; Gradle vs Maven build system identification
 
 ### Adapters
 
-- [ ] T020 [P] [US1] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/IjBuildSystemAdapter.kt` — `getBuildSystem()` via `ExternalSystemUtil.getDefaultExternalSystemId()` or `MavenProjectsManager.isMavenizedProject()`; `getModuleLanguageLevels()` via `LanguageLevelModuleExtension.getInstance(module).languageLevel` per module (null = inherits project default from `LanguageLevelProjectExtension`) per research.md R-002/R-003
-- [ ] T021 [P] [US1] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/IjDependencyAdapter.kt` — for Maven: `MavenProjectsManager.getInstance(project).projects` → `MavenProject.getDependencies()`; for Gradle: `ExternalProjectDataCache` + `ExternalSystemApiUtil.findAll(moduleNode, LibraryDependencyData.KEY)`; returns only declared (non-transitive) entries per research.md R-001
+- [X] T020 [P] [US1] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/IjBuildSystemAdapter.kt` — `getBuildSystem()` via `ExternalSystemUtil.getDefaultExternalSystemId()` or `MavenProjectsManager.isMavenizedProject()`; `getModuleLanguageLevels()` via `LanguageLevelModuleExtension.getInstance(module).languageLevel` per module (null = inherits project default from `LanguageLevelProjectExtension`) per research.md R-002/R-003
+- [X] T021 [P] [US1] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/IjDependencyAdapter.kt` — for Maven: `MavenProjectsManager.getInstance(project).projects` → `MavenProject.getDependencies()`; for Gradle: `ExternalProjectDataCache` + `ExternalSystemApiUtil.findAll(moduleNode, LibraryDependencyData.KEY)`; returns only declared (non-transitive) entries per research.md R-001
 
 **Checkpoint**: `./gradlew :scan:test --tests "*.StackCollectorTest"` passes. User Story 1 is fully functional via fakes.
 

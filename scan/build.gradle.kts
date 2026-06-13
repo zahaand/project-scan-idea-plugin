@@ -1,5 +1,3 @@
-import org.jetbrains.intellij.platform.gradle.TestFrameworkType
-
 plugins {
     id("org.jetbrains.kotlin.jvm")
     id("org.jetbrains.intellij.platform.module")
@@ -14,7 +12,7 @@ dependencies {
     intellijPlatform {
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.idea.maven")
-        testFramework(TestFrameworkType.Platform)
+        bundledPlugin("com.intellij.gradle")
     }
 }
 
