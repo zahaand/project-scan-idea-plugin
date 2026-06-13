@@ -20,7 +20,7 @@ class ScanService(
     private val dependencyPort: DependencyPort,
     private val styleSourcePort: StyleSourcePort,
     private val linterPort: LinterPort,
-    private val linterConfigParser: LinterConfigParser,
+    private val linterConfigParsers: Map<String, LinterConfigParser>,
     private val testInfoPort: TestInfoPort,
     private val moduleStructurePort: ModuleStructurePort,
 ) {

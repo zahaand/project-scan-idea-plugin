@@ -127,14 +127,55 @@ class StackCollectorTest {
         assertEquals(BuildSystem.GRADLE, ok.buildSystem)
     }
 
+    @Test
+    fun `jdkVersion from project SDK is propagated`() {
+        val result = collector(
+            buildSystem = BuildSystem.GRADLE,
+            modules = emptyMap(),
+            jdkVersion = "temurin-21",
+        ).collect()
+        val ok = assertOk(result)
+        assertEquals("temurin-21", ok.jdkVersion)
+    }
+
+    @Test
+    fun `jdkVersion aggregated from module SDKs is propagated`() {
+        val result = collector(
+            buildSystem = BuildSystem.GRADLE,
+            modules = emptyMap(),
+            jdkVersion = "temurin-17",
+        ).collect()
+        val ok = assertOk(result)
+        assertEquals("temurin-17", ok.jdkVersion)
+    }
+
+    @Test
+    fun `jdkVersion is null when no SDK is configured`() {
+        val result = collector(buildSystem = BuildSystem.GRADLE, modules = emptyMap()).collect()
+        val ok = assertOk(result)
+        assertNull(ok.jdkVersion)
+    }
+
+    @Test
+    fun `dependency port failure yields Ok with empty dependencies and build system intact`() {
+        val result = StackCollector(
+            FakeBuildSystemPort(BuildSystem.GRADLE),
+            FakeDependencyPort(error = RuntimeException("dependency read failed")),
+        ).collect()
+        val ok = assertOk(result)
+        assertTrue(ok.dependencies.isEmpty())
+        assertEquals(BuildSystem.GRADLE, ok.buildSystem)
+    }
+
     // --- helpers ---
 
     private fun collector(
         buildSystem: BuildSystem?,
         modules: Map<String, List<Dependency>>,
         moduleLevels: Map<String, String> = emptyMap(),
+        jdkVersion: String? = null,
     ) = StackCollector(
-        FakeBuildSystemPort(buildSystem, moduleLevels),
+        FakeBuildSystemPort(buildSystem, moduleLevels, jdkVersion),
         FakeDependencyPort(modules),
     )
 

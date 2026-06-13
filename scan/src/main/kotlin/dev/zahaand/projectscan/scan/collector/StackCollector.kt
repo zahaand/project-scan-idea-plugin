@@ -13,13 +13,18 @@ class StackCollector(
 ) {
     fun collect(): SectionResult<StackInfo> {
         val buildSystem = buildSystemPort.getBuildSystem()
-        val moduleMap = dependencyPort.getModuleDependencies()
+        val moduleMap = try {
+            dependencyPort.getModuleDependencies()
+        } catch (_: Exception) {
+            emptyMap()
+        }
 
         if (buildSystem == null && moduleMap.isEmpty()) return SectionResult.Empty
 
         return SectionResult.Ok(
             StackInfo(
                 dependencies = aggregate(moduleMap),
+                jdkVersion = buildSystemPort.getJdkVersion(),
                 languageLevel = maxLanguageLevel(buildSystemPort.getModuleLanguageLevels().values),
                 buildSystem = buildSystem,
             )

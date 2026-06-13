@@ -51,4 +51,31 @@ class LinterInfoTest {
             )
         assertNull(rule.breaksBuild)
     }
+
+    @Test
+    fun `LinterInfo with toolsWithUnresolvableConfig records applied tool names`() {
+        val info = LinterInfo(
+            activeRules = emptyList(),
+            toolsWithUnresolvableConfig = listOf("checkstyle", "pmd"),
+        )
+        assertEquals(listOf("checkstyle", "pmd"), info.toolsWithUnresolvableConfig)
+        assertTrue(info.activeRules.isEmpty())
+    }
+
+    @Test
+    fun `LinterInfo default has empty toolsWithUnresolvableConfig`() {
+        val info = LinterInfo(activeRules = emptyList())
+        assertTrue(info.toolsWithUnresolvableConfig.isEmpty())
+    }
+
+    @Test
+    fun `LinterInfo can carry both activeRules and toolsWithUnresolvableConfig`() {
+        val rule = ActiveRule("LineLength", "checkstyle", RuleSeverity.ERROR, true)
+        val info = LinterInfo(
+            activeRules = listOf(rule),
+            toolsWithUnresolvableConfig = listOf("pmd"),
+        )
+        assertEquals(1, info.activeRules.size)
+        assertEquals(listOf("pmd"), info.toolsWithUnresolvableConfig)
+    }
 }

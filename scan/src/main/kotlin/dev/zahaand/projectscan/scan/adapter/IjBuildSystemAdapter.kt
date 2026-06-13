@@ -5,6 +5,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.LanguageLevelModuleExtension
 import com.intellij.openapi.roots.LanguageLevelProjectExtension
 import com.intellij.openapi.roots.ModuleRootManager
+import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.pom.java.LanguageLevel
 import dev.zahaand.projectscan.model.BuildSystem
 import dev.zahaand.projectscan.scan.port.BuildSystemPort
@@ -27,6 +28,13 @@ class IjBuildSystemAdapter(private val project: Project) : BuildSystemPort {
             val effective = moduleExt?.languageLevel ?: projectDefault
             module.name to effective.featureVersionString()
         }
+    }
+
+    override fun getJdkVersion(): String? {
+        ProjectRootManager.getInstance(project).projectSdk?.name?.let { return it }
+        return ModuleManager.getInstance(project).modules
+            .mapNotNull { ModuleRootManager.getInstance(it).sdk?.name }
+            .maxOrNull()
     }
 
     private fun LanguageLevel.featureVersionString(): String = when {

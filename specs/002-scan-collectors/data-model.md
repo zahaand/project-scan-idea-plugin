@@ -53,7 +53,7 @@ data class Module(
 data class StructureInfo(
     val modules: List<Module> = emptyList(),
     val rootPackages: List<String> = emptyList(),
-    val packageSegments: List<String> = emptyList(), // root + second-level, e.g. "com.example.web"
+    val packageSegments: List<String> = emptyList(), // second-level segments only, e.g. "com.example.web"; root packages map to rootPackages
 )
 ```
 
@@ -84,6 +84,7 @@ data class ActiveRule(
 
 data class LinterInfo(
     val activeRules: List<ActiveRule> = emptyList(),
+    val toolsWithUnresolvableConfig: List<String> = emptyList(),
 )
 ```
 
@@ -106,7 +107,7 @@ data class TestInfo(
     val frameworks: List<TestFramework> = emptyList(),
     val unknownTestDependencies: List<Dependency> = emptyList(),
     val sourceRoots: List<String> = emptyList(),
-    val namingPattern: String? = null,
+    val namingSuffixes: List<String> = emptyList(),
     val coverageThreshold: Double? = null,
 )
 ```
@@ -181,8 +182,10 @@ Two production implementations: `CheckstyleConfigParser` and `PmdConfigParser`, 
 
 ```kotlin
 interface TestInfoPort {
-    fun getTestSourceRoots(): List<String>          // project-relative paths
+    fun getTestSourceRoots(): List<String>           // project-relative paths
     fun getTestScopedDependencies(): List<Dependency>
+    fun getCoverageThreshold(): Double?              // null if reporting-only or unreadable
+    fun getTestClassNames(): List<String>            // simple class names without extension
 }
 ```
 

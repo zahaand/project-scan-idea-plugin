@@ -11,4 +11,5 @@ data class ActiveRule(
 
 data class LinterInfo(
     val activeRules: List<ActiveRule> = emptyList(),
+    val toolsWithUnresolvableConfig: List<String> = emptyList(),
 )
