@@ -23,9 +23,9 @@
 
 **Purpose**: Create the `:scan` Gradle submodule so the compiler can resolve all subsequent files.
 
-- [ ] T001 Register `:scan` in `settings.gradle.kts` via `include(":scan")`
-- [ ] T002 Create `scan/build.gradle.kts` with dependencies on `:model`, IntelliJ Platform SDK (External System API, JavaPlugin, MavenIntegration), and JUnit 5 for tests (per plan.md Technical Context)
-- [ ] T003 Create the source directory tree: `scan/src/main/kotlin/dev/zahaand/projectscan/scan/{port,collector,adapter}/` and `scan/src/test/kotlin/dev/zahaand/projectscan/scan/{fake,collector}/`
+- [X] T001 Register `:scan` in `settings.gradle.kts` via `include(":scan")`
+- [X] T002 Create `scan/build.gradle.kts` with dependencies on `:model`, IntelliJ Platform SDK (External System API, JavaPlugin, MavenIntegration), and JUnit 5 for tests (per plan.md Technical Context)
+- [X] T003 Create the source directory tree: `scan/src/main/kotlin/dev/zahaand/projectscan/scan/{port,collector,adapter}/` and `scan/src/test/kotlin/dev/zahaand/projectscan/scan/{fake,collector}/`
 
 **Checkpoint**: `./gradlew :scan:compileKotlin` resolves without "module not found" errors.
 
@@ -39,24 +39,24 @@
 
 ### Model Changes
 
-- [ ] T004 [P] Create `model/src/main/kotlin/dev/zahaand/projectscan/model/ScanResult.kt` — `sealed class SectionResult<out T>` with `Ok`, `Empty`, `Error` variants, and `data class ScanResult` with five `SectionResult` fields (stack, codeStyle, linters, tests, structure) per data-model.md §1.1
-- [ ] T005 [P] Update `model/src/main/kotlin/dev/zahaand/projectscan/model/StructureInfo.kt` — remove `packageOrganisation: PackageOrganisation?` field and `PackageOrganisation` enum; add `packageSegments: List<String>` field; update `model/src/test/kotlin/dev/zahaand/projectscan/model/StructureInfoTest.kt` to remove assertions on removed field and add `packageSegments` construction
-- [ ] T006 [P] Update `model/src/main/kotlin/dev/zahaand/projectscan/model/LinterInfo.kt` — widen `breaksBuild: Boolean` to `breaksBuild: Boolean?` in `ActiveRule`; update `model/src/test/kotlin/dev/zahaand/projectscan/model/LinterInfoTest.kt` to construct `ActiveRule` with null/non-null `breaksBuild`
-- [ ] T007 [P] Update `model/src/main/kotlin/dev/zahaand/projectscan/model/TestInfo.kt` — add `unknownTestDependencies: List<Dependency> = emptyList()` to `TestInfo`; update `model/src/test/kotlin/dev/zahaand/projectscan/model/TestInfoTest.kt` to include `unknownTestDependencies` in construction
+- [X] T004 [P] Create `model/src/main/kotlin/dev/zahaand/projectscan/model/ScanResult.kt` — `sealed class SectionResult<out T>` with `Ok`, `Empty`, `Error` variants, and `data class ScanResult` with five `SectionResult` fields (stack, codeStyle, linters, tests, structure) per data-model.md §1.1
+- [X] T005 [P] Update `model/src/main/kotlin/dev/zahaand/projectscan/model/StructureInfo.kt` — remove `packageOrganisation: PackageOrganisation?` field and `PackageOrganisation` enum; add `packageSegments: List<String>` field; update `model/src/test/kotlin/dev/zahaand/projectscan/model/StructureInfoTest.kt` to remove assertions on removed field and add `packageSegments` construction
+- [X] T006 [P] Update `model/src/main/kotlin/dev/zahaand/projectscan/model/LinterInfo.kt` — widen `breaksBuild: Boolean` to `breaksBuild: Boolean?` in `ActiveRule`; update `model/src/test/kotlin/dev/zahaand/projectscan/model/LinterInfoTest.kt` to construct `ActiveRule` with null/non-null `breaksBuild`
+- [X] T007 [P] Update `model/src/main/kotlin/dev/zahaand/projectscan/model/TestInfo.kt` — add `unknownTestDependencies: List<Dependency> = emptyList()` to `TestInfo`; update `model/src/test/kotlin/dev/zahaand/projectscan/model/TestInfoTest.kt` to include `unknownTestDependencies` in construction
 
 ### Port Interfaces
 
-- [ ] T008 [P] Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/port/BuildSystemPort.kt` — `interface BuildSystemPort { fun getBuildSystem(): BuildSystem?; fun getModuleLanguageLevels(): Map<String, String> }` per data-model.md §2.1
-- [ ] T009 [P] Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/port/DependencyPort.kt` — `interface DependencyPort { fun getModuleDependencies(): Map<String, List<Dependency>> }` per data-model.md §2.2
-- [ ] T010 [P] Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/port/StyleSourcePort.kt` — `interface StyleSourcePort { fun findStyleSources(): List<StyleSource> }` per data-model.md §2.3
-- [ ] T011 [P] Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/port/LinterPort.kt` — `data class LinterToolDescriptor` (toolName, configFilePath, breaksBuild) and `interface LinterPort { fun getAppliedLinterTools(): List<LinterToolDescriptor> }` per data-model.md §2.4
-- [ ] T012 [P] Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/port/LinterConfigParser.kt` — `data class ParsedRule` (ruleId, severity) and `interface LinterConfigParser { fun parseRules(absoluteConfigPath: String): List<ParsedRule> }` per data-model.md §2.5
-- [ ] T013 [P] Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/port/TestInfoPort.kt` — `interface TestInfoPort { fun getTestSourceRoots(): List<String>; fun getTestScopedDependencies(): List<Dependency> }` per data-model.md §2.6
-- [ ] T014 [P] Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/port/ModuleStructurePort.kt` — `data class PackageTreeData` (rootPackages, secondLevelSegments), `data class ModuleDescriptor` (name, externalDependencies, moduleDependencies, sourceRootPaths, hasSourceRoots), and `interface ModuleStructurePort { fun getModules(): List<ModuleDescriptor>; fun getPackageTree(): PackageTreeData }` per data-model.md §2.7
+- [X] T008 [P] Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/port/BuildSystemPort.kt` — `interface BuildSystemPort { fun getBuildSystem(): BuildSystem?; fun getModuleLanguageLevels(): Map<String, String> }` per data-model.md §2.1
+- [X] T009 [P] Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/port/DependencyPort.kt` — `interface DependencyPort { fun getModuleDependencies(): Map<String, List<Dependency>> }` per data-model.md §2.2
+- [X] T010 [P] Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/port/StyleSourcePort.kt` — `interface StyleSourcePort { fun findStyleSources(): List<StyleSource> }` per data-model.md §2.3
+- [X] T011 [P] Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/port/LinterPort.kt` — `data class LinterToolDescriptor` (toolName, configFilePath, breaksBuild) and `interface LinterPort { fun getAppliedLinterTools(): List<LinterToolDescriptor> }` per data-model.md §2.4
+- [X] T012 [P] Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/port/LinterConfigParser.kt` — `data class ParsedRule` (ruleId, severity) and `interface LinterConfigParser { fun parseRules(absoluteConfigPath: String): List<ParsedRule> }` per data-model.md §2.5
+- [X] T013 [P] Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/port/TestInfoPort.kt` — `interface TestInfoPort { fun getTestSourceRoots(): List<String>; fun getTestScopedDependencies(): List<Dependency> }` per data-model.md §2.6
+- [X] T014 [P] Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/port/ModuleStructurePort.kt` — `data class PackageTreeData` (rootPackages, secondLevelSegments), `data class ModuleDescriptor` (name, externalDependencies, moduleDependencies, sourceRootPaths, hasSourceRoots), and `interface ModuleStructurePort { fun getModules(): List<ModuleDescriptor>; fun getPackageTree(): PackageTreeData }` per data-model.md §2.7
 
 ### Service Skeleton
 
-- [ ] T015 Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/ScanService.kt` — constructor accepting all seven port/parser parameters; `fun scan(): ScanResult` with five individual `try { collector.collect() } catch (e: Exception) { SectionResult.Error(e.message) }` blocks, one per section (FR-021 error isolation); collector bodies are `TODO()` stubs until Phase 3+
+- [X] T015 Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/ScanService.kt` — constructor accepting all seven port/parser parameters; `fun scan(): ScanResult` with five individual `try { collector.collect() } catch (e: Exception) { SectionResult.Error(e.message) }` blocks, one per section (FR-021 error isolation); collector bodies are `TODO()` stubs until Phase 3+
 
 **Checkpoint**: `./gradlew :model:test :scan:compileKotlin` passes — all model tests green; scan module compiles with port interfaces and service skeleton.
 

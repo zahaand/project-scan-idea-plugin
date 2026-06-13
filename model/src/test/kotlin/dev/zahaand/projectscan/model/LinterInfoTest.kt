@@ -22,7 +22,7 @@ class LinterInfoTest {
         assertEquals("LineLength", rule.ruleId)
         assertEquals("Checkstyle", rule.tool)
         assertEquals(RuleSeverity.ERROR, rule.severity)
-        assertTrue(rule.breaksBuild)
+        assertEquals(true, rule.breaksBuild)
     }
 
     @Test
@@ -37,6 +37,18 @@ class LinterInfoTest {
         assertEquals("UnusedImports", rule.ruleId)
         assertEquals("PMD", rule.tool)
         assertEquals(RuleSeverity.WARNING, rule.severity)
-        assertFalse(rule.breaksBuild)
+        assertEquals(false, rule.breaksBuild)
+    }
+
+    @Test
+    fun `ActiveRule with null breaksBuild represents Gradle not-detected case`() {
+        val rule =
+            ActiveRule(
+                ruleId = "checkstyleMain",
+                tool = "Checkstyle",
+                severity = RuleSeverity.WARNING,
+                breaksBuild = null,
+            )
+        assertNull(rule.breaksBuild)
     }
 }

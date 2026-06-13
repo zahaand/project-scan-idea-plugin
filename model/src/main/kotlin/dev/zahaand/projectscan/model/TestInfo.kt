@@ -7,6 +7,7 @@ data class TestFramework(
 
 data class TestInfo(
     val frameworks: List<TestFramework> = emptyList(),
+    val unknownTestDependencies: List<Dependency> = emptyList(),
     val sourceRoots: List<String> = emptyList(),
     val namingPattern: String? = null,
     val coverageThreshold: Double? = null,
