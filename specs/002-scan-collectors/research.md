@@ -144,7 +144,7 @@ No third-party XML library needed; available in all IntelliJ plugin runtimes.
 2. For each module that is NOT `Checker` or `TreeWalker` (i.e., actual rule modules), record its
    `name` attribute as `ruleId`.
 3. Severity: the `<property name="severity" value="..."/>` child. If absent, inherit from the
-   nearest ancestor `<module>` that declares severity; if none, default to `WARNING`.
+   nearest ancestor `<module>` that declares severity; if none, default to `INFO` (see FR-009).
 4. Severity mapping: `"error"` → `ERROR`, `"warning"` → `WARNING`, `"info"` / `"ignore"` → `INFO`.
 
 ---
@@ -167,7 +167,7 @@ No third-party XML library needed; available in all IntelliJ plugin runtimes.
 1. Enumerate all `<rule>` elements.
 2. `ruleId` = the `ref` attribute value (full category path, e.g.,
    `category/java/bestpractices.xml/AbstractClassWithoutAbstractMethod`).
-3. Priority → severity: 1–2 = `ERROR`, 3 = `WARNING`, 4–5 = `INFO`. Default if absent: `WARNING`.
+3. Priority → severity: 1–2 = `ERROR`, 3 = `WARNING`, 4–5 = `INFO`. Default if absent: `INFO` (see FR-009).
 
 ---
 
@@ -214,8 +214,8 @@ disambiguating artefacts). Anything test-scoped but NOT matched → "unknown tes
 | `org.awaitility` | Awaitility |
 | `io.rest-assured` | REST Assured |
 | `org.spockframework` | Spock |
-| `org.easymock` | EasyMock |
-| `org.powermock` | PowerMock |
+| `org.hamcrest` | Hamcrest |
+| `org.testng` | TestNG |
 
 **Matching rule**: `dependency.groupId.startsWith(knownGroupId)` for prefix entries. Exact
 `groupId:artifactId` match reserved for cases where groupId alone is ambiguous.

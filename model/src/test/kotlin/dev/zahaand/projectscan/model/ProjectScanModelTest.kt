@@ -42,7 +42,7 @@ class ProjectScanModelTest {
             TestInfo(
                 frameworks = listOf(TestFramework("JUnit", "5.11.4")),
                 sourceRoots = listOf("src/test/kotlin"),
-                namingPattern = ".*Test",
+                namingSuffixes = listOf("Test"),
                 coverageThreshold = 80.0,
             )
         val structure =

@@ -100,7 +100,7 @@
 ### Collector + Tests
 
 - [ ] T023 [US2] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/collector/CodeStyleCollector.kt` — delegates to `StyleSourcePort.findStyleSources()`; returns `SectionResult.Ok` when any source found, `SectionResult.Empty` when none
-- [ ] T024 [US2] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/collector/CodeStyleCollectorTest.kt` — covers: project with three source types (all appear); no style files (Empty); multiple .editorconfig files (all collected); Spotless without external file (not present)
+- [ ] T024 [US2] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/collector/CodeStyleCollectorTest.kt` — covers: project with three source types (all appear); no style files (Empty); multiple .editorconfig files (all collected); Spotless without external file (not present); assert that a StyleSource with an XML-named path is returned as-is without parsing its contents (enforces FR-007 — the collector MUST NOT parse style config file contents for style facts)
 
 ### Adapter
 
@@ -124,12 +124,12 @@
 ### Config Parsers
 
 - [ ] T028 [P] [US3] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/CheckstyleConfigParser.kt` — DOM parse via `DocumentBuilderFactory`; walk `<module>` elements recursively; skip `Checker` and `TreeWalker` containers; `ruleId` = `name` attribute; severity from `<property name="severity">`, inherit from nearest ancestor, default `INFO`; mapping: `"error"→ERROR`, `"warning"→WARNING`, `"info"/"ignore"→INFO` per research.md R-006
-- [ ] T029 [P] [US3] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/PmdConfigParser.kt` — DOM parse; enumerate `<rule>` elements; `ruleId` = `ref` attribute; `<priority>` → severity: 1–2=`ERROR`, 3=`WARNING`, 4–5=`INFO`; absent priority → `WARNING` per research.md R-007
+- [ ] T029 [P] [US3] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/PmdConfigParser.kt` — DOM parse; enumerate `<rule>` elements; `ruleId` = `ref` attribute; `<priority>` → severity: 1–2=`ERROR`, 3=`WARNING`, 4–5=`INFO`; absent priority → `INFO` (per FR-009 and research.md R-007)
 
 ### Collector + Tests
 
 - [ ] T030 [US3] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/collector/LinterCollector.kt` — for each `LinterToolDescriptor`: if `configFilePath == null` → record tool with rules in error sub-state; else call `LinterConfigParser.parseRules(absolutePath)`; denormalize `breaksBuild` onto each `ActiveRule`; multiple configs for same tool collected independently (all rules merged); `SectionResult.Ok` if any tool applied, `SectionResult.Empty` if none
-- [ ] T031 [US3] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/collector/LinterCollectorTest.kt` — covers: 10-rule Checkstyle config (all rules with severities and breaksBuild); undetectable breaksBuild (null); no tools (Empty); Spotless not producing rules; Gradle Checkstyle applied (breaksBuild=null); missing config file (tool recorded, rules in error); multiple configs merged
+- [ ] T031 [US3] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/collector/LinterCollectorTest.kt` — covers: 10-rule Checkstyle config (all rules with severities and breaksBuild); undetectable breaksBuild (null); no tools (Empty); Spotless tool descriptor in list produces zero ActiveRule entries (explicitly assert `activeRules` is empty for a Spotless-only input — enforces FR-011); Gradle Checkstyle applied (breaksBuild=null); missing config file (tool recorded, rules in error); multiple configs merged
 
 ### Adapter
 
@@ -147,16 +147,16 @@
 
 ### Fake
 
-- [ ] T033 [P] [US4] Create `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeTestInfoPort.kt` — constructor takes `testSourceRoots: List<String>` and `testScopedDependencies: List<Dependency>`; implements `TestInfoPort`; optionally accepts `coverageThreshold: Double?` if threshold is modeled in the port (otherwise handled via `BuildSystemPort` or a separate port per plan)
+- [ ] T033 [P] [US4] Create `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeTestInfoPort.kt` — constructor takes `testSourceRoots: List<String>`, `testScopedDependencies: List<Dependency>`, `coverageThreshold: Double? = null`, `testClassNames: List<String> = emptyList()`; implements `TestInfoPort` (all four methods: `getTestSourceRoots()`, `getTestScopedDependencies()`, `getCoverageThreshold()`, `getTestClassNames()`)
 
 ### Collector + Tests
 
-- [ ] T034 [US4] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/collector/TestCollector.kt` — contains `KNOWN_TEST_FRAMEWORKS` registry (13 entries per spec Known Test Framework Registry table); for each test-scoped dep: prefix-match groupId (exact artifactId match for `junit:junit`); matched → `TestFramework(name, resolvedVersion)`; unmatched → `unknownTestDependencies`; collect test source root paths; infer raw naming suffixes from file names; JaCoCo threshold via `BuildSystemPort` or dedicated port (null when reporting-only or unreadable per FR-014); `SectionResult.Ok` if any test root or dep found, `SectionResult.Empty` if neither
-- [ ] T035 [US4] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/collector/TestCollectorTest.kt` — covers: JUnit 5 + Mockito + AssertJ detected; JaCoCo threshold 0.8; JaCoCo reporting-only (null); no test deps (Empty); unknown test dep recorded; resolved version used; Maven scope=test vs Gradle testImplementation
+- [ ] T034 [US4] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/collector/TestCollector.kt` — contains `KNOWN_TEST_FRAMEWORKS` registry (13 entries per spec FR-012 table); for each test-scoped dep: prefix-match groupId (exact artifactId match for `junit:junit`); matched → `TestFramework(name, resolvedVersion)`; unmatched → `unknownTestDependencies`; collect test source root paths from `TestInfoPort.getTestSourceRoots()`; derive raw `namingSuffixes` from `TestInfoPort.getTestClassNames()` — extract distinct trailing name segments (e.g. `Test`, `IT`, `Spec`) as raw observed facts, NOT normalized; JaCoCo threshold via `TestInfoPort.getCoverageThreshold()` (null when reporting-only or unreadable per FR-014); `SectionResult.Ok` if any test root or dep found, `SectionResult.Empty` if neither
+- [ ] T035 [US4] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/collector/TestCollectorTest.kt` — covers: JUnit 5 + Mockito + AssertJ detected; JaCoCo threshold 0.8; JaCoCo reporting-only (null); no test deps (Empty); unknown test dep recorded; resolved version used; Maven scope=test vs Gradle testImplementation; multiple coexisting suffixes (Test, IT, Spec) all captured in `namingSuffixes` without normalization (enforces FR-013)
 
 ### Adapter
 
-- [ ] T036 [US4] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/IjTestInfoAdapter.kt` — `getTestSourceRoots()` via `ModuleRootManager.getInstance(module).getSourceRoots(JavaSourceRootType.TEST_SOURCE)` → project-relative paths; `getTestScopedDependencies()` filters test-scope entries from ExternalProjectDataCache / MavenProjectsManager (Maven: `scope=test`; Gradle: testImplementation/testCompileOnly/testRuntimeOnly); JaCoCo threshold via Maven `jacoco-maven-plugin` execution `check` goal `<minimum>` element per research.md R-010
+- [ ] T036 [US4] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/IjTestInfoAdapter.kt` — `getTestSourceRoots()` via `ModuleRootManager.getInstance(module).getSourceRoots(JavaSourceRootType.TEST_SOURCE)` → project-relative paths; `getTestScopedDependencies()` filters test-scope entries from ExternalProjectDataCache / MavenProjectsManager (Maven: `scope=test`; Gradle: testImplementation/testCompileOnly/testRuntimeOnly); `getCoverageThreshold()` via Maven `jacoco-maven-plugin` execution `check` goal `<minimum>` element per research.md R-010 (Gradle: return `null`); `getTestClassNames()` — for each test source root, enumerate VirtualFile children recursively and collect simple file names (without extension) so the collector can extract naming suffixes without filesystem access
 
 **Checkpoint**: `./gradlew :scan:test --tests "*.TestCollectorTest"` passes.
 
@@ -194,6 +194,23 @@
 - [ ] T043 [P] Verify the production wiring from `quickstart.md` compiles: instantiate all `Ij*Adapter` classes with a stub `Project` parameter in a compilation-only test or example to confirm constructor signatures match port interfaces
 
 **Checkpoint**: `./gradlew :model:test :scan:test` passes — all 8+ collector test classes green, model tests green.
+
+---
+
+## Phase 9: Adapter Integration Tests (constitution §Testing compliance)
+
+**Purpose**: Satisfy constitution requirement — "Platform-dependent code (`scan` component and platform adapters): IntelliJ Platform Test Framework". T043 (Phase 8) is compilation-only; this phase adds one functional happy-path integration test per adapter that benefits from precise, declarative fixture data. Full Gradle External System import coverage is deferred as tech debt (see plan.md Governance).
+
+**Note**: Use `LightProjectDescriptor` or `HeavyIdeaTestFixtureFactory` per adapter needs. Maven adapter tests take priority (precise declarative data via pom.xml fixture).
+
+- [ ] T044 [P] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/adapter/IjBuildSystemAdapterTest.kt` — IntelliJ Platform fixture: Maven-ized project → `getBuildSystem()` returns `MAVEN`; `getModuleLanguageLevels()` returns the configured source compatibility level
+- [ ] T045 [P] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/adapter/IjDependencyAdapterTest.kt` — IntelliJ Platform fixture: Maven project with 2 declared dependencies → `getModuleDependencies()` returns exactly those 2 entries; no transitive entries appear
+- [ ] T046 [P] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/adapter/IjStyleSourceAdapterTest.kt` — IntelliJ Platform fixture: project with `.editorconfig` and `.idea/codeStyles/` → `findStyleSources()` returns both; project with neither → empty list
+- [ ] T047 [P] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/adapter/IjLinterAdapterTest.kt` — IntelliJ Platform fixture (Maven): project with `maven-checkstyle-plugin` in `<plugins>` → tool recorded as applied with `breaksBuild` from `failsOnError`; plugin in `<pluginManagement>` only → not applied; Gradle adapter: smoke-level compilation check only (Gradle TAPI import not feasible in light fixture)
+- [ ] T048 [P] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/adapter/IjTestInfoAdapterTest.kt` — IntelliJ Platform fixture: module with test source root → `getTestSourceRoots()` returns project-relative path; `getCoverageThreshold()` returns correct value from Maven jacoco plugin configuration; `getTestClassNames()` returns file names from test source root
+- [ ] T049 [P] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/adapter/IjModuleStructureAdapterTest.kt` — IntelliJ Platform fixture: two-module project → `getModules()` returns both; `getPackageTree()` returns correct root packages and second-level segments in dotted notation
+
+**Checkpoint**: `./gradlew :scan:test --tests "*.Ij*AdapterTest"` passes.
 
 ---
 

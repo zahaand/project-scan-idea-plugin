@@ -10,7 +10,7 @@ class TestInfoTest {
         assertTrue(info.frameworks.isEmpty())
         assertTrue(info.unknownTestDependencies.isEmpty())
         assertTrue(info.sourceRoots.isEmpty())
-        assertNull(info.namingPattern)
+        assertTrue(info.namingSuffixes.isEmpty())
         assertNull(info.coverageThreshold)
     }
 
@@ -31,13 +31,13 @@ class TestInfoTest {
                 frameworks = listOf(junit5, mockito),
                 unknownTestDependencies = listOf(unknownDep),
                 sourceRoots = listOf("src/test/kotlin"),
-                namingPattern = "**/*Test.kt",
+                namingSuffixes = listOf("Test", "IT"),
                 coverageThreshold = 80.0,
             )
         assertEquals(listOf(junit5, mockito), info.frameworks)
         assertEquals(listOf(unknownDep), info.unknownTestDependencies)
         assertEquals(listOf("src/test/kotlin"), info.sourceRoots)
-        assertEquals("**/*Test.kt", info.namingPattern)
+        assertEquals(listOf("Test", "IT"), info.namingSuffixes)
         assertEquals(80.0, info.coverageThreshold)
     }
 
@@ -45,5 +45,12 @@ class TestInfoTest {
     fun `coverageThreshold null represents JaCoCo absent case`() {
         val info = TestInfo(coverageThreshold = null)
         assertNull(info.coverageThreshold)
+    }
+
+    @Test
+    fun `namingSuffixes captures multiple coexisting raw suffixes`() {
+        val info = TestInfo(namingSuffixes = listOf("Test", "Spec", "IT"))
+        assertEquals(3, info.namingSuffixes.size)
+        assertTrue(info.namingSuffixes.containsAll(listOf("Test", "Spec", "IT")))
     }
 }

@@ -121,3 +121,10 @@ settings.gradle.kts             ← ADD: include(":scan")
 port interfaces. All IntelliJ API calls are confined to `adapter/`. This makes every collector
 unit-testable without a running IntelliJ instance (FR-019) and isolates Maven/Gradle asymmetry
 inside the adapters.
+
+## Governance — Known Deviations
+
+| Deviation | Scope | Resolution |
+|-----------|-------|------------|
+| Adapter integration test coverage | Gradle External System import path | Functional integration tests for adapters using IntelliJ Platform Test Framework are added in Phase 9 (T044–T049) for the Maven path where precise declarative fixture data is available. Full Gradle Tooling API import coverage via IntelliJ Platform fixtures is not feasible in this sprint due to External System import complexity; adapters relying on Gradle import state are covered at the compilation/smoke level only. Tracked as tech debt per constitution §Governance: _"Deviations are tracked explicitly as technical debt."_ |
+| `ComparableVersion` classpath | scan module | `org.apache.maven.artifact.versioning.ComparableVersion` is consumed from `bundledPlugin("org.jetbrains.idea.maven")` (verified compile-time, Sprint 2). No explicit `compileOnly` dep added to avoid version conflict with the platform's bundled Maven 3 artefact. |
