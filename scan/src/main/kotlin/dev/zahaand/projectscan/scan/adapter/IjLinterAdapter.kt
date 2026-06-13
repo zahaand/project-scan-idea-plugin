@@ -28,9 +28,9 @@ class IjLinterAdapter(private val project: Project) : LinterPort {
         val seen = linkedSetOf<LinterToolDescriptor>()
         for (mavenProject in mavenManager.projects) {
             // Checkstyle
-            mavenProject.findPlugin("com.puppycrawl.tools", "maven-checkstyle-plugin")?.let { plugin ->
+            mavenProject.findPlugin("org.apache.maven.plugins", "maven-checkstyle-plugin")?.let { plugin ->
                 val configElement = plugin.configurationElement
-                val breaksBuild = configElement?.getChildText("failsOnError")
+                val breaksBuild = configElement?.getChildText("failOnViolation")
                     ?.let { it.equals("true", ignoreCase = true) }
                 val configLocation = configElement?.getChildText("configLocation")
                 val configFilePath = configLocation?.let { resolveLocalPath(basePath, it) }

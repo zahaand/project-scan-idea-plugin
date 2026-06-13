@@ -133,7 +133,7 @@ For multi-module projects, the plugin records each module's build-system identif
 
 - **FR-008**: The scan layer supports rule extraction for **Checkstyle and PMD only**. SpotBugs, ErrorProne, and other static analysis tools are out of scope for this sprint. The scan layer MUST collect only linter rules that are actually applied in the build; it MUST NOT enumerate tool default catalogs.
 
-  - **Maven applied-state**: a tool is applied when its plugin entry appears in `<plugins>` (not only `<pluginManagement>`). Specifically: `maven-checkstyle-plugin` (groupId `com.puppycrawl.tools`) for Checkstyle; `maven-pmd-plugin` (groupId `org.apache.maven.plugins`) for PMD.
+  - **Maven applied-state**: a tool is applied when its plugin entry appears in `<plugins>` (not only `<pluginManagement>`). Specifically: `maven-checkstyle-plugin` (groupId `org.apache.maven.plugins`) for Checkstyle; `maven-pmd-plugin` (groupId `org.apache.maven.plugins`) for PMD. The build-failure flag for Checkstyle is read from `failOnViolation` (not `failsOnError`; the latter tests Checkstyle's own internal error handling, not build failure on rule violations).
   - **Gradle applied-state**: inferred from task names in the External System task node list. Presence of `checkstyleMain` or `checkstyleTest` tasks indicates Checkstyle is applied; presence of `pmdMain` or `pmdTest` tasks indicates PMD is applied.
 
   If a linter tool is applied in the build but its config file cannot be read (missing or unresolvable), the tool MUST be recorded as applied with its rules in an error/unresolvable state — it MUST NOT be silently omitted. The linters section remains `Ok` in this case.
@@ -251,7 +251,7 @@ For multi-module projects, the plugin records each module's build-system identif
 - **CHK010** (.idea/codeStyles scope): All files under `.idea/codeStyles/` are collected as `IDE_CODE_STYLE` sources — not only `Project.xml`. Applied to FR-006.
 - **CHK011** (supported linters): Checkstyle and PMD only. SpotBugs, ErrorProne, and others are out of scope for this sprint. Applied to FR-008.
 - **CHK012** (default severity): When a rule declares no explicit severity, `INFO` is used as the fallback. Applied to FR-009.
-- **CHK013** (applied-state criteria per build system): Maven = plugin present in `<plugins>` (not just `<pluginManagement>`). Gradle = task names `checkstyleMain`/`checkstyleTest` for Checkstyle, `pmdMain`/`pmdTest` for PMD. Applied to FR-008.
+- **CHK013** (applied-state criteria per build system): Maven = plugin present in `<plugins>` (not just `<pluginManagement>`). Checkstyle groupId = `org.apache.maven.plugins` (not `com.puppycrawl.tools` — that is the Checkstyle library, not the Maven plugin). PMD groupId = `org.apache.maven.plugins`. Checkstyle build-failure flag = `failOnViolation` (not `failsOnError`). Gradle = task names `checkstyleMain`/`checkstyleTest` for Checkstyle, `pmdMain`/`pmdTest` for PMD. Applied to FR-008.
 - **CHK014** (import resolution): Rules from imported or externally-referenced config files are not resolved in MVP — only locally-parsed rules are collected. Applied to FR-008.
 - **CHK015** (multiple configurations): Multiple configurations of the same linter tool are each collected independently; all rules are included in the aggregate. Applied to FR-008.
 - **CHK016** (denormalization): `breaksBuild` from the tool descriptor is explicitly denormalized onto each `ActiveRule`. Applied to FR-009.

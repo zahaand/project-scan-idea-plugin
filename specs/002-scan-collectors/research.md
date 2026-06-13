@@ -99,10 +99,12 @@ to the project-level value; take the maximum across all effective per-module val
 External System data (standard TAPI does not expose applied plugin extensions).
 
 **Maven**:
-- `MavenProject.findPlugin("com.puppycrawl.tools", "maven-checkstyle-plugin")` → non-null =
-  applied.
+- `MavenProject.findPlugin("org.apache.maven.plugins", "maven-checkstyle-plugin")` → non-null =
+  applied. (Note: `com.puppycrawl.tools` is the Checkstyle *library* groupId, not the Maven
+  plugin — using it in `findPlugin` silently returns null on standard projects.)
 - `MavenProject.findPlugin("org.apache.maven.plugins", "maven-pmd-plugin")` → non-null = applied.
-- `MavenPlugin.getConfigurationElement()?.getChildText("failsOnError")` → hardness (Checkstyle).
+- `MavenPlugin.getConfigurationElement()?.getChildText("failOnViolation")` → hardness (Checkstyle).
+  (`failsOnError` tests Checkstyle's own execution errors, not build failure on rule violations.)
 - `MavenPlugin.getConfigurationElement()?.getChildText("failOnViolation")` → hardness (PMD).
 - If the element is absent or the plugin is in `<pluginManagement>` but not `<plugins>`,
   applied-state = false.

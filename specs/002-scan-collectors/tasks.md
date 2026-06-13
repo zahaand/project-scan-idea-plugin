@@ -71,7 +71,7 @@
 ### Fakes
 
 - [X] T016 [P] [US1] Create `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeBuildSystemPort.kt` — constructor takes `buildSystem: BuildSystem?` and `moduleLevels: Map<String, String>`; implements `BuildSystemPort`
-- [X] T017 [P] [US1] Create `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeDependencyPort.kt` — constructor takes `moduleMap: Map<String, List<Dependency>>`; implements `DependencyPort`
+- [X] T017 [P] [US1] Create `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeDependencyPort.kt` — constructor takes `moduleMap: Map<String, List<Dependency>>` and `error: Exception? = null` (used by the partial-failure sub-scenario in StackCollectorTest); implements `DependencyPort`
 
 ### Collector + Tests
 
