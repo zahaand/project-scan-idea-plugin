@@ -72,6 +72,7 @@ The plugin identifies which test frameworks and companion libraries appear in th
 2. **Given** a project where JaCoCo is applied with a minimum coverage threshold of 80%, **When** the test collector runs, **Then** the threshold is recorded as `0.8` (or equivalent representation).
 3. **Given** a project where JaCoCo is applied but its threshold cannot be read via the standard project model, **When** the test collector runs, **Then** the threshold field is `null`, not absent and not a defaulted value.
 4. **Given** a project with no testing dependencies, **When** the test collector runs, **Then** the frameworks list is empty and the coverage threshold is absent.
+5. **Given** a project with a test-scoped dependency that is not on the known framework list, **When** the test collector runs, **Then** it is recorded as "unknown test dependency" and does not appear in the named frameworks list.
 
 ---
 
@@ -95,8 +96,8 @@ For multi-module projects, the plugin records each module's name, its declared e
 ### Edge Cases
 
 - What happens when a dependency appears only in test scope — is it included in the flat stack aggregate? (Assumption: all declared scopes are included; scope is a fact to preserve, not a filter.)
-- How does the system handle a module with no source roots — is it still listed in the structure section?
-- What if a linter config file is referenced in the build but the file is missing from the project tree — is the linter entry omitted or flagged as unresolvable?
+- A module with no source roots (e.g., pure aggregator or BOM) is still listed in the structure section with its dependency links intact; its package tree is recorded as empty. (See FR-015.)
+- If a linter config file is referenced in the build but is missing from the project tree, the tool is recorded as applied with its rules in an error/unresolvable state. The tool's presence is a fact; only its rule details are unresolvable. (See FR-008.)
 - What if two modules declare an identical inter-module dependency — is it recorded once or twice in the module's dependency list?
 
 ## Requirements *(mandatory)*
@@ -110,19 +111,20 @@ For multi-module projects, the plugin records each module's name, its declared e
 - **FR-005**: When modules have differing JDK/language levels, the scan layer MUST record the maximum level as the project-level value.
 - **FR-006**: The scan layer MUST discover all code style configuration sources present in the project (Checkstyle configs, Spotless configs, PMD configs, `.editorconfig`, IDE style settings) and record each source's type and project-relative file path.
 - **FR-007**: The scan layer MUST NOT parse the contents of style config files for style facts; config contents are only read when extracting linter rules (Checkstyle, PMD).
-- **FR-008**: The scan layer MUST collect only linter rules that are actually applied in the build; it MUST NOT enumerate tool default catalogs.
+- **FR-008**: The scan layer MUST collect only linter rules that are actually applied in the build; it MUST NOT enumerate tool default catalogs. If a linter tool is applied in the build but its config file cannot be read (missing or unresolvable), the tool MUST be recorded as applied with its rules in an error/unresolvable state — it MUST NOT be silently omitted.
 - **FR-009**: For each applied linter rule, the scan layer MUST record its severity (error / warning / info) as declared in the tool's config file.
 - **FR-010**: The scan layer MUST record the build-failure flag for each applied linter tool; when this fact cannot be determined from the available project model, it MUST be recorded as "not detected".
 - **FR-011**: Spotless MUST be recorded only as a code style source; it MUST NOT produce linter rule entries.
-- **FR-012**: The scan layer MUST detect test frameworks and companion libraries from declared dependencies (JUnit, Mockito, AssertJ, Testcontainers, and similar).
+- **FR-012**: The scan layer MUST detect test frameworks from declared dependencies using a closed explicit list of recognised framework groupIds (e.g., JUnit, Mockito, AssertJ, Testcontainers, Awaitility). Test-scoped dependencies that do not match a known framework MUST be recorded as "unknown test dependency" — not silently dropped and not misclassified as a named framework.
 - **FR-013**: The scan layer MUST record the test source directory structure and file naming conventions.
 - **FR-014**: When JaCoCo is applied, the scan layer MUST record the coverage threshold as a single representative number; when the value is unavailable, it MUST record `null`.
-- **FR-015**: The scan layer MUST record each module's declared external dependencies (coordinate + version) and inter-module dependency links by module name.
+- **FR-015**: The scan layer MUST record each module's declared external dependencies (coordinate + version) and inter-module dependency links by module name. Modules with no source roots MUST still appear in the structure section; their package tree is recorded as empty.
 - **FR-016**: The scan layer MUST collect raw package structure data consisting of root packages and their second-level segments (fixed depth — no deeper); it MUST NOT classify the organization pattern (by-layer vs. by-feature). Classification is the responsibility of downstream consumers (LLM at Constitution time).
 - **FR-017**: The `packageOrganization` inference field from the Sprint 1 model MUST be replaced with a raw-material field containing the collected package tree data.
-- **FR-018**: When a section has no data to report, it MUST be explicitly marked empty — never silently omitted and never populated with fabricated data.
+- **FR-018**: When a section has no data to report, it MUST be explicitly marked empty — never silently omitted and never populated with fabricated data. A section that could not be collected due to an error MUST be marked with a distinct error/unresolvable state; it MUST NOT be conflated with "empty" (no data found).
 - **FR-019**: The scan layer MUST be independently testable via unit tests using port fakes, without requiring a running IDE instance.
 - **FR-020**: The scan layer MUST NOT text-parse build files (pom.xml, build.gradle, build.gradle.kts, settings files, version catalogs) to extract project facts.
+- **FR-021**: If one collector encounters an error during execution (e.g., malformed config file, unexpected model failure), the scan layer MUST continue running the remaining collectors. The failing section is marked with a distinct error/unresolvable state; all other sections proceed independently.
 
 ### Key Entities
 
@@ -137,12 +139,21 @@ For multi-module projects, the plugin records each module's name, its declared e
 
 ### Measurable Outcomes
 
-- **SC-001**: For any single-module or multi-module Maven or Gradle project, the scan completes and produces a result with all five sections either populated or explicitly marked empty — no crashes and no silent omissions — in 100% of test cases.
+- **SC-001**: For any single-module or multi-module Maven or Gradle project, the scan completes and produces a result with all five sections either populated, explicitly marked empty, or marked with a distinct error state — no crashes, no silent omissions, and no cascading failures from one collector to another — in 100% of test cases.
 - **SC-002**: Dependency collection accuracy: for projects with known build files used as test fixtures, 100% of declared dependency coordinates appear in the scan result; 0% of transitive-only dependencies appear.
 - **SC-003**: Linter rule completeness: for projects with Checkstyle or PMD configured in test fixtures, all rules listed in the tool's config file appear in the scan result with correct severities.
 - **SC-004**: Honesty under absence: for each section, when no relevant configuration exists in the project, the section is marked empty in 100% of test cases — never populated with fabricated values.
 - **SC-005**: All primary collector code paths are exercised by unit tests that run without a running IDE instance.
 - **SC-006**: No breaking changes are introduced to the meaning of existing model fields that downstream consumers depend on.
+
+## Clarifications
+
+### Session 2026-06-13
+
+- Q: If one collector encounters an error, do the remaining collectors still run? → A: Yes — continue remaining collectors; the failing section is marked with a distinct error/unresolvable state (not empty, not fabricated). Collectors are independent; one failure must not cascade to others.
+- Q: If a linter tool is applied in the build but its config file is missing from the project tree, is the tool omitted or flagged? → A: Record the tool as applied with its rules in an error/unresolvable state. The tool's presence in the build is a fact; only the rule details are unresolvable.
+- Q: Is a module with no source roots still listed in the structure section? → A: Yes — include it; its package tree is empty. A source-less module (e.g., aggregator or BOM) is a real build participant; its dependency links are valid facts.
+- Q: How are test frameworks detected — closed explicit list, test-scope heuristic, or hybrid? → A: Closed explicit list for well-known frameworks (JUnit, Mockito, AssertJ, Testcontainers, etc.); test-scoped dependencies not matching a known framework are recorded as "unknown test dependency" rather than silently dropped or misclassified.
 
 ## Assumptions
 
