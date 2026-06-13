@@ -170,16 +170,16 @@
 
 ### Fake
 
-- [ ] T037 [P] [US5] Create `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeModuleStructurePort.kt` — constructor takes `modules: List<ModuleDescriptor>` and `packageTree: PackageTreeData`; implements `ModuleStructurePort`
+- [X] T037 [P] [US5] Create `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeModuleStructurePort.kt` — constructor takes `modules: List<ModuleDescriptor>` and `packageTree: PackageTreeData`; implements `ModuleStructurePort`
 
 ### Collector + Tests
 
-- [ ] T038 [US5] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/collector/StructureCollector.kt` — map each `ModuleDescriptor` → `Module(name, declaredDependencies, moduleDependencies.distinct())`; deduplicate `moduleDependencies` by name; source-less modules included with empty package contribution; `packageSegments` from `PackageTreeData.secondLevelSegments`; `SectionResult.Ok` if module list non-empty, `SectionResult.Empty` if empty
-- [ ] T039 [US5] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/collector/StructureCollectorTest.kt` — covers: three-module dependency graph A→B→C; 3-dep module; package segments in dotted notation; single-module project; source-less module included; duplicate inter-module dep deduplicated; empty module list (Empty); verify root packages land in `rootPackages` not `packageSegments`; per-collector partial-failure sub-scenario: module list readable but package tree read fails → section is Ok with modules populated and empty packageSegments/rootPackages
+- [X] T038 [US5] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/collector/StructureCollector.kt` — map each `ModuleDescriptor` → `Module(name, declaredDependencies, moduleDependencies.distinct())`; deduplicate `moduleDependencies` by name; source-less modules included with empty package contribution; `packageSegments` from `PackageTreeData.secondLevelSegments`; `SectionResult.Ok` if module list non-empty, `SectionResult.Empty` if empty
+- [X] T039 [US5] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/collector/StructureCollectorTest.kt` — covers: three-module dependency graph A→B→C; 3-dep module; package segments in dotted notation; single-module project; source-less module included; duplicate inter-module dep deduplicated; empty module list (Empty); verify root packages land in `rootPackages` not `packageSegments`; per-collector partial-failure sub-scenario: module list readable but package tree read fails → section is Ok with modules populated and empty packageSegments/rootPackages
 
 ### Adapter
 
-- [ ] T040 [US5] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/IjModuleStructureAdapter.kt` — `getModules()`: iterate `ModuleManager.getInstance(project).modules`; per module get external deps via ExternalProjectDataCache and inter-module deps via `ModuleDependencyData`; module name = build-system identifier (Gradle `:name`, Maven `name`); `getPackageTree()`: for each module's main source roots, walk VirtualFile children (skip `.`-prefixed and non-Java-identifier dirs) → rootPackages; recurse one more level → secondLevelSegments (full dotted path); aggregate + dedup across modules per research.md R-008
+- [X] T040 [US5] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/IjModuleStructureAdapter.kt` — `getModules()`: iterate `ModuleManager.getInstance(project).modules`; per module get external deps via ExternalProjectDataCache and inter-module deps via `ModuleDependencyData`; module name = build-system identifier (Gradle `:name`, Maven `name`); `getPackageTree()`: for each module's main source roots, walk VirtualFile children (skip `.`-prefixed and non-Java-identifier dirs) → rootPackages; recurse one more level → secondLevelSegments (full dotted path); aggregate + dedup across modules per research.md R-008
 
 **Checkpoint**: `./gradlew :scan:test --tests "*.StructureCollectorTest"` passes.
 
