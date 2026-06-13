@@ -95,16 +95,16 @@
 
 ### Fake
 
-- [ ] T022 [P] [US2] Create `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeStyleSourcePort.kt` — constructor takes `sources: List<StyleSource>`; implements `StyleSourcePort`
+- [X] T022 [P] [US2] Create `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeStyleSourcePort.kt` — constructor takes `sources: List<StyleSource>`; implements `StyleSourcePort`
 
 ### Collector + Tests
 
-- [ ] T023 [US2] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/collector/CodeStyleCollector.kt` — delegates to `StyleSourcePort.findStyleSources()`; returns `SectionResult.Ok` when any source found, `SectionResult.Empty` when none
-- [ ] T024 [US2] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/collector/CodeStyleCollectorTest.kt` — covers: project with three source types (all appear); no style files (Empty); multiple .editorconfig files (all collected); Spotless without external file (not present); assert that a StyleSource with an XML-named path is returned as-is without parsing its contents (enforces FR-007 — the collector MUST NOT parse style config file contents for style facts); per-collector partial-failure sub-scenario: style source port partially succeeds (returns subset of sources or partial data) → section is Ok with whatever was returned, not Error
+- [X] T023 [US2] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/collector/CodeStyleCollector.kt` — delegates to `StyleSourcePort.findStyleSources()`; returns `SectionResult.Ok` when any source found, `SectionResult.Empty` when none
+- [X] T024 [US2] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/collector/CodeStyleCollectorTest.kt` — covers: project with three source types (all appear); no style files (Empty); multiple .editorconfig files (all collected); Spotless without external file (not present); assert that a StyleSource with an XML-named path is returned as-is without parsing its contents (enforces FR-007 — the collector MUST NOT parse style config file contents for style facts); per-collector partial-failure sub-scenario: style source port partially succeeds (returns subset of sources or partial data) → section is Ok with whatever was returned, not Error
 
 ### Adapter
 
-- [ ] T025 [US2] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/IjStyleSourceAdapter.kt` — `ProjectUtil.guessProjectDir()` as base; discovery uses two distinct mechanisms: (1) well-known exact paths (`config/checkstyle/`, `config/pmd/`) checked as exact-path lookups regardless of nesting depth; (2) name-pattern matching (`checkstyle*`, `pmd*`) via VirtualFile descent up to max depth 2; `findFileByRelativePath(".editorconfig")` + recursive subdirectory walk for nested .editorconfig; `.idea/codeStyles/` enumeration for all child files; Spotless: presence of a task like `spotlessApply` in External System model MAY indicate Spotless is applied, but a `StyleSource(SPOTLESS, path)` is emitted ONLY when a standalone non-build config file also exists (task name alone is insufficient, consistent with FR-020 and CHK008)
+- [X] T025 [US2] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/IjStyleSourceAdapter.kt` — `ProjectUtil.guessProjectDir()` as base; discovery uses two distinct mechanisms: (1) well-known exact paths (`config/checkstyle/`, `config/pmd/`) checked as exact-path lookups regardless of nesting depth; (2) name-pattern matching (`checkstyle*`, `pmd*`) via VirtualFile descent up to max depth 2; `findFileByRelativePath(".editorconfig")` + recursive subdirectory walk for nested .editorconfig; `.idea/codeStyles/` enumeration for all child files; Spotless: presence of a task like `spotlessApply` in External System model MAY indicate Spotless is applied, but a `StyleSource(SPOTLESS, path)` is emitted ONLY when a standalone non-build config file also exists (task name alone is insufficient, consistent with FR-020 and CHK008)
 
 **Checkpoint**: `./gradlew :scan:test --tests "*.CodeStyleCollectorTest"` passes.
 
