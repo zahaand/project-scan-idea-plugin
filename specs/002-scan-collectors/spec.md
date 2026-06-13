@@ -172,7 +172,7 @@ For multi-module projects, the plugin records each module's build-system identif
 | `org.spockframework` | — | Spock |
 | `org.testng` | — | TestNG |
 
-- **FR-013**: The scan layer MUST record test source directory paths (project-relative) and the raw observed file-naming suffixes found in test source files (e.g., `Test`, `Spec`, `IT`). Suffixes are collected as raw observed values with no normalization or pattern classification applied.
+- **FR-013**: The scan layer MUST record test source directory paths (project-relative) and the file-naming suffixes found in test source files, recognised against the closed suffix set: `Test`, `Tests`, `IT`, `ITCase`, `Spec`. Each recognised suffix is recorded verbatim — "raw observed" means the token value is unmodified (e.g., `IT` recorded as `"IT"`, not normalised into a regex or pattern), NOT an unbounded enumeration of arbitrary endings. Class names that do not end with a known token contribute nothing. The plugin does not classify the team's naming convention — it records the set of observed known suffixes and leaves convention classification to the downstream consumer (LLM). This aligns with the closed-list approach used for test framework detection (FR-012).
 
 - **FR-014**: When JaCoCo is applied, the scan layer MUST record the coverage threshold as a single representative `Double` value in the range 0.0–1.0 (ratio, not percentage). When JaCoCo is applied for reporting only (no threshold/check rule configured), `coverageThreshold` MUST be `null`. When the threshold value is present but cannot be read from the project model, it MUST also be `null`.
 
