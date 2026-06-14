@@ -11,18 +11,19 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class TestCollectorTest {
-
     @Test
     fun `JUnit 5, Mockito, and AssertJ detected with resolved versions`() {
-        val deps = listOf(
-            Dependency("org.junit.jupiter", "junit-jupiter-api", "5.10.1"),
-            Dependency("org.mockito", "mockito-core", "5.5.0"),
-            Dependency("org.assertj", "assertj-core", "3.24.2"),
-        )
-        val result = collector(
-            testRoots = listOf("src/test/kotlin"),
-            testDeps = deps,
-        ).collect()
+        val deps =
+            listOf(
+                Dependency("org.junit.jupiter", "junit-jupiter-api", "5.10.1"),
+                Dependency("org.mockito", "mockito-core", "5.5.0"),
+                Dependency("org.assertj", "assertj-core", "3.24.2"),
+            )
+        val result =
+            collector(
+                testRoots = listOf("src/test/kotlin"),
+                testDeps = deps,
+            ).collect()
 
         val ok = assertOk(result)
         assertEquals(3, ok.frameworks.size)
@@ -35,10 +36,11 @@ class TestCollectorTest {
 
     @Test
     fun `JaCoCo threshold 0_8 surfaced`() {
-        val result = collector(
-            testRoots = listOf("src/test/kotlin"),
-            coverageThreshold = 0.8,
-        ).collect()
+        val result =
+            collector(
+                testRoots = listOf("src/test/kotlin"),
+                coverageThreshold = 0.8,
+            ).collect()
 
         val ok = assertOk(result)
         assertEquals(0.8, ok.coverageThreshold)
@@ -46,10 +48,11 @@ class TestCollectorTest {
 
     @Test
     fun `JaCoCo reporting-only returns null coverageThreshold`() {
-        val result = collector(
-            testRoots = listOf("src/test/kotlin"),
-            coverageThreshold = null,
-        ).collect()
+        val result =
+            collector(
+                testRoots = listOf("src/test/kotlin"),
+                coverageThreshold = null,
+            ).collect()
 
         val ok = assertOk(result)
         assertNull(ok.coverageThreshold)
@@ -64,10 +67,11 @@ class TestCollectorTest {
     @Test
     fun `unknown test-scoped dependency recorded in unknownTestDependencies`() {
         val unknown = Dependency("com.example", "some-test-lib", "1.0.0")
-        val result = collector(
-            testRoots = listOf("src/test/kotlin"),
-            testDeps = listOf(unknown),
-        ).collect()
+        val result =
+            collector(
+                testRoots = listOf("src/test/kotlin"),
+                testDeps = listOf(unknown),
+            ).collect()
 
         val ok = assertOk(result)
         assertEquals(listOf(unknown), ok.unknownTestDependencies)
@@ -77,10 +81,11 @@ class TestCollectorTest {
     @Test
     fun `resolved version is used for TestFramework version`() {
         val dep = Dependency("org.junit.jupiter", "junit-jupiter", "5.9.3")
-        val result = collector(
-            testRoots = listOf("src/test/kotlin"),
-            testDeps = listOf(dep),
-        ).collect()
+        val result =
+            collector(
+                testRoots = listOf("src/test/kotlin"),
+                testDeps = listOf(dep),
+            ).collect()
 
         val ok = assertOk(result)
         assertEquals("5.9.3", ok.frameworks.single().version)
@@ -89,10 +94,11 @@ class TestCollectorTest {
     @Test
     fun `null version is preserved for TestFramework`() {
         val dep = Dependency("org.mockito", "mockito-core", null)
-        val result = collector(
-            testRoots = listOf("src/test/kotlin"),
-            testDeps = listOf(dep),
-        ).collect()
+        val result =
+            collector(
+                testRoots = listOf("src/test/kotlin"),
+                testDeps = listOf(dep),
+            ).collect()
 
         val ok = assertOk(result)
         assertNull(ok.frameworks.single().version)
@@ -100,40 +106,44 @@ class TestCollectorTest {
 
     @Test
     fun `FooBarTest produces suffix Test`() {
-        val result = collector(
-            testRoots = listOf("src/test/kotlin"),
-            testClassNames = listOf("FooBarTest"),
-        ).collect()
+        val result =
+            collector(
+                testRoots = listOf("src/test/kotlin"),
+                testClassNames = listOf("FooBarTest"),
+            ).collect()
 
         assertEquals(listOf("Test"), assertOk(result).namingSuffixes)
     }
 
     @Test
     fun `FooBarIT produces suffix IT`() {
-        val result = collector(
-            testRoots = listOf("src/test/kotlin"),
-            testClassNames = listOf("FooBarIT"),
-        ).collect()
+        val result =
+            collector(
+                testRoots = listOf("src/test/kotlin"),
+                testClassNames = listOf("FooBarIT"),
+            ).collect()
 
         assertEquals(listOf("IT"), assertOk(result).namingSuffixes)
     }
 
     @Test
     fun `OrderServiceSpec produces suffix Spec`() {
-        val result = collector(
-            testRoots = listOf("src/test/kotlin"),
-            testClassNames = listOf("OrderServiceSpec"),
-        ).collect()
+        val result =
+            collector(
+                testRoots = listOf("src/test/kotlin"),
+                testClassNames = listOf("OrderServiceSpec"),
+            ).collect()
 
         assertEquals(listOf("Spec"), assertOk(result).namingSuffixes)
     }
 
     @Test
     fun `multiple coexisting suffixes all captured`() {
-        val result = collector(
-            testRoots = listOf("src/test/kotlin"),
-            testClassNames = listOf("FooBarTest", "FooBarIT", "OrderServiceSpec", "FooBarITCase", "FooBarTests"),
-        ).collect()
+        val result =
+            collector(
+                testRoots = listOf("src/test/kotlin"),
+                testClassNames = listOf("FooBarTest", "FooBarIT", "OrderServiceSpec", "FooBarITCase", "FooBarTests"),
+            ).collect()
 
         val suffixes = assertOk(result).namingSuffixes.toSet()
         assertTrue(suffixes.containsAll(setOf("Test", "IT", "Spec", "ITCase", "Tests")))
@@ -141,23 +151,28 @@ class TestCollectorTest {
 
     @Test
     fun `non-test class name contributes nothing to namingSuffixes`() {
-        val result = collector(
-            testRoots = listOf("src/test/kotlin"),
-            testClassNames = listOf("OrderServiceImpl"),
-        ).collect()
+        val result =
+            collector(
+                testRoots = listOf("src/test/kotlin"),
+                testClassNames = listOf("OrderServiceImpl"),
+            ).collect()
 
         assertTrue(assertOk(result).namingSuffixes.isEmpty())
     }
 
     @Test
     fun `partial failure - roots readable but deps throw - section Ok with roots and empty frameworks`() {
-        val throwingPort = object : TestInfoPort {
-            override fun getTestSourceRoots(): List<String> = listOf("src/test/kotlin")
-            override fun getTestScopedDependencies(): List<Dependency> =
-                throw RuntimeException("dependency read failed")
-            override fun getCoverageThreshold(): Double? = null
-            override fun getTestClassNames(): List<String> = emptyList()
-        }
+        val throwingPort =
+            object : TestInfoPort {
+                override fun getTestSourceRoots(): List<String> = listOf("src/test/kotlin")
+
+                override fun getTestScopedDependencies(): List<Dependency> =
+                    throw RuntimeException("dependency read failed")
+
+                override fun getCoverageThreshold(): Double? = null
+
+                override fun getTestClassNames(): List<String> = emptyList()
+            }
 
         val result = TestCollector(throwingPort).collect()
 
@@ -171,10 +186,11 @@ class TestCollectorTest {
     fun `JUnit 4 matched only on exact artifactId junit`() {
         val junit4 = Dependency("junit", "junit", "4.13.2")
         val notJunit4 = Dependency("junit", "junit-dep", "4.11")
-        val result = collector(
-            testRoots = listOf("src/test/kotlin"),
-            testDeps = listOf(junit4, notJunit4),
-        ).collect()
+        val result =
+            collector(
+                testRoots = listOf("src/test/kotlin"),
+                testDeps = listOf(junit4, notJunit4),
+            ).collect()
 
         val ok = assertOk(result)
         assertEquals(1, ok.frameworks.size)
@@ -196,7 +212,7 @@ class TestCollectorTest {
             testScopedDependencies = testDeps,
             coverageThreshold = coverageThreshold,
             testClassNames = testClassNames,
-        )
+        ),
     )
 
     private fun assertOk(result: SectionResult<*>): TestInfo {

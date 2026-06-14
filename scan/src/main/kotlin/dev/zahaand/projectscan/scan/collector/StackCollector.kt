@@ -13,11 +13,12 @@ class StackCollector(
 ) {
     fun collect(): SectionResult<StackInfo> {
         val buildSystem = buildSystemPort.getBuildSystem()
-        val moduleMap = try {
-            dependencyPort.getModuleDependencies()
-        } catch (_: Exception) {
-            emptyMap()
-        }
+        val moduleMap =
+            try {
+                dependencyPort.getModuleDependencies()
+            } catch (_: Exception) {
+                emptyMap()
+            }
 
         if (buildSystem == null && moduleMap.isEmpty()) return SectionResult.Empty
 
@@ -27,7 +28,7 @@ class StackCollector(
                 jdkVersion = buildSystemPort.getJdkVersion(),
                 languageLevel = maxLanguageLevel(buildSystemPort.getModuleLanguageLevels().values),
                 buildSystem = buildSystem,
-            )
+            ),
         )
     }
 
@@ -41,13 +42,23 @@ class StackCollector(
         return byCoordinate.values.toList()
     }
 
-    private fun pickMaxVersion(a: Dependency, b: Dependency): Dependency {
-        val va = a.resolvedVersion ?: return b
-        val vb = b.resolvedVersion ?: return a
-        return if (compareVersions(va, vb) >= 0) a else b
+    private fun pickMaxVersion(
+        a: Dependency,
+        b: Dependency,
+    ): Dependency {
+        val vA = a.resolvedVersion
+        val vB = b.resolvedVersion
+        return when {
+            vA == null -> b
+            vB == null -> a
+            else -> if (compareVersions(vA, vB) >= 0) a else b
+        }
     }
 
-    private fun compareVersions(a: String, b: String): Int =
+    private fun compareVersions(
+        a: String,
+        b: String,
+    ): Int =
         try {
             ComparableVersion(a).compareTo(ComparableVersion(b))
         } catch (_: Exception) {

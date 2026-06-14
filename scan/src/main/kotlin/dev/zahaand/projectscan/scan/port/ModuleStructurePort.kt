@@ -17,5 +17,6 @@ data class ModuleDescriptor(
 
 interface ModuleStructurePort {
     fun getModules(): List<ModuleDescriptor>
+
     fun getPackageTree(): PackageTreeData
 }

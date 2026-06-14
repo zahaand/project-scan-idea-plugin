@@ -2,7 +2,9 @@ package dev.zahaand.projectscan.model
 
 sealed class SectionResult<out T> {
     data class Ok<out T>(val data: T) : SectionResult<T>()
+
     data object Empty : SectionResult<Nothing>()
+
     data class Error(val cause: String? = null) : SectionResult<Nothing>()
 }
 

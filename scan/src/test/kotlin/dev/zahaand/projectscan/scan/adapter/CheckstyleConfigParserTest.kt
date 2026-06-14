@@ -6,12 +6,12 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class CheckstyleConfigParserTest {
-
     private val parser = CheckstyleConfigParser()
 
     @Test
     fun `multiple rules with explicit severities map correctly`() {
-        val xml = """
+        val xml =
+            """
             <module name="Checker">
               <module name="TreeWalker">
                 <module name="MethodLength">
@@ -25,7 +25,7 @@ class CheckstyleConfigParserTest {
                 </module>
               </module>
             </module>
-        """.trimIndent()
+            """.trimIndent()
 
         val rules = parser.parseRulesFromXml(xml)
 
@@ -37,14 +37,15 @@ class CheckstyleConfigParserTest {
 
     @Test
     fun `rule with no severity inherits from ancestor module`() {
-        val xml = """
+        val xml =
+            """
             <module name="Checker">
               <property name="severity" value="warning"/>
               <module name="TreeWalker">
                 <module name="MagicNumber"/>
               </module>
             </module>
-        """.trimIndent()
+            """.trimIndent()
 
         val rules = parser.parseRulesFromXml(xml)
 
@@ -54,13 +55,14 @@ class CheckstyleConfigParserTest {
 
     @Test
     fun `rule with no severity anywhere defaults to INFO`() {
-        val xml = """
+        val xml =
+            """
             <module name="Checker">
               <module name="TreeWalker">
                 <module name="MagicNumber"/>
               </module>
             </module>
-        """.trimIndent()
+            """.trimIndent()
 
         val rules = parser.parseRulesFromXml(xml)
 
@@ -70,7 +72,8 @@ class CheckstyleConfigParserTest {
 
     @Test
     fun `Checker and TreeWalker containers are not emitted as rules`() {
-        val xml = """
+        val xml =
+            """
             <module name="Checker">
               <module name="TreeWalker">
                 <module name="MethodLength">
@@ -78,7 +81,7 @@ class CheckstyleConfigParserTest {
                 </module>
               </module>
             </module>
-        """.trimIndent()
+            """.trimIndent()
 
         val rules = parser.parseRulesFromXml(xml)
 
@@ -90,7 +93,8 @@ class CheckstyleConfigParserTest {
 
     @Test
     fun `ignore severity maps to INFO`() {
-        val xml = """
+        val xml =
+            """
             <module name="Checker">
               <module name="TreeWalker">
                 <module name="MagicNumber">
@@ -98,7 +102,7 @@ class CheckstyleConfigParserTest {
                 </module>
               </module>
             </module>
-        """.trimIndent()
+            """.trimIndent()
 
         val rules = parser.parseRulesFromXml(xml)
 
@@ -108,7 +112,8 @@ class CheckstyleConfigParserTest {
 
     @Test
     fun `config with import or reference — only local rules returned, import not followed`() {
-        val xml = """
+        val xml =
+            """
             <module name="Checker">
               <module name="TreeWalker">
                 <module name="MethodLength">
@@ -119,7 +124,7 @@ class CheckstyleConfigParserTest {
                 <property name="file" value="suppressions.xml"/>
               </module>
             </module>
-        """.trimIndent()
+            """.trimIndent()
 
         val rules = parser.parseRulesFromXml(xml)
 
@@ -136,7 +141,8 @@ class CheckstyleConfigParserTest {
 
     @Test
     fun `nested severity inheritance — closer ancestor wins`() {
-        val xml = """
+        val xml =
+            """
             <module name="Checker">
               <property name="severity" value="error"/>
               <module name="TreeWalker">
@@ -144,7 +150,7 @@ class CheckstyleConfigParserTest {
                 <module name="MagicNumber"/>
               </module>
             </module>
-        """.trimIndent()
+            """.trimIndent()
 
         val rules = parser.parseRulesFromXml(xml)
 

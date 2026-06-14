@@ -9,5 +9,6 @@ class FakeModuleStructurePort(
     private val packageTree: PackageTreeData,
 ) : ModuleStructurePort {
     override fun getModules(): List<ModuleDescriptor> = modules
+
     override fun getPackageTree(): PackageTreeData = packageTree
 }

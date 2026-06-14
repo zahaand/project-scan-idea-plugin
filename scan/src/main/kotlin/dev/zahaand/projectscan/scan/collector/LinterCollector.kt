@@ -23,23 +23,23 @@ class LinterCollector(
 
             if (parser == null || configPath == null) {
                 toolsWithUnresolvableConfig += tool.toolName
-                continue
-            }
+            } else {
+                val parsedRules =
+                    try {
+                        parser.parseRules(configPath)
+                    } catch (_: Exception) {
+                        toolsWithUnresolvableConfig += tool.toolName
+                        null
+                    }
 
-            val parsedRules = try {
-                parser.parseRules(configPath)
-            } catch (e: Exception) {
-                toolsWithUnresolvableConfig += tool.toolName
-                continue
-            }
-
-            parsedRules.mapTo(activeRules) { parsed ->
-                ActiveRule(
-                    ruleId = parsed.ruleId,
-                    tool = tool.toolName,
-                    severity = parsed.severity,
-                    breaksBuild = tool.breaksBuild,
-                )
+                parsedRules?.mapTo(activeRules) { parsed ->
+                    ActiveRule(
+                        ruleId = parsed.ruleId,
+                        tool = tool.toolName,
+                        severity = parsed.severity,
+                        breaksBuild = tool.breaksBuild,
+                    )
+                }
             }
         }
 
@@ -47,7 +47,7 @@ class LinterCollector(
             LinterInfo(
                 activeRules = activeRules,
                 toolsWithUnresolvableConfig = toolsWithUnresolvableConfig,
-            )
+            ),
         )
     }
 }

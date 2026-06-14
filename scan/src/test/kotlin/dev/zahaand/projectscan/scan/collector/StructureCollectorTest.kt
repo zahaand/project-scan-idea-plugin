@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class StructureCollectorTest {
-
     @Test
     fun `three-module dependency graph A points to B which points to C`() {
         val moduleA = moduleDescriptor(":a", moduleDeps = listOf(":b"))
@@ -30,11 +29,12 @@ class StructureCollectorTest {
 
     @Test
     fun `module with three external declared dependencies`() {
-        val deps = listOf(
-            Dependency("org.springframework", "spring-core", "6.1.0"),
-            Dependency("com.google.guava", "guava", "32.0.0-jre"),
-            Dependency("org.apache.commons", "commons-lang3", "3.13.0"),
-        )
+        val deps =
+            listOf(
+                Dependency("org.springframework", "spring-core", "6.1.0"),
+                Dependency("com.google.guava", "guava", "32.0.0-jre"),
+                Dependency("org.apache.commons", "commons-lang3", "3.13.0"),
+            )
         val result = collector(modules = listOf(moduleDescriptor(":lib", externalDeps = deps))).collect()
 
         val ok = assertOk(result)
@@ -43,25 +43,33 @@ class StructureCollectorTest {
 
     @Test
     fun `root packages land in rootPackages and second-level in packageSegments in dotted notation`() {
-        val tree = PackageTreeData(
-            rootPackages = listOf("com", "org"),
-            secondLevelSegments = listOf("com.example", "com.example.web", "org.utils"),
-        )
+        val tree =
+            PackageTreeData(
+                rootPackages = listOf("com", "org"),
+                secondLevelSegments = listOf("com.example", "com.example.web", "org.utils"),
+            )
         val result = collector(modules = listOf(moduleDescriptor(":app")), packageTree = tree).collect()
 
         val ok = assertOk(result)
         assertEquals(listOf("com", "org"), ok.rootPackages)
         assertEquals(listOf("com.example", "com.example.web", "org.utils"), ok.packageSegments)
-        assertTrue(ok.rootPackages.none { it.contains("/") }, "rootPackages must use dotted notation, not path notation")
-        assertTrue(ok.packageSegments.none { it.contains("/") }, "packageSegments must use dotted notation, not path notation")
+        assertTrue(
+            ok.rootPackages.none { it.contains("/") },
+            "rootPackages must use dotted notation, not path notation",
+        )
+        assertTrue(
+            ok.packageSegments.none { it.contains("/") },
+            "packageSegments must use dotted notation, not path notation",
+        )
     }
 
     @Test
     fun `root packages are not duplicated in packageSegments`() {
-        val tree = PackageTreeData(
-            rootPackages = listOf("com"),
-            secondLevelSegments = listOf("com.example"),
-        )
+        val tree =
+            PackageTreeData(
+                rootPackages = listOf("com"),
+                secondLevelSegments = listOf("com.example"),
+            )
         val result = collector(modules = listOf(moduleDescriptor(":app")), packageTree = tree).collect()
 
         val ok = assertOk(result)
@@ -82,13 +90,14 @@ class StructureCollectorTest {
 
     @Test
     fun `source-less module is included with empty package contribution`() {
-        val sourceless = ModuleDescriptor(
-            name = ":bom",
-            externalDependencies = emptyList(),
-            moduleDependencies = emptyList(),
-            sourceRootPaths = emptyList(),
-            hasSourceRoots = false,
-        )
+        val sourceless =
+            ModuleDescriptor(
+                name = ":bom",
+                externalDependencies = emptyList(),
+                moduleDependencies = emptyList(),
+                sourceRootPaths = emptyList(),
+                hasSourceRoots = false,
+            )
         val result = collector(modules = listOf(sourceless)).collect()
 
         val ok = assertOk(result)
@@ -112,13 +121,13 @@ class StructureCollectorTest {
     }
 
     @Test
-    fun `partial failure - modules readable but package tree throws - section Ok with modules and empty package data`() {
-        val throwingPort = object : ModuleStructurePort {
-            override fun getModules(): List<ModuleDescriptor> =
-                listOf(moduleDescriptor(":core"))
-            override fun getPackageTree(): PackageTreeData =
-                throw RuntimeException("package tree unresolvable")
-        }
+    fun `partial failure - package tree throws - section Ok with modules and empty package data`() {
+        val throwingPort =
+            object : ModuleStructurePort {
+                override fun getModules(): List<ModuleDescriptor> = listOf(moduleDescriptor(":core"))
+
+                override fun getPackageTree(): PackageTreeData = throw RuntimeException("package tree unresolvable")
+            }
         val result = StructureCollector(throwingPort).collect()
 
         val ok = assertOk(result)

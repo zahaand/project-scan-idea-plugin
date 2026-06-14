@@ -13,18 +13,19 @@ import org.jetbrains.idea.maven.project.MavenProjectsManager
 import org.jetbrains.plugins.gradle.settings.GradleSettings
 
 class IjBuildSystemAdapter(private val project: Project) : BuildSystemPort {
-
-    override fun getBuildSystem(): BuildSystem? = when {
-        MavenProjectsManager.getInstance(project).isMavenizedProject -> BuildSystem.MAVEN
-        GradleSettings.getInstance(project).linkedProjectsSettings.isNotEmpty() -> BuildSystem.GRADLE
-        else -> null
-    }
+    override fun getBuildSystem(): BuildSystem? =
+        when {
+            MavenProjectsManager.getInstance(project).isMavenizedProject -> BuildSystem.MAVEN
+            GradleSettings.getInstance(project).linkedProjectsSettings.isNotEmpty() -> BuildSystem.GRADLE
+            else -> null
+        }
 
     override fun getModuleLanguageLevels(): Map<String, String> {
         val projectDefault = LanguageLevelProjectExtension.getInstance(project).languageLevel
         return ModuleManager.getInstance(project).modules.associate { module ->
-            val moduleExt = ModuleRootManager.getInstance(module)
-                .getModuleExtension(LanguageLevelModuleExtension::class.java)
+            val moduleExt =
+                ModuleRootManager.getInstance(module)
+                    .getModuleExtension(LanguageLevelModuleExtension::class.java)
             val effective = moduleExt?.languageLevel ?: projectDefault
             module.name to effective.featureVersionString()
         }
@@ -37,9 +38,10 @@ class IjBuildSystemAdapter(private val project: Project) : BuildSystemPort {
             .maxOrNull()
     }
 
-    private fun LanguageLevel.featureVersionString(): String = when {
-        name.startsWith("JDK_1_") -> name.removePrefix("JDK_1_")
-        name.startsWith("JDK_") -> name.removePrefix("JDK_")
-        else -> name
-    }
+    private fun LanguageLevel.featureVersionString(): String =
+        when {
+            name.startsWith("JDK_1_") -> name.removePrefix("JDK_1_")
+            name.startsWith("JDK_") -> name.removePrefix("JDK_")
+            else -> name
+        }
 }

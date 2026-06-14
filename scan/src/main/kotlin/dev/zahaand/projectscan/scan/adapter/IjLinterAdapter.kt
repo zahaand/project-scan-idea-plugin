@@ -4,7 +4,6 @@ import com.intellij.openapi.externalSystem.model.DataNode
 import com.intellij.openapi.externalSystem.model.ProjectKeys
 import com.intellij.openapi.externalSystem.model.task.TaskData
 import com.intellij.openapi.externalSystem.service.project.ProjectDataManager
-import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
 import com.intellij.openapi.project.Project
 import dev.zahaand.projectscan.scan.port.LinterPort
 import dev.zahaand.projectscan.scan.port.LinterToolDescriptor
@@ -13,7 +12,6 @@ import org.jetbrains.plugins.gradle.util.GradleConstants
 import java.io.File
 
 class IjLinterAdapter(private val project: Project) : LinterPort {
-
     override fun getAppliedLinterTools(): List<LinterToolDescriptor> {
         val mavenManager = MavenProjectsManager.getInstance(project)
         return if (mavenManager.isMavenizedProject) {
@@ -30,8 +28,9 @@ class IjLinterAdapter(private val project: Project) : LinterPort {
             // Checkstyle
             mavenProject.findPlugin("org.apache.maven.plugins", "maven-checkstyle-plugin")?.let { plugin ->
                 val configElement = plugin.configurationElement
-                val breaksBuild = configElement?.getChildText("failOnViolation")
-                    ?.let { it.equals("true", ignoreCase = true) }
+                val breaksBuild =
+                    configElement?.getChildText("failOnViolation")
+                        ?.let { it.equals("true", ignoreCase = true) }
                 val configLocation = configElement?.getChildText("configLocation")
                 val configFilePath = configLocation?.let { resolveLocalPath(basePath, it) }
                 seen += LinterToolDescriptor("checkstyle", configFilePath, breaksBuild)
@@ -39,8 +38,9 @@ class IjLinterAdapter(private val project: Project) : LinterPort {
             // PMD
             mavenProject.findPlugin("org.apache.maven.plugins", "maven-pmd-plugin")?.let { plugin ->
                 val configElement = plugin.configurationElement
-                val breaksBuild = configElement?.getChildText("failOnViolation")
-                    ?.let { it.equals("true", ignoreCase = true) }
+                val breaksBuild =
+                    configElement?.getChildText("failOnViolation")
+                        ?.let { it.equals("true", ignoreCase = true) }
                 val ruleset = configElement?.getChildText("ruleset")
                 val configFilePath = ruleset?.let { resolveLocalPath(basePath, it) }
                 seen += LinterToolDescriptor("pmd", configFilePath, breaksBuild)
@@ -55,21 +55,23 @@ class IjLinterAdapter(private val project: Project) : LinterPort {
         val descriptors = mutableListOf<LinterToolDescriptor>()
 
         if (taskNames.any { it == "checkstyleMain" || it == "checkstyleTest" }) {
-            val configFilePath = resolveFirstExisting(
-                basePath,
-                "config/checkstyle/checkstyle.xml",
-            )
+            val configFilePath =
+                resolveFirstExisting(
+                    basePath,
+                    "config/checkstyle/checkstyle.xml",
+                )
             descriptors += LinterToolDescriptor("checkstyle", configFilePath, null)
         }
 
         if (taskNames.any { it == "pmdMain" || it == "pmdTest" }) {
-            val configFilePath = resolveFirstExisting(
-                basePath,
-                "config/pmd/ruleset.xml",
-                "config/pmd/pmd-ruleset.xml",
-                "pmd.xml",
-                "ruleset.xml",
-            )
+            val configFilePath =
+                resolveFirstExisting(
+                    basePath,
+                    "config/pmd/ruleset.xml",
+                    "config/pmd/pmd-ruleset.xml",
+                    "pmd.xml",
+                    "ruleset.xml",
+                )
             descriptors += LinterToolDescriptor("pmd", configFilePath, null)
         }
 
@@ -86,7 +88,10 @@ class IjLinterAdapter(private val project: Project) : LinterPort {
         return names
     }
 
-    private fun collectTaskNamesRecursively(node: DataNode<*>, names: MutableSet<String>) {
+    private fun collectTaskNamesRecursively(
+        node: DataNode<*>,
+        names: MutableSet<String>,
+    ) {
         for (child in node.children) {
             @Suppress("UNCHECKED_CAST")
             if (child.key == ProjectKeys.TASK) {
@@ -96,13 +101,19 @@ class IjLinterAdapter(private val project: Project) : LinterPort {
         }
     }
 
-    private fun resolveLocalPath(basePath: String, value: String): String? {
+    private fun resolveLocalPath(
+        basePath: String,
+        value: String,
+    ): String? {
         if (value.startsWith("classpath") || value.contains("://")) return null
         val file = if (value.startsWith("/")) File(value) else File(basePath, value)
         return if (file.exists()) file.absolutePath else null
     }
 
-    private fun resolveFirstExisting(basePath: String, vararg relativePaths: String): String? =
+    private fun resolveFirstExisting(
+        basePath: String,
+        vararg relativePaths: String,
+    ): String? =
         relativePaths.firstNotNullOfOrNull { rel ->
             val file = File(basePath, rel)
             if (file.exists()) file.absolutePath else null

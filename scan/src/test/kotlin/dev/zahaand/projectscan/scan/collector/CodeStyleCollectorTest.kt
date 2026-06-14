@@ -9,14 +9,14 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class CodeStyleCollectorTest {
-
     @Test
     fun `project with three source types returns all in Ok`() {
-        val sources = listOf(
-            StyleSource(StyleSourceType.CHECKSTYLE, "checkstyle.xml"),
-            StyleSource(StyleSourceType.EDITOR_CONFIG, ".editorconfig"),
-            StyleSource(StyleSourceType.IDE_CODE_STYLE, ".idea/codeStyles/Project.xml"),
-        )
+        val sources =
+            listOf(
+                StyleSource(StyleSourceType.CHECKSTYLE, "checkstyle.xml"),
+                StyleSource(StyleSourceType.EDITOR_CONFIG, ".editorconfig"),
+                StyleSource(StyleSourceType.IDE_CODE_STYLE, ".idea/codeStyles/Project.xml"),
+            )
         val result = collector(sources).collect()
         val ok = assertOk(result)
         assertEquals(3, ok.sources.size)
@@ -33,11 +33,12 @@ class CodeStyleCollectorTest {
 
     @Test
     fun `multiple editorconfig files all collected as separate StyleSource entries`() {
-        val sources = listOf(
-            StyleSource(StyleSourceType.EDITOR_CONFIG, ".editorconfig"),
-            StyleSource(StyleSourceType.EDITOR_CONFIG, "module-a/.editorconfig"),
-            StyleSource(StyleSourceType.EDITOR_CONFIG, "module-b/.editorconfig"),
-        )
+        val sources =
+            listOf(
+                StyleSource(StyleSourceType.EDITOR_CONFIG, ".editorconfig"),
+                StyleSource(StyleSourceType.EDITOR_CONFIG, "module-a/.editorconfig"),
+                StyleSource(StyleSourceType.EDITOR_CONFIG, "module-b/.editorconfig"),
+            )
         val result = collector(sources).collect()
         val ok = assertOk(result)
         val editorconfigs = ok.sources.filter { it.type == StyleSourceType.EDITOR_CONFIG }
@@ -71,10 +72,11 @@ class CodeStyleCollectorTest {
     @Test
     fun `partial port result returns Ok with collected sources not Error`() {
         // Port surfaces 2 of 3 expected sources (one path unresolvable) — section is Ok, not Error
-        val partialSources = listOf(
-            StyleSource(StyleSourceType.CHECKSTYLE, "checkstyle.xml"),
-            StyleSource(StyleSourceType.EDITOR_CONFIG, ".editorconfig"),
-        )
+        val partialSources =
+            listOf(
+                StyleSource(StyleSourceType.CHECKSTYLE, "checkstyle.xml"),
+                StyleSource(StyleSourceType.EDITOR_CONFIG, ".editorconfig"),
+            )
         val result = collector(partialSources).collect()
         val ok = assertOk(result)
         assertEquals(2, ok.sources.size)

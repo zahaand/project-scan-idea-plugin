@@ -1,0 +1,27 @@
+style:
+  MagicNumber:
+    ignoreEnums: true
+    ignoreNamedArgument: true
+  WildcardImport:
+    excludeImports:
+      - 'org.junit.jupiter.api.Assertions.*'
+
+exceptions:
+  TooGenericExceptionCaught:
+    # FR-021: cross-collector isolation requires catching all exceptions in ScanService and collectors
+    excludes:
+      - '**/scan/ScanService.kt'
+      - '**/scan/collector/**'
+  SwallowedException:
+    # CHK031: collector-internal partial failure silences exceptions by design; `_` discard is intentional
+    excludes:
+      - '**/scan/collector/**'
+  TooGenericExceptionThrown:
+    # Test files use RuntimeException/Exception as lightweight throw stubs
+    excludes:
+      - '**/*Test.kt'
+
+complexity:
+  LongParameterList:
+    # ScanService wires 7 parameters by design (F-D01 / I1): 6 port interfaces + linterConfigParsers map
+    constructorThreshold: 8

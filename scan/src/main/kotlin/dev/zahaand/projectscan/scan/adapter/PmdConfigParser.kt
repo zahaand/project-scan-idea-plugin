@@ -8,37 +8,31 @@ import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 
 class PmdConfigParser : LinterConfigParser {
-
     override fun parseRules(absoluteConfigPath: String): List<ParsedRule> {
-        val doc = DocumentBuilderFactory.newInstance()
-            .newDocumentBuilder()
-            .parse(File(absoluteConfigPath))
+        val doc =
+            DocumentBuilderFactory.newInstance()
+                .newDocumentBuilder()
+                .parse(File(absoluteConfigPath))
         doc.documentElement.normalize()
         return extractRules(doc.documentElement)
     }
 
     fun parseRulesFromXml(xml: String): List<ParsedRule> {
-        val doc = DocumentBuilderFactory.newInstance()
-            .newDocumentBuilder()
-            .parse(xml.byteInputStream())
+        val doc =
+            DocumentBuilderFactory.newInstance()
+                .newDocumentBuilder()
+                .parse(xml.byteInputStream())
         doc.documentElement.normalize()
         return extractRules(doc.documentElement)
     }
 
     private fun extractRules(root: Element): List<ParsedRule> {
-        val rules = mutableListOf<ParsedRule>()
         val ruleNodes = root.getElementsByTagName("rule")
-        for (i in 0 until ruleNodes.length) {
-            val node = ruleNodes.item(i)
-            if (node !is Element) continue
-            val ref = node.getAttribute("ref")
-            if (ref.isBlank()) continue
-            // Skip rules that are nested inside another rule element (rulesets-within-rules)
-            if (node.parentNode != root) continue
-            val severity = extractSeverity(node)
-            rules.add(ParsedRule(ruleId = ref, severity = severity))
-        }
-        return rules
+        return (0 until ruleNodes.length)
+            .mapNotNull { i -> ruleNodes.item(i) as? Element }
+            // Skip rules nested inside another rule element (rulesets-within-rules)
+            .filter { it.parentNode == root && it.getAttribute("ref").isNotBlank() }
+            .map { ParsedRule(ruleId = it.getAttribute("ref"), severity = extractSeverity(it)) }
     }
 
     private fun extractSeverity(ruleElement: Element): RuleSeverity {

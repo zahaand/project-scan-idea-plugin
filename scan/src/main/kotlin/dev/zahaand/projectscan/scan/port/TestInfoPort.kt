@@ -4,7 +4,10 @@ import dev.zahaand.projectscan.model.Dependency
 
 interface TestInfoPort {
     fun getTestSourceRoots(): List<String>
+
     fun getTestScopedDependencies(): List<Dependency>
+
     fun getCoverageThreshold(): Double?
+
     fun getTestClassNames(): List<String>
 }

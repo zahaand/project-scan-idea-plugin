@@ -9,13 +9,13 @@ import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 
 class CheckstyleConfigParser : LinterConfigParser {
-
     private val containers = setOf("Checker", "TreeWalker")
 
     override fun parseRules(absoluteConfigPath: String): List<ParsedRule> {
-        val doc = DocumentBuilderFactory.newInstance()
-            .newDocumentBuilder()
-            .parse(File(absoluteConfigPath))
+        val doc =
+            DocumentBuilderFactory.newInstance()
+                .newDocumentBuilder()
+                .parse(File(absoluteConfigPath))
         doc.documentElement.normalize()
         val rules = mutableListOf<ParsedRule>()
         collectRules(doc.documentElement, null, rules)
@@ -23,16 +23,21 @@ class CheckstyleConfigParser : LinterConfigParser {
     }
 
     fun parseRulesFromXml(xml: String): List<ParsedRule> {
-        val doc = DocumentBuilderFactory.newInstance()
-            .newDocumentBuilder()
-            .parse(xml.byteInputStream())
+        val doc =
+            DocumentBuilderFactory.newInstance()
+                .newDocumentBuilder()
+                .parse(xml.byteInputStream())
         doc.documentElement.normalize()
         val rules = mutableListOf<ParsedRule>()
         collectRules(doc.documentElement, null, rules)
         return rules
     }
 
-    private fun collectRules(element: Element, inheritedSeverity: RuleSeverity?, result: MutableList<ParsedRule>) {
+    private fun collectRules(
+        element: Element,
+        inheritedSeverity: RuleSeverity?,
+        result: MutableList<ParsedRule>,
+    ) {
         val name = element.getAttribute("name")
         val declaredSeverity = extractSeverity(element)
         val effectiveSeverity = declaredSeverity ?: inheritedSeverity

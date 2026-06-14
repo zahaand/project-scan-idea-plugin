@@ -9,6 +9,8 @@ class FakeBuildSystemPort(
     private val jdkVersion: String? = null,
 ) : BuildSystemPort {
     override fun getBuildSystem(): BuildSystem? = buildSystem
+
     override fun getModuleLanguageLevels(): Map<String, String> = moduleLevels
+
     override fun getJdkVersion(): String? = jdkVersion
 }

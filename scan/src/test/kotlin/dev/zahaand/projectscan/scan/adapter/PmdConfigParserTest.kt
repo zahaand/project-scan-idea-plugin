@@ -6,12 +6,12 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class PmdConfigParserTest {
-
     private val parser = PmdConfigParser()
 
     @Test
     fun `priorities 1 through 5 map to correct severities`() {
-        val xml = """
+        val xml =
+            """
             <ruleset name="Custom Rules">
               <rule ref="category/java/a.xml/Rule1"><priority>1</priority></rule>
               <rule ref="category/java/a.xml/Rule2"><priority>2</priority></rule>
@@ -19,7 +19,7 @@ class PmdConfigParserTest {
               <rule ref="category/java/a.xml/Rule4"><priority>4</priority></rule>
               <rule ref="category/java/a.xml/Rule5"><priority>5</priority></rule>
             </ruleset>
-        """.trimIndent()
+            """.trimIndent()
 
         val rules = parser.parseRulesFromXml(xml)
 
@@ -33,11 +33,12 @@ class PmdConfigParserTest {
 
     @Test
     fun `absent priority defaults to INFO`() {
-        val xml = """
+        val xml =
+            """
             <ruleset name="Custom Rules">
               <rule ref="category/java/codestyle.xml/LongVariable"/>
             </ruleset>
-        """.trimIndent()
+            """.trimIndent()
 
         val rules = parser.parseRulesFromXml(xml)
 
@@ -47,13 +48,14 @@ class PmdConfigParserTest {
 
     @Test
     fun `ruleId taken from ref attribute`() {
-        val xml = """
+        val xml =
+            """
             <ruleset name="Custom Rules">
               <rule ref="category/java/bestpractices.xml/AbstractClassWithoutAbstractMethod">
                 <priority>2</priority>
               </rule>
             </ruleset>
-        """.trimIndent()
+            """.trimIndent()
 
         val rules = parser.parseRulesFromXml(xml)
 
@@ -63,14 +65,15 @@ class PmdConfigParserTest {
 
     @Test
     fun `ruleset referencing external ruleset by ref — only local rules returned, reference not followed`() {
-        val xml = """
+        val xml =
+            """
             <ruleset name="Custom Rules">
               <rule ref="category/java/bestpractices.xml"/>
               <rule ref="category/java/codestyle.xml/LongVariable">
                 <priority>3</priority>
               </rule>
             </ruleset>
-        """.trimIndent()
+            """.trimIndent()
 
         val rules = parser.parseRulesFromXml(xml)
 
@@ -85,7 +88,8 @@ class PmdConfigParserTest {
 
     @Test
     fun `rule without ref attribute is skipped`() {
-        val xml = """
+        val xml =
+            """
             <ruleset name="Custom Rules">
               <rule name="SomeRule">
                 <priority>1</priority>
@@ -94,7 +98,7 @@ class PmdConfigParserTest {
                 <priority>2</priority>
               </rule>
             </ruleset>
-        """.trimIndent()
+            """.trimIndent()
 
         val rules = parser.parseRulesFromXml(xml)
 
@@ -104,13 +108,14 @@ class PmdConfigParserTest {
 
     @Test
     fun `multiple rules with mixed priorities`() {
-        val xml = """
+        val xml =
+            """
             <ruleset name="Mixed">
               <rule ref="a/Rule1"><priority>1</priority></rule>
               <rule ref="b/Rule2"><priority>3</priority></rule>
               <rule ref="c/Rule3"/>
             </ruleset>
-        """.trimIndent()
+            """.trimIndent()
 
         val rules = parser.parseRulesFromXml(xml)
 

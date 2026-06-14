@@ -7,19 +7,26 @@ import dev.zahaand.projectscan.model.TestInfo
 import dev.zahaand.projectscan.scan.port.TestInfoPort
 
 class TestCollector(private val port: TestInfoPort) {
-
     fun collect(): SectionResult<TestInfo> {
-        val testRoots = try { port.getTestSourceRoots() } catch (e: Exception) { emptyList() }
+        val testRoots =
+            try {
+                port.getTestSourceRoots()
+            } catch (_: Exception) {
+                emptyList()
+            }
 
         val frameworks = mutableListOf<TestFramework>()
         val unknownTestDependencies = mutableListOf<Dependency>()
         try {
             for (dep in port.getTestScopedDependencies()) {
                 val name = matchFramework(dep)
-                if (name != null) frameworks += TestFramework(name, dep.resolvedVersion)
-                else unknownTestDependencies += dep
+                if (name != null) {
+                    frameworks += TestFramework(name, dep.resolvedVersion)
+                } else {
+                    unknownTestDependencies += dep
+                }
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             // partial failure: dependency read failed; continue with what was collected
         }
 
@@ -27,12 +34,23 @@ class TestCollector(private val port: TestInfoPort) {
             return SectionResult.Empty
         }
 
-        val classNames = try { port.getTestClassNames() } catch (e: Exception) { emptyList() }
-        val namingSuffixes = classNames
-            .mapNotNull { className -> SUFFIX_TOKENS.firstOrNull { token -> className.endsWith(token) } }
-            .distinct()
+        val classNames =
+            try {
+                port.getTestClassNames()
+            } catch (_: Exception) {
+                emptyList()
+            }
+        val namingSuffixes =
+            classNames
+                .mapNotNull { className -> SUFFIX_TOKENS.firstOrNull { token -> className.endsWith(token) } }
+                .distinct()
 
-        val coverageThreshold = try { port.getCoverageThreshold() } catch (e: Exception) { null }
+        val coverageThreshold =
+            try {
+                port.getCoverageThreshold()
+            } catch (_: Exception) {
+                null
+            }
 
         return SectionResult.Ok(
             TestInfo(
@@ -41,7 +59,7 @@ class TestCollector(private val port: TestInfoPort) {
                 sourceRoots = testRoots,
                 namingSuffixes = namingSuffixes,
                 coverageThreshold = coverageThreshold,
-            )
+            ),
         )
     }
 
@@ -60,20 +78,21 @@ class TestCollector(private val port: TestInfoPort) {
     companion object {
         private val SUFFIX_TOKENS = listOf("ITCase", "Tests", "Test", "IT", "Spec")
 
-        private val KNOWN_TEST_FRAMEWORKS = listOf(
-            FrameworkMatcher("org.junit.jupiter", canonicalName = "JUnit 5"),
-            FrameworkMatcher("org.junit.vintage", canonicalName = "JUnit 4 (Vintage)"),
-            FrameworkMatcher("org.junit.platform", canonicalName = "JUnit Platform"),
-            FrameworkMatcher("junit", artifactIdExact = "junit", canonicalName = "JUnit 4"),
-            FrameworkMatcher("org.mockito", canonicalName = "Mockito"),
-            FrameworkMatcher("org.assertj", canonicalName = "AssertJ"),
-            FrameworkMatcher("org.hamcrest", canonicalName = "Hamcrest"),
-            FrameworkMatcher("org.testcontainers", canonicalName = "Testcontainers"),
-            FrameworkMatcher("io.cucumber", canonicalName = "Cucumber"),
-            FrameworkMatcher("org.awaitility", canonicalName = "Awaitility"),
-            FrameworkMatcher("io.rest-assured", canonicalName = "REST Assured"),
-            FrameworkMatcher("org.spockframework", canonicalName = "Spock"),
-            FrameworkMatcher("org.testng", canonicalName = "TestNG"),
-        )
+        private val KNOWN_TEST_FRAMEWORKS =
+            listOf(
+                FrameworkMatcher("org.junit.jupiter", canonicalName = "JUnit 5"),
+                FrameworkMatcher("org.junit.vintage", canonicalName = "JUnit 4 (Vintage)"),
+                FrameworkMatcher("org.junit.platform", canonicalName = "JUnit Platform"),
+                FrameworkMatcher("junit", artifactIdExact = "junit", canonicalName = "JUnit 4"),
+                FrameworkMatcher("org.mockito", canonicalName = "Mockito"),
+                FrameworkMatcher("org.assertj", canonicalName = "AssertJ"),
+                FrameworkMatcher("org.hamcrest", canonicalName = "Hamcrest"),
+                FrameworkMatcher("org.testcontainers", canonicalName = "Testcontainers"),
+                FrameworkMatcher("io.cucumber", canonicalName = "Cucumber"),
+                FrameworkMatcher("org.awaitility", canonicalName = "Awaitility"),
+                FrameworkMatcher("io.rest-assured", canonicalName = "REST Assured"),
+                FrameworkMatcher("org.spockframework", canonicalName = "Spock"),
+                FrameworkMatcher("org.testng", canonicalName = "TestNG"),
+            )
     }
 }

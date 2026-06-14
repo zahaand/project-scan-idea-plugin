@@ -10,7 +10,10 @@ class FakeTestInfoPort(
     private val testClassNames: List<String> = emptyList(),
 ) : TestInfoPort {
     override fun getTestSourceRoots(): List<String> = testSourceRoots
+
     override fun getTestScopedDependencies(): List<Dependency> = testScopedDependencies
+
     override fun getCoverageThreshold(): Double? = coverageThreshold
+
     override fun getTestClassNames(): List<String> = testClassNames
 }

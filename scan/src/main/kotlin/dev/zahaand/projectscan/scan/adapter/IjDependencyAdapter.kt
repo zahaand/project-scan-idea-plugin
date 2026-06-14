@@ -12,7 +12,6 @@ import org.jetbrains.idea.maven.project.MavenProjectsManager
 import org.jetbrains.plugins.gradle.util.GradleConstants
 
 class IjDependencyAdapter(private val project: Project) : DependencyPort {
-
     override fun getModuleDependencies(): Map<String, List<Dependency>> {
         val mavenManager = MavenProjectsManager.getInstance(project)
         if (mavenManager.isMavenizedProject) {
@@ -31,8 +30,9 @@ class IjDependencyAdapter(private val project: Project) : DependencyPort {
             val projectNode = projectData.externalProjectStructure ?: continue
             for (moduleNode in ExternalSystemApiUtil.findAll(projectNode, ProjectKeys.MODULE)) {
                 val moduleName = moduleNode.data.externalName
-                val deps = ExternalSystemApiUtil.findAll(moduleNode, ProjectKeys.LIBRARY_DEPENDENCY)
-                    .mapNotNull { node -> toDependency(node.data.target) }
+                val deps =
+                    ExternalSystemApiUtil.findAll(moduleNode, ProjectKeys.LIBRARY_DEPENDENCY)
+                        .mapNotNull { node -> toDependency(node.data.target) }
                 result[moduleName] = deps
             }
         }
@@ -44,10 +44,13 @@ class IjDependencyAdapter(private val project: Project) : DependencyPort {
         val name = lib.externalName.removePrefix("Gradle: ")
         val parts = name.split(":")
         if (parts.size < 2) return null
-        val groupId = parts[0].takeIf(String::isNotBlank) ?: return null
-        val artifactId = parts[1].takeIf(String::isNotBlank) ?: return null
-        val version = parts.getOrNull(2)?.takeIf(String::isNotBlank)
-        return Dependency(groupId, artifactId, version)
+        val groupId = parts[0].takeIf(String::isNotBlank)
+        val artifactId = parts[1].takeIf(String::isNotBlank)
+        return if (groupId != null && artifactId != null) {
+            Dependency(groupId, artifactId, parts.getOrNull(2)?.takeIf(String::isNotBlank))
+        } else {
+            null
+        }
     }
 
     private fun MavenArtifact.toDependency(): Dependency =
