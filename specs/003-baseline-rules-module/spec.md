@@ -18,11 +18,12 @@ A plugin developer (or release pipeline) instantiates the baseline rule provider
 **Acceptance Scenarios**:
 
 1. **Given** the module's bundled `rules.json` resource is well-formed and all invariants are satisfied, **When** the baseline provider is invoked, **Then** it returns a non-empty list of `BaselineRule` objects with no exception thrown.
-2. **Given** a test-only replacement `rules.json` where one rule has an empty `statement`, **When** the baseline provider is invoked, **Then** it throws a diagnosable exception identifying the invariant violation — it does NOT return a partial or empty list silently.
-3. **Given** a test-only replacement `rules.json` where two rules share the same `id`, **When** the baseline provider is invoked, **Then** it throws a diagnosable exception identifying the duplicate id.
-4. **Given** a test-only replacement `rules.json` that is malformed JSON, **When** the baseline provider is invoked, **Then** it throws a diagnosable exception from the structural parsing layer.
-5. **Given** a test-only replacement `rules.json` where a rule's `minJavaLevel` is set to an invalid value (e.g. `7` or `99`), **When** the baseline provider is invoked, **Then** it throws a diagnosable exception identifying the disallowed value.
-6. **Given** a test-only replacement `rules.json` where the `rules` array is empty, **When** the baseline provider is invoked, **Then** it throws a diagnosable exception — an empty bundled set is invalid.
+2. **Given** a test-only replacement `rules.json` where one rule has an empty `statement`, **When** the baseline provider is invoked, **Then** it throws `BaselineLoadException` identifying the invariant violation — it does NOT return a partial or empty list silently.
+3. **Given** a test-only replacement `rules.json` where two rules share the same `id`, **When** the baseline provider is invoked, **Then** it throws `BaselineLoadException` identifying the duplicate id.
+4. **Given** a test-only replacement `rules.json` that is malformed JSON, **When** the baseline provider is invoked, **Then** it throws `BaselineLoadException` from the structural parsing layer.
+5. **Given** a test-only replacement `rules.json` where a rule's `minJavaLevel` is set to an invalid value (e.g. `7` or `99`), **When** the baseline provider is invoked, **Then** it throws `BaselineLoadException` identifying the disallowed value.
+6. **Given** a test-only replacement `rules.json` where the `rules` array is empty, **When** the baseline provider is invoked, **Then** it throws `BaselineLoadException` — an empty bundled set is invalid.
+7. **Given** a test-only replacement `rules.json` where a rule carries `level = CORRECTNESS` but `category = EXCEPTION_HANDLING` (a BEST_PRACTICE-level category), **When** the baseline provider is invoked, **Then** it throws `BaselineLoadException` identifying the category/level mismatch.
 
 ---
 
@@ -44,7 +45,7 @@ A downstream component (e.g. the future `:prompt` module) calls the baseline pro
 
 ### User Story 3 — Rule Metadata Completeness and Correctness (Priority: P2)
 
-Each returned `BaselineRule` carries all 7 mandatory fields with correct values: a stable `id`, a `level` (`CORRECTNESS` or `BEST_PRACTICE`), an `obligation` (`MUST` or `SHOULD`), a non-empty `statement`, a non-empty `rationale`, a valid `minJavaLevel`, and a non-empty `languages` list. Downstream consumers rely on these fields to render rules in the generated Constitution.
+Each returned `BaselineRule` carries all 8 mandatory fields with correct values: a stable `id`, a `level` (`CORRECTNESS` or `BEST_PRACTICE`), a `category` (one of 9 `BaselineCategory` values), an `obligation` (`MUST` or `SHOULD`), a non-empty `statement`, a non-empty `rationale`, a valid `minJavaLevel`, and a non-empty `languages` list. Downstream consumers rely on these fields to render rules in the generated Constitution.
 
 **Why this priority**: Metadata correctness is what makes the rules useful in the Constitution. Incomplete or incorrect metadata breaks the Constitution rendering contract.
 
@@ -54,10 +55,11 @@ Each returned `BaselineRule` carries all 7 mandatory fields with correct values:
 
 1. **Given** the bundled rules are loaded, **When** each rule is inspected, **Then** every rule has a non-empty `id`, a non-empty `statement`, and a non-empty `rationale`.
 2. **Given** the bundled rules are loaded, **When** each rule's `level` is checked, **Then** it is exactly one of `CORRECTNESS` or `BEST_PRACTICE` — no other value is present.
-3. **Given** the bundled rules are loaded, **When** each rule's `obligation` is checked, **Then** it is exactly one of `MUST` or `SHOULD` — no other value is present.
-4. **Given** the bundled rules are loaded, **When** each rule's `minJavaLevel` is checked, **Then** it belongs to the allowed set `{8, 11, 17, 21}`.
-5. **Given** the bundled rules are loaded, **When** each rule's `languages` list is checked, **Then** it is non-empty and every entry is `JAVA`.
-6. **Given** the bundled rules are loaded, **When** the complete set is inspected, **Then** at least one rule has `minJavaLevel > 8`.
+3. **Given** the bundled rules are loaded, **When** each rule's `category` is checked, **Then** it is exactly one of the 9 `BaselineCategory` values — no other value is present, and the category is consistent with the rule's `level` (CORRECTNESS-level categories pair with `CORRECTNESS`; BEST_PRACTICE-level categories pair with `BEST_PRACTICE`).
+4. **Given** the bundled rules are loaded, **When** each rule's `obligation` is checked, **Then** it is exactly one of `MUST` or `SHOULD` — no other value is present.
+5. **Given** the bundled rules are loaded, **When** each rule's `minJavaLevel` is checked, **Then** it belongs to the allowed set `{8, 11, 17, 21}`.
+6. **Given** the bundled rules are loaded, **When** each rule's `languages` list is checked, **Then** it is non-empty and every entry is `JAVA`.
+7. **Given** the bundled rules are loaded, **When** the complete set is inspected, **Then** at least one rule has `minJavaLevel > 8`.
 
 ---
 
@@ -67,23 +69,23 @@ The bundled rule set covers all required correctness and best-practice categorie
 
 **Why this priority**: A rule set that omits a required category silently degrades Constitution quality. The coverage constraint is the measurable quality bar for the curated set.
 
-**Independent Test**: A unit test groups the real bundled rules by category-keyword patterns in their IDs and asserts minimum counts per category: ≥2 rules for each of the 4 CORRECTNESS categories and ≥1 rule for each of the 5 BEST_PRACTICE categories (≥13 total).
+**Independent Test**: A unit test groups the real bundled rules by the `category` field and asserts minimum counts per `BaselineCategory` value: ≥2 rules for each of the 4 CORRECTNESS categories and ≥1 rule for each of the 5 BEST_PRACTICE categories (≥13 total).
 
 **Acceptance Scenarios**:
 
-1. **Given** the bundled rules are loaded, **When** CORRECTNESS rules are filtered by null-safety category, **Then** at least 2 rules cover null safety (null checks, empty collections, Optional usage).
-2. **Given** the bundled rules are loaded, **When** CORRECTNESS rules are filtered by resource-management category, **Then** at least 2 rules cover resource management (try-with-resources, no reliance on finalize).
-3. **Given** the bundled rules are loaded, **When** CORRECTNESS rules are filtered by concurrency category, **Then** at least 2 rules cover concurrency (safe publication, synchronization pitfalls, atomicity).
-4. **Given** the bundled rules are loaded, **When** CORRECTNESS rules are filtered by dangerous-constructs category, **Then** at least 2 rules cover dangerous constructs (reference equality, equals/hashCode pairing, ignoring return values).
-5. **Given** the bundled rules are loaded, **When** BEST_PRACTICE rules are inspected, **Then** at least 1 rule covers exception handling, 1 covers string performance, 1 covers decomposition, 1 covers immutability, and 1 covers programming to interfaces.
+1. **Given** the bundled rules are loaded, **When** rules where `category == NULL_SAFETY` are counted, **Then** there are at least 2 (covering null checks, empty collections, Optional usage).
+2. **Given** the bundled rules are loaded, **When** rules where `category == RESOURCE_MANAGEMENT` are counted, **Then** there are at least 2 (covering try-with-resources, no reliance on finalize).
+3. **Given** the bundled rules are loaded, **When** rules where `category == CONCURRENCY` are counted, **Then** there are at least 2 (covering safe publication, synchronization pitfalls, atomicity).
+4. **Given** the bundled rules are loaded, **When** rules where `category == DANGEROUS_CONSTRUCTS` are counted, **Then** there are at least 2 (covering reference equality, equals/hashCode pairing, ignoring return values).
+5. **Given** the bundled rules are loaded, **When** rules are grouped by `category`, **Then** `EXCEPTION_HANDLING` has ≥1, `STRING_PERFORMANCE` has ≥1, `DECOMPOSITION` has ≥1, `IMMUTABILITY` has ≥1, and `INTERFACE_PROGRAMMING` has ≥1.
 6. **Given** the bundled rules are counted, **When** all levels are combined, **Then** the total count is ≥ 13.
 
 ---
 
 ### Edge Cases
 
-- What happens when the `rules.json` resource is entirely absent from the jar? → The loader MUST throw a diagnosable exception; it MUST NOT return an empty list.
-- What happens when `schemaVersion` in `rules.json` is absent or has an unrecognized value? → The loader MUST either fail loudly or (if version is unrecognized) throw an exception identifying the unsupported version — silent fallback is prohibited.
+- What happens when the `rules.json` resource is entirely absent from the jar? → The loader MUST throw `BaselineLoadException`; it MUST NOT return an empty list.
+- What happens when `schemaVersion` in `rules.json` is absent or has an unrecognized value? → The loader MUST throw `BaselineLoadException` identifying the unsupported version — silent fallback is prohibited.
 - What happens when a rule's `languages` field is present but empty (`[]`)? → Invariant validation MUST reject this; `languages` must be non-empty per the data model.
 - What happens when a rule contains extra/unknown JSON fields not in the model? → The parser silently ignores them (lenient deserialization); no exception is thrown for unrecognized fields.
 - What happens when two rules have the same `id` but differ only in case? → Duplicate detection is case-sensitive; `"correctness.null-deref"` and `"CORRECTNESS.NULL-DEREF"` are considered distinct — but the rule ID convention (lowercase dotted) should prevent this in practice.
@@ -92,39 +94,41 @@ The bundled rule set covers all required correctness and best-practice categorie
 
 ### Functional Requirements
 
-- **FR-001**: The module MUST expose a public API (loader/provider) that returns `List<BaselineRule>` loaded from the bundled JSON resource.
+- **FR-001**: The module MUST expose a public API (loader/provider) that returns `List<BaselineRule>` loaded from the bundled JSON resource. The provider MUST parse and validate the resource exactly once (lazy init) and return the cached immutable list on every subsequent call.
 - **FR-002**: The module MUST load `rules.json` via the module's classloader (`getResourceAsStream`), NOT via filesystem access.
 - **FR-003**: The module MUST parse `rules.json` using `kotlinx.serialization` (the only permitted external dependency besides `:model`).
 - **FR-004**: The provider MUST perform structural validation (via the parser) and invariant validation (via explicit post-parse checks) before returning any results.
-- **FR-005**: On any structural or invariant violation, the provider MUST throw a diagnosable exception with a message identifying the violation — it MUST NOT silently return an empty or partial list.
+- **FR-005**: On any structural or invariant violation, the provider MUST throw `BaselineLoadException` (a custom exception defined in `:baseline`) with a message identifying the specific violation and wrapping the original cause where applicable — it MUST NOT silently return an empty or partial list.
 - **FR-006**: The returned list MUST be complete and unfiltered — every rule stored in `rules.json` is returned, regardless of `minJavaLevel`, `languages`, or any other field.
 - **FR-007**: The returned list MUST be unranked — the module stores no priority ordering and applies no sorting by priority.
-- **FR-008**: The module MUST validate the following invariants after parsing: unique `id` across all rules; non-empty `statement` and `rationale`; `minJavaLevel` within `{8, 11, 17, 21}`; non-empty `languages` list.
+- **FR-008**: The module MUST validate the following invariants after parsing: unique `id` across all rules; non-empty `statement` and `rationale`; `minJavaLevel` within `{8, 11, 17, 21}`; non-empty `languages` list; `category` consistent with `level` (the four CORRECTNESS-level categories — `NULL_SAFETY`, `RESOURCE_MANAGEMENT`, `CONCURRENCY`, `DANGEROUS_CONSTRUCTS` — must pair with `level = CORRECTNESS`; the five BEST_PRACTICE-level categories — `EXCEPTION_HANDLING`, `STRING_PERFORMANCE`, `DECOMPOSITION`, `IMMUTABILITY`, `INTERFACE_PROGRAMMING` — must pair with `level = BEST_PRACTICE`). Any mismatch is an invariant violation that throws `BaselineLoadException`.
 - **FR-009**: The `rules.json` resource MUST use wrapper format `{ "schemaVersion": 1, "rules": [ ... ] }` to support future schema evolution.
-- **FR-010**: The bundled rule set MUST satisfy category coverage: ≥2 CORRECTNESS rules in each of the 4 required correctness categories; ≥1 BEST_PRACTICE rule in each of the 5 required best-practice categories; ≥13 rules total.
+- **FR-010**: The bundled rule set MUST satisfy category coverage as determined by the explicit `category` field (NOT by id-string patterns): ≥2 rules with `category == NULL_SAFETY`; ≥2 with `RESOURCE_MANAGEMENT`; ≥2 with `CONCURRENCY`; ≥2 with `DANGEROUS_CONSTRUCTS`; ≥1 with `EXCEPTION_HANDLING`; ≥1 with `STRING_PERFORMANCE`; ≥1 with `DECOMPOSITION`; ≥1 with `IMMUTABILITY`; ≥1 with `INTERFACE_PROGRAMMING`; ≥13 rules total.
 - **FR-011**: At least one bundled rule MUST have `minJavaLevel > 8` so the language-level field is demonstrable and testable.
 - **FR-012**: The module MUST NOT contain any filtering, ranking, or priority logic — these belong exclusively in `:prompt` (Sprint 4).
 - **FR-013**: The module MUST NOT depend on `:scan` and MUST NOT reference or import any type from `:scan`.
 - **FR-014**: The module MUST NOT contain style, formatting, or naming rules — only correctness and architectural best-practice rules.
-- **FR-015**: The `BaselineRule` data type, `BaselineLevel` enum, `Obligation` enum, and `BaselineLanguage` enum MUST be defined inside `:baseline`, not in `:model`.
+- **FR-015**: The `BaselineRule` data type, `BaselineLevel` enum, `BaselineCategory` enum, `Obligation` enum, and `BaselineLanguage` enum MUST be defined inside `:baseline`, not in `:model`.
 
 ### Key Entities *(include if feature involves data)*
 
-- **BaselineRule**: A single code-quality rule. Has 7 fields: `id` (String, stable unique identifier), `level` (BaselineLevel), `obligation` (Obligation), `statement` (String, non-empty), `rationale` (String, non-empty), `minJavaLevel` (Int, from `{8, 11, 17, 21}`), `languages` (List\<BaselineLanguage\>, non-empty).
+- **BaselineRule**: A single code-quality rule. Has 8 fields: `id` (String, stable unique identifier — used for deduplication and future override support, NOT for category classification), `level` (BaselineLevel), `category` (BaselineCategory), `obligation` (Obligation), `statement` (String, non-empty), `rationale` (String, non-empty), `minJavaLevel` (Int, from `{8, 11, 17, 21}`), `languages` (List\<BaselineLanguage\>, non-empty). The `level` and `category` fields are both explicit and stored; `level` is NOT derived from `category` at runtime — the redundancy is intentional so downstream consumers can use `level` directly without knowing the category→level mapping.
 - **BaselineLevel**: Enum with two values — `CORRECTNESS` (SpotBugs-type, Level 1) and `BEST_PRACTICE` (Effective Java / PMD-type, Level 2).
-- **Obligation**: Enum with two values — `MUST` (mandatory requirement) and `SHOULD` (strong recommendation). Curated per rule; NOT derived from `level`.
+- **BaselineCategory**: Enum with 9 values representing the semantic category of a rule. Four CORRECTNESS-level values: `NULL_SAFETY`, `RESOURCE_MANAGEMENT`, `CONCURRENCY`, `DANGEROUS_CONSTRUCTS`. Five BEST_PRACTICE-level values: `EXCEPTION_HANDLING`, `STRING_PERFORMANCE`, `DECOMPOSITION`, `IMMUTABILITY`, `INTERFACE_PROGRAMMING`. Each value belongs to exactly one `BaselineLevel`; the loader enforces this consistency as an invariant.
+- **Obligation**: Enum with two values — `MUST` (mandatory requirement) and `SHOULD` (strong recommendation). Curated per rule; NOT derived from `level` or `category`.
 - **BaselineLanguage**: Enum with a single MVP value — `JAVA`. Exists as a list-per-rule to support future multi-language expansion without data model changes.
 - **RuleSet (JSON resource)**: Wrapper object in `rules.json` — `{ "schemaVersion": 1, "rules": [ <BaselineRule>... ] }`. `schemaVersion` is the evolution hook for format changes.
-- **BaselineRuleProvider** (or equivalent loader): The public entry point of the module. Loads the resource, validates it, and returns `List<BaselineRule>`.
+- **BaselineRuleProvider** (or equivalent loader): The public entry point of the module. Parses and validates the resource once on first access (lazy init) and caches the immutable result; returns the same `List<BaselineRule>` on every subsequent call. Throws `BaselineLoadException` on any failure.
+- **BaselineLoadException**: Custom unchecked exception defined in `:baseline`. Carries a human-readable violation message and wraps the original cause. Used as the single failure signal across all load and validation errors; enables `:prompt` (Sprint 4) to catch baseline failures specifically.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
 - **SC-001**: The baseline provider successfully loads and validates the bundled rule set in any unit test environment without requiring an IDE, build system, or project context.
-- **SC-002**: 100% of the ≥13 bundled rules pass all invariant checks (unique id, non-empty statement/rationale, valid minJavaLevel, non-empty languages).
-- **SC-003**: All 4 CORRECTNESS categories and all 5 BEST_PRACTICE categories are covered with at least the specified minimum rule counts, verified by a single unit test over the real bundled `rules.json`.
-- **SC-004**: Any invalid `rules.json` (structural or invariant violation) is detected at load time and produces a thrown exception with a human-readable message identifying the specific problem — zero silent failures.
+- **SC-002**: 100% of the ≥13 bundled rules pass all invariant checks (unique id, non-empty statement/rationale, valid minJavaLevel, non-empty languages, category consistent with level).
+- **SC-003**: All 4 CORRECTNESS categories and all 5 BEST_PRACTICE categories are covered with at least the specified minimum rule counts, verified by a single unit test that groups rules by the `category` field over the real bundled `rules.json`.
+- **SC-004**: Any invalid `rules.json` (structural or invariant violation) is detected at load time and produces a thrown `BaselineLoadException` with a human-readable message identifying the specific problem — zero silent failures.
 - **SC-005**: The module has zero compile-time or runtime dependencies on `:scan` or on any IntelliJ Platform class — verifiable by inspecting the module's `build.gradle.kts` dependency block.
 - **SC-006**: The module's unit tests run without IntelliJ Platform fixtures (no `LightPlatformTestCase`, no `BasePlatformTestCase`) — tests are pure JVM, mirroring the `:model` module's test approach.
 - **SC-007**: At least one bundled rule has `minJavaLevel > 8`, and this is asserted by a dedicated unit test assertion.
@@ -138,6 +142,14 @@ The bundled rule set covers all required correctness and best-practice categorie
 - Rule wording (the actual `statement` and `rationale` text) is a curation concern to be decided during implementation; the spec mandates category coverage and field constraints but does not dictate exact rule prose.
 - `BaselineLanguage.JAVA` is the only value in the enum for MVP; the enum and list-per-rule structure are intentionally forward-compatible but not exercised beyond Java in this sprint.
 - "Silent team practice" rules are never represented in any data structure — they are a conceptual layer only.
+
+## Clarifications
+
+### Session 2026-06-14
+
+- Q: Should `BaselineRuleProvider` parse `rules.json` once and cache the result, or re-parse on every call? → A: Parse-once, cache internally (lazy init); same list returned on every call.
+- Q: What exception type should the provider throw on any load or validation failure? → A: A single custom exception (`BaselineLoadException`) wrapping the cause and carrying the violation message.
+- Correction: Added explicit `category: BaselineCategory` as the 3rd field of `BaselineRule` (8-field model). `BaselineCategory` enum has 9 values (4 CORRECTNESS-level, 5 BEST_PRACTICE-level). Category coverage (FR-010, SC-003, US4) is now verified via the `category` field, not id-string patterns. Category/level consistency is enforced as an invariant (FR-008). The `id` field is a stable identifier only — not the basis for category classification.
 
 ## Out of Scope
 
