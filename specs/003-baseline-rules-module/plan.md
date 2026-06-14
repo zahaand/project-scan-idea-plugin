@@ -77,7 +77,13 @@ baseline/                           ← NEW Gradle submodule
         ├── BaselineRuleMetadataTest.kt       ← US3: per-field invariant assertions on real rules
         └── BaselineRuleCoverageTest.kt       ← US4: category coverage counts on real bundled rules
 
-settings.gradle.kts                 ← ADD: include(":baseline")
+settings.gradle.kts                 ← ADD: include(":baseline") in the includes block;
+                                        ADD id("org.jetbrains.kotlin.plugin.serialization")
+                                        version "2.2.20" in pluginManagement.plugins block
+baseline/build.gradle.kts           ← depends on kotlin("stdlib") +
+                                        "org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3";
+                                        applies kotlin.jvm + kotlin.plugin.serialization +
+                                        detekt + ktlint plugins
 ```
 
 **Structure decision**: Single flat package `dev.zahaand.projectscan.baseline`. No port/adapter

@@ -66,12 +66,12 @@ data class BaselineRule(
 
 | Field | Constraint |
 |-------|-----------|
-| `id` | Non-empty; unique across all rules (case-sensitive dedup) |
+| `id` | Non-blank (empty string or whitespace-only fails); unique across all rules (case-sensitive: `"a.b"` ≠ `"A.B"`); naming convention is a curation guideline only, not validated beyond non-blank + uniqueness |
 | `level` | One of `CORRECTNESS`, `BEST_PRACTICE` |
-| `category` | One of 9 `BaselineCategory` values; MUST be consistent with `level` (see mapping below) |
+| `category` | One of 9 `BaselineCategory` values; MUST be consistent with `level` per FR-008 mapping (see table below) |
 | `obligation` | One of `MUST`, `SHOULD` |
-| `statement` | Non-blank string |
-| `rationale` | Non-blank string |
+| `statement` | Non-blank (empty string or whitespace-only fails) |
+| `rationale` | Non-blank (empty string or whitespace-only fails) |
 | `minJavaLevel` | One of `{8, 11, 17, 21}` |
 | `languages` | Non-empty list; all entries recognized `BaselineLanguage` values |
 
@@ -300,6 +300,11 @@ object BaselineRuleProvider {
 
 **`loadFromReader` is `internal`** so tests in the same Gradle module can call it with a
 `StringReader` to exercise all error paths without touching the classloader resource.
+This is the testability seam that makes all US1 negative acceptance scenarios (scenarios 2–9)
+runnable as pure-JVM unit tests with no IntelliJ Platform fixtures, as mandated by SC-006.
+Without this seam, negative-path tests would require classloader manipulation or real
+filesystem resources. (Assumption: the spec does not explicitly mandate this seam by name;
+it is the implementation of SC-006's pure-JVM constraint.)
 
 **`by lazy` exception behavior**: If `loadRules()` throws, Kotlin's `SynchronizedLazyImpl` does
 NOT cache the exception — the next access to `rules` re-attempts loading. This means a corrupt
