@@ -42,14 +42,14 @@ class ProjectScanModelTest {
             TestInfo(
                 frameworks = listOf(TestFramework("JUnit", "5.11.4")),
                 sourceRoots = listOf("src/test/kotlin"),
-                namingPattern = ".*Test",
+                namingSuffixes = listOf("Test"),
                 coverageThreshold = 80.0,
             )
         val structure =
             StructureInfo(
                 modules = listOf(Module("app")),
-                packageOrganisation = PackageOrganisation.BY_LAYER,
                 rootPackages = listOf("dev.zahaand.projectscan"),
+                packageSegments = listOf("dev.zahaand.projectscan.model"),
             )
         val model = ProjectScanModel(stack, codeStyle, linters, tests, structure)
         assertEquals(stack, model.stack)

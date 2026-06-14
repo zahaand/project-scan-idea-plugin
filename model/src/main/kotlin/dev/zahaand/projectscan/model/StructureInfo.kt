@@ -1,7 +1,5 @@
 package dev.zahaand.projectscan.model
 
-enum class PackageOrganisation { BY_LAYER, BY_FEATURE }
-
 data class Module(
     val name: String,
     val declaredDependencies: List<Dependency> = emptyList(),
@@ -10,6 +8,6 @@ data class Module(
 
 data class StructureInfo(
     val modules: List<Module> = emptyList(),
-    val packageOrganisation: PackageOrganisation? = null,
     val rootPackages: List<String> = emptyList(),
+    val packageSegments: List<String> = emptyList(),
 )

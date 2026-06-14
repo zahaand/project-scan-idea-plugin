@@ -3,6 +3,7 @@ import org.jetbrains.intellij.platform.gradle.extensions.intellijPlatform
 rootProject.name = "project-scan-idea-plugin"
 
 include(":model")
+include(":scan")
 
 pluginManagement {
     plugins {

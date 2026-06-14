@@ -5,11 +5,11 @@ import org.junit.jupiter.api.Test
 
 class StructureInfoTest {
     @Test
-    fun `empty-state StructureInfo has empty lists and null packageOrganisation`() {
+    fun `empty-state StructureInfo has empty lists`() {
         val info = StructureInfo()
         assertTrue(info.modules.isEmpty())
-        assertNull(info.packageOrganisation)
         assertTrue(info.rootPackages.isEmpty())
+        assertTrue(info.packageSegments.isEmpty())
     }
 
     @Test
@@ -40,7 +40,6 @@ class StructureInfoTest {
         val info =
             StructureInfo(
                 modules = listOf(coreModule, appModule),
-                packageOrganisation = PackageOrganisation.BY_FEATURE,
                 rootPackages = listOf("dev.zahaand.projectscan"),
             )
         assertEquals(2, info.modules.size)
@@ -58,8 +57,12 @@ class StructureInfoTest {
     }
 
     @Test
-    fun `PackageOrganisation BY_FEATURE round-trips`() {
-        val info = StructureInfo(packageOrganisation = PackageOrganisation.BY_FEATURE)
-        assertEquals(PackageOrganisation.BY_FEATURE, info.packageOrganisation)
+    fun `packageSegments holds second-level dotted package paths`() {
+        val info =
+            StructureInfo(
+                packageSegments = listOf("com.example.web", "com.example.domain"),
+            )
+        assertEquals(2, info.packageSegments.size)
+        assertTrue(info.packageSegments.contains("com.example.web"))
     }
 }
