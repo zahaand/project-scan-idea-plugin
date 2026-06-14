@@ -7,6 +7,7 @@ import com.intellij.openapi.externalSystem.service.project.ProjectDataManager
 import com.intellij.openapi.project.Project
 import dev.zahaand.projectscan.scan.port.LinterPort
 import dev.zahaand.projectscan.scan.port.LinterToolDescriptor
+import org.jdom.Element
 import org.jetbrains.idea.maven.project.MavenProjectsManager
 import org.jetbrains.plugins.gradle.util.GradleConstants
 import java.io.File
@@ -25,28 +26,60 @@ class IjLinterAdapter(private val project: Project) : LinterPort {
         val basePath = project.basePath ?: return emptyList()
         val seen = linkedSetOf<LinterToolDescriptor>()
         for (mavenProject in mavenManager.projects) {
-            // Checkstyle
+            // Checkstyle — one descriptor per distinct execution config path (FR-008 / CHK015)
             mavenProject.findPlugin("org.apache.maven.plugins", "maven-checkstyle-plugin")?.let { plugin ->
-                val configElement = plugin.configurationElement
-                val breaksBuild =
-                    configElement?.getChildText("failOnViolation")
-                        ?.let { it.equals("true", ignoreCase = true) }
-                val configLocation = configElement?.getChildText("configLocation")
-                val configFilePath = configLocation?.let { resolveLocalPath(basePath, it) }
-                seen += LinterToolDescriptor("checkstyle", configFilePath, breaksBuild)
+                seen +=
+                    descriptorsFromPlugin(
+                        basePath, "checkstyle", "configLocation",
+                        plugin.configurationElement,
+                        plugin.executions.map { it.configurationElement },
+                    )
             }
-            // PMD
+            // PMD — one descriptor per distinct execution config path (FR-008 / CHK015)
             mavenProject.findPlugin("org.apache.maven.plugins", "maven-pmd-plugin")?.let { plugin ->
-                val configElement = plugin.configurationElement
-                val breaksBuild =
-                    configElement?.getChildText("failOnViolation")
-                        ?.let { it.equals("true", ignoreCase = true) }
-                val ruleset = configElement?.getChildText("ruleset")
-                val configFilePath = ruleset?.let { resolveLocalPath(basePath, it) }
-                seen += LinterToolDescriptor("pmd", configFilePath, breaksBuild)
+                seen +=
+                    descriptorsFromPlugin(
+                        basePath, "pmd", "ruleset",
+                        plugin.configurationElement,
+                        plugin.executions.map { it.configurationElement },
+                    )
             }
         }
         return seen.toList()
+    }
+
+    // Emits one LinterToolDescriptor per distinct config path across plugin-level and per-execution
+    // configs. If a plugin has no executions the plugin-level config produces a single descriptor.
+    private fun descriptorsFromPlugin(
+        basePath: String,
+        toolName: String,
+        configKey: String,
+        pluginConfig: Element?,
+        executionConfigs: List<Element?>,
+    ): List<LinterToolDescriptor> {
+        val pluginBreaksBuild =
+            pluginConfig?.getChildText("failOnViolation")
+                ?.let { value -> value.equals("true", ignoreCase = true) }
+        val pluginConfigValue = pluginConfig?.getChildText(configKey)
+        if (executionConfigs.isEmpty()) {
+            return listOf(
+                LinterToolDescriptor(
+                    toolName,
+                    pluginConfigValue?.let { resolveLocalPath(basePath, it) },
+                    pluginBreaksBuild,
+                ),
+            )
+        }
+        val visitedPaths = linkedSetOf<String?>()
+        return executionConfigs.mapNotNull { execConfig ->
+            val breaksBuild =
+                execConfig?.getChildText("failOnViolation")
+                    ?.let { value -> value.equals("true", ignoreCase = true) } ?: pluginBreaksBuild
+            val configPath =
+                (execConfig?.getChildText(configKey) ?: pluginConfigValue)
+                    ?.let { resolveLocalPath(basePath, it) }
+            if (visitedPaths.add(configPath)) LinterToolDescriptor(toolName, configPath, breaksBuild) else null
+        }
     }
 
     private fun gradleDescriptors(): List<LinterToolDescriptor> {
@@ -55,24 +88,22 @@ class IjLinterAdapter(private val project: Project) : LinterPort {
         val descriptors = mutableListOf<LinterToolDescriptor>()
 
         if (taskNames.any { it == "checkstyleMain" || it == "checkstyleTest" }) {
-            val configFilePath =
-                resolveFirstExisting(
-                    basePath,
-                    "config/checkstyle/checkstyle.xml",
+            descriptors +=
+                LinterToolDescriptor(
+                    "checkstyle",
+                    resolveFirstExisting(basePath, "config/checkstyle/checkstyle.xml"),
+                    null,
                 )
-            descriptors += LinterToolDescriptor("checkstyle", configFilePath, null)
         }
 
         if (taskNames.any { it == "pmdMain" || it == "pmdTest" }) {
-            val configFilePath =
-                resolveFirstExisting(
-                    basePath,
-                    "config/pmd/ruleset.xml",
-                    "config/pmd/pmd-ruleset.xml",
-                    "pmd.xml",
-                    "ruleset.xml",
+            // Only match config/pmd/ paths to avoid false positives from generic ruleset.xml names
+            descriptors +=
+                LinterToolDescriptor(
+                    "pmd",
+                    resolveFirstExisting(basePath, "config/pmd/ruleset.xml", "config/pmd/pmd-ruleset.xml"),
+                    null,
                 )
-            descriptors += LinterToolDescriptor("pmd", configFilePath, null)
         }
 
         return descriptors
