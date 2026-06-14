@@ -46,7 +46,7 @@
 
 ### Port Interfaces
 
-- [X] T008 [P] Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/port/BuildSystemPort.kt` — `interface BuildSystemPort { fun getBuildSystem(): BuildSystem?; fun getModuleLanguageLevels(): Map<String, String> }` per data-model.md §2.1
+- [X] T008 [P] Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/port/BuildSystemPort.kt` — `interface BuildSystemPort { fun getBuildSystem(): BuildSystem?; fun getModuleLanguageLevels(): Map<String, String>; fun getJdkVersion(): String? }` per data-model.md §2.1
 - [X] T009 [P] Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/port/DependencyPort.kt` — `interface DependencyPort { fun getModuleDependencies(): Map<String, List<Dependency>> }` per data-model.md §2.2
 - [X] T010 [P] Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/port/StyleSourcePort.kt` — `interface StyleSourcePort { fun findStyleSources(): List<StyleSource> }` per data-model.md §2.3
 - [X] T011 [P] Create `scan/src/main/kotlin/dev/zahaand/projectscan/scan/port/LinterPort.kt` — `data class LinterToolDescriptor` (toolName, configFilePath, breaksBuild) and `interface LinterPort { fun getAppliedLinterTools(): List<LinterToolDescriptor> }` per data-model.md §2.4
@@ -70,7 +70,7 @@
 
 ### Fakes
 
-- [X] T016 [P] [US1] Create `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeBuildSystemPort.kt` — constructor takes `buildSystem: BuildSystem?` and `moduleLevels: Map<String, String>`; implements `BuildSystemPort`
+- [X] T016 [P] [US1] Create `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeBuildSystemPort.kt` — constructor takes `buildSystem: BuildSystem?`, `moduleLevels: Map<String, String>`, and `jdkVersion: String? = null`; implements `BuildSystemPort`
 - [X] T017 [P] [US1] Create `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeDependencyPort.kt` — constructor takes `moduleMap: Map<String, List<Dependency>>` and `error: Exception? = null` (used by the partial-failure sub-scenario in StackCollectorTest); implements `DependencyPort`
 
 ### Collector + Tests
@@ -80,7 +80,7 @@
 
 ### Adapters
 
-- [X] T020 [P] [US1] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/IjBuildSystemAdapter.kt` — `getBuildSystem()` via `ExternalSystemUtil.getDefaultExternalSystemId()` or `MavenProjectsManager.isMavenizedProject()`; `getModuleLanguageLevels()` via `LanguageLevelModuleExtension.getInstance(module).languageLevel` per module (null = inherits project default from `LanguageLevelProjectExtension`) per research.md R-002/R-003
+- [X] T020 [P] [US1] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/IjBuildSystemAdapter.kt` — `getBuildSystem()` via `ExternalSystemUtil.getDefaultExternalSystemId()` or `MavenProjectsManager.isMavenizedProject()`; `getModuleLanguageLevels()` via `LanguageLevelModuleExtension.getInstance(module).languageLevel` per module (null = inherits project default from `LanguageLevelProjectExtension`) per research.md R-002/R-003; `getJdkVersion()` via project-level SDK (`ProjectRootManager.getInstance(project).projectSdk?.versionString`), falling back to max across modules, then `null` if undetectable
 - [X] T021 [P] [US1] Implement `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/IjDependencyAdapter.kt` — for Maven: `MavenProjectsManager.getInstance(project).projects` → `MavenProject.getDependencies()`; for Gradle: `ExternalProjectDataCache` + `ExternalSystemApiUtil.findAll(moduleNode, LibraryDependencyData.KEY)`; returns only declared (non-transitive) entries per research.md R-001
 
 **Checkpoint**: `./gradlew :scan:test --tests "*.StackCollectorTest"` passes. User Story 1 is fully functional via fakes.
@@ -207,7 +207,7 @@
 - [ ] T044 [P] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/adapter/IjBuildSystemAdapterTest.kt` — IntelliJ Platform fixture: Maven-ized project → `getBuildSystem()` returns `MAVEN`; `getModuleLanguageLevels()` returns the configured source compatibility level
 - [ ] T045 [P] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/adapter/IjDependencyAdapterTest.kt` — IntelliJ Platform fixture: Maven project with 2 declared dependencies → `getModuleDependencies()` returns exactly those 2 entries; no transitive entries appear
 - [ ] T046 [P] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/adapter/IjStyleSourceAdapterTest.kt` — IntelliJ Platform fixture: project with `.editorconfig` and `.idea/codeStyles/` → `findStyleSources()` returns both; project with neither → empty list
-- [ ] T047 [P] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/adapter/IjLinterAdapterTest.kt` — IntelliJ Platform fixture (Maven): project with `maven-checkstyle-plugin` in `<plugins>` → tool recorded as applied with `breaksBuild` from `failsOnError`; plugin in `<pluginManagement>` only → not applied; Gradle adapter: smoke-level compilation check only (Gradle TAPI import not feasible in light fixture)
+- [ ] T047 [P] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/adapter/IjLinterAdapterTest.kt` — IntelliJ Platform fixture (Maven): project with `maven-checkstyle-plugin` in `<plugins>` → tool recorded as applied with `breaksBuild` from `failOnViolation` (not `failsOnError` — CHK013: `failsOnError` tests Checkstyle's internal error handling, not build failure on rule violations); plugin in `<pluginManagement>` only → not applied; Gradle adapter: smoke-level compilation check only (Gradle TAPI import not feasible in light fixture)
 - [ ] T048 [P] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/adapter/IjTestInfoAdapterTest.kt` — IntelliJ Platform fixture: module with test source root → `getTestSourceRoots()` returns project-relative path; `getCoverageThreshold()` returns correct value from Maven jacoco plugin configuration; `getTestClassNames()` returns file names from test source root
 - [ ] T049 [P] Write `scan/src/test/kotlin/dev/zahaand/projectscan/scan/adapter/IjModuleStructureAdapterTest.kt` — IntelliJ Platform fixture: two-module project → `getModules()` returns both; `getPackageTree()` returns correct root packages and second-level segments in dotted notation
 
