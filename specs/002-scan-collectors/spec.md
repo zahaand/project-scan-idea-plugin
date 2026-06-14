@@ -76,6 +76,7 @@ The plugin identifies which test frameworks and companion libraries appear in th
 3. **Given** a project where JaCoCo is applied for reporting only (no threshold/check rule configured), **When** the test collector runs, **Then** the `coverageThreshold` field is `null`.
 4. **Given** a project with no testing dependencies and no test source roots, **When** the test collector runs, **Then** the tests section is `Empty` — the frameworks list is empty and the coverage threshold is absent.
 5. **Given** a project with a test-scoped dependency that is not on the known framework list, **When** the test collector runs, **Then** it is recorded as "unknown test dependency" and does not appear in the named frameworks list.
+6. **Given** a module with a test source root, **When** the test collector runs, **Then** `sourceRoots` in the result contains the project-relative path to that test source root.
 
 ---
 
@@ -91,7 +92,7 @@ For multi-module projects, the plugin records each module's build-system identif
 
 1. **Given** a three-module project where module A depends on module B which depends on module C, **When** the structure collector runs, **Then** the module dependency graph shows A→B and B→C links by module name.
 2. **Given** a module with 3 declared external dependencies, **When** the structure collector runs, **Then** `declaredDependencies` for that module contains exactly those 3 entries with correct coordinates and versions.
-3. **Given** a project's source roots, **When** the package structure collector runs, **Then** the result contains root packages and their second-level segments in dotted Java notation (e.g. `com.example.web`, `com.example.domain`) — no deeper — without any organization pattern classification, stored in the `packageSegments` field.
+3. **Given** a project's source roots, **When** the package structure collector runs, **Then** the result contains root packages stored in `rootPackages` and their second-level segments stored in `packageSegments` in dotted Java notation (e.g. `com.example.web`, `com.example.domain`) — no deeper — without any organization pattern classification.
 4. **Given** a single-module project, **When** the structure collector runs, **Then** the result contains exactly one module entry with its dependencies populated.
 
 ---

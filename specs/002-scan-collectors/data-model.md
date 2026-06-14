@@ -125,6 +125,7 @@ platform-free and fakes trivial to write.
 ```kotlin
 interface BuildSystemPort {
     fun getBuildSystem(): BuildSystem?
+    fun getJdkVersion(): String?
     /** Returns effective language level per module (module name → level string, e.g. "17"). */
     fun getModuleLanguageLevels(): Map<String, String>
 }
@@ -226,7 +227,7 @@ ScanResult
 │                    ActiveRule has: ruleId, tool, severity, breaksBuild: Boolean?
 ├── tests:     SectionResult<TestInfo>
 │                └── Ok(TestInfo(frameworks, unknownTestDependencies, sourceRoots,
-│                                namingPattern, coverageThreshold))
+│                                namingSuffixes: List<String>, coverageThreshold))
 └── structure: SectionResult<StructureInfo>
                  └── Ok(StructureInfo(modules, rootPackages, packageSegments))
                      Module has: name, declaredDependencies, moduleDependencies
@@ -242,7 +243,7 @@ Each `SectionResult` is one of: `Ok(data)` | `Empty` | `Error(cause)`.
 |---|---|---|
 | `StackCollector` | `DependencyPort`, `BuildSystemPort` | Aggregate per-module deps → dedup by coord; take max version; take max language level |
 | `CodeStyleCollector` | `StyleSourcePort` | Return discovered sources as-is; empty if none |
-| `LinterCollector` | `LinterPort`, `LinterConfigParser` | Per tool: if config path null → `Error`; else parse → `ActiveRule` list with `breaksBuild` denormalized |
+| `LinterCollector` | `LinterPort`, `LinterConfigParser` | Per tool: config null or unparseable → tool added to `toolsWithUnresolvableConfig`; section stays `Ok`; else parse → `ActiveRule` list with `breaksBuild` denormalized |
 | `TestCollector` | `TestInfoPort` | Split test-scope deps into known frameworks vs unknowns; read JaCoCo threshold |
 | `StructureCollector` | `ModuleStructurePort` | Map `ModuleDescriptor` → `Module`; get `PackageTreeData` for `rootPackages`+`packageSegments` |
 
