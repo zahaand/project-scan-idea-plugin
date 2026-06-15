@@ -130,8 +130,15 @@ type to allow test assertions on the intermediate structure without parsing Mark
 - `##` (level 2) — six block names
 - `###` (level 3) — two origin groups within Core Principles only
 - `####` (level 4) — `Mandatory (build-breaking)` and `Advisory` sub-sections within
-  `### project standard`; omitted when the sub-section would contain zero rules
+  `### project standard` only; omitted when the sub-section would contain zero rules
 - `-` (bullet) — individual rules within their enclosing section
+- `### baseline quality requirement` is ALWAYS a flat `-` bullet list — it NEVER uses `####`
+  sub-sections
+
+**Separator conventions** (contractual — required for deterministic string assertions):
+- Exactly one blank line between each `##` block
+- Exactly one blank line between each `###` group within Core Principles
+- No separator between `####` sub-section heading and its bullet items
 
 ---
 
@@ -159,6 +166,56 @@ A rule from `LinterInfo.activeRules` is **mandatory** if:
 - `breaksBuild == true`
 
 All other rules (including `breaksBuild == null`) are **advisory**.
+
+### Obligation-to-Rendered-Text Mapping
+
+Each `BaselineRule` bullet in the `### baseline quality requirement` group MUST include an
+explicit leading obligation marker derived from `BaselineRule.obligation`:
+
+| `Obligation` value | Rendered marker |
+|---|---|
+| `MUST` | `MUST` |
+| `SHOULD` | `SHOULD` |
+
+The marker MUST be deterministically present in every baseline rule bullet. Exact surrounding
+format (e.g., whether the marker is bold, bracketed, or plain) is an implementation choice.
+
+### Unavailable-Data Markers
+
+Sections derived from unavailable scan data MUST use these exact fixed phrases:
+
+| `SectionResult` variant | Required marker |
+|---|---|
+| `SectionResult.Empty` | `not detected` |
+| `SectionResult.Error` (cause is non-null) | `not available (cause: <cause>)` |
+| `SectionResult.Error` (cause is null) | `not available` |
+
+No other phrasing is permitted. `(cause: null)` MUST NEVER appear.
+
+### Empty-Group Notations
+
+When either origin group in Core Principles has no rules, the group heading is still emitted
+and a notation line replaces the bullet list:
+
+| Condition | Required rendering |
+|---|---|
+| `LinterInfo.activeRules` is empty | `### project standard` present; notation line states no active linter rules were detected; NO `####` headings |
+| `baselineRules` list is empty | `### baseline quality requirement` present; notation line states no baseline rules are available |
+
+Both groups follow the same structural pattern: group NOT omitted, notation line MUST be present.
+
+---
+
+## Governance Block Requirements
+
+The Governance block content does not vary per project and is not derived from scan data.
+Regardless of exact phrasing (an implementation choice), the block MUST contain all three of
+the following elements — verifiable by their presence, not by exact text match:
+
+1. **Semantic-versioning policy** — when MAJOR, MINOR, and PATCH version bumps apply to the
+   Constitution file
+2. **Changelog convention** — how changes to the Constitution are recorded
+3. **Amendment and compliance procedure** — how the Constitution is updated and by whom
 
 ---
 

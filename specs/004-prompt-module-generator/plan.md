@@ -18,7 +18,7 @@ Platform dependencies and is fully covered by JUnit 5 unit tests.
 **Testing**: JUnit 5 (`junit.jupiter`), pure JVM, no IntelliJ Platform fixtures
 **Target Platform**: JVM library (no IntelliJ Platform SDK in compile or test classpath)
 **Project Type**: Gradle submodule within a multi-project build
-**Performance Goals**: Synchronous, <10 ms per call (no I/O, prompt is small)
+**Performance Expectation** *(informational — not a verifiable requirement; no SC)*: Synchronous, expected <10 ms per call (no I/O, prompt is small)
 **Constraints**: No IntelliJ Platform API; no file I/O; no clipboard access
 **Scale/Scope**: ~4 production source files; ~4 test files aligned to the four User Stories
 
