@@ -3,6 +3,7 @@ package dev.zahaand.projectscan.baseline
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import java.io.IOException
 import java.io.Reader
 
 @Serializable
@@ -22,7 +23,12 @@ object BaselineRuleProvider {
 
     @Suppress("ThrowsCount")
     internal fun loadFromReader(reader: Reader): List<BaselineRule> {
-        val text = reader.readText()
+        val text =
+            try {
+                reader.readText()
+            } catch (e: IOException) {
+                throw BaselineLoadException("Failed to read rules.json: ${e.message}", e)
+            }
         val ruleSet =
             try {
                 jsonParser.decodeFromString<RuleSet>(text)

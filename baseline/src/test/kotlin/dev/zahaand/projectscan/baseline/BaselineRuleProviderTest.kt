@@ -51,7 +51,7 @@ class BaselineRuleProviderTest {
     }
 
     // -------------------------------------------------------------------------
-    // US1 — S2–S9: negative paths via loadFromReader seam
+    // US1 — S2–S10: negative paths via loadFromReader seam
     // -------------------------------------------------------------------------
 
     @Test
@@ -59,6 +59,13 @@ class BaselineRuleProviderTest {
         val json = minimalValidJson(minimalRule(statement = "   "))
         val ex = assertThrows<BaselineLoadException> { load(json) }
         assertTrue(ex.message!!.contains("statement"), "Message should identify 'statement': ${ex.message}")
+    }
+
+    @Test
+    fun `US1-S2b blank rationale throws BaselineLoadException`() {
+        val json = minimalValidJson(minimalRule(rationale = "   "))
+        val ex = assertThrows<BaselineLoadException> { load(json) }
+        assertTrue(ex.message!!.contains("rationale"), "Message should identify 'rationale': ${ex.message}")
     }
 
     @Test
@@ -129,6 +136,16 @@ class BaselineRuleProviderTest {
         assertTrue(
             ex.message!!.lowercase().contains("language"),
             "Message must mention 'language': ${ex.message}",
+        )
+    }
+
+    @Test
+    fun `US1-S10 unsupported schemaVersion throws BaselineLoadException stating actual value`() {
+        val json = """{"schemaVersion":2,"rules":[${minimalRule()}]}"""
+        val ex = assertThrows<BaselineLoadException> { load(json) }
+        assertTrue(
+            ex.message!!.contains("2"),
+            "Message must state the actual schemaVersion found: ${ex.message}",
         )
     }
 

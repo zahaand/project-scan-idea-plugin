@@ -26,6 +26,7 @@ A plugin developer (or release pipeline) instantiates the baseline rule provider
 7. **Given** a test-only replacement `rules.json` where a rule carries `level = CORRECTNESS` but `category = EXCEPTION_HANDLING` (a BEST_PRACTICE-level category), **When** the baseline provider is invoked, **Then** it throws `BaselineLoadException` identifying the category/level mismatch.
 8. **Given** a test-only replacement `rules.json` where a rule has an empty `languages` list (`"languages": []`), **When** the baseline provider is invoked, **Then** it throws `BaselineLoadException` identifying the empty-languages violation.
 9. **Given** a test-only replacement `rules.json` where a rule has a blank `id` (empty string or whitespace-only), **When** the baseline provider is invoked, **Then** it throws `BaselineLoadException` identifying the blank-id violation.
+10. **Given** a test-only replacement with valid JSON whose `schemaVersion` value is not `1` (e.g. `{"schemaVersion": 2, "rules": [ <one valid rule> ]}`), **When** the baseline provider is invoked, **Then** it throws `BaselineLoadException` whose message states the actual `schemaVersion` value found (Phase 2 failure — valid JSON but unsupported version).
 
 ---
 
@@ -98,7 +99,7 @@ The bundled rule set covers all required correctness and best-practice categorie
 ### Functional Requirements
 
 - **FR-001**: The module MUST expose a public API (loader/provider) that returns `List<BaselineRule>` loaded from the bundled JSON resource. The provider MUST parse and validate the resource exactly once (lazy init) and return the same cached immutable list instance (referential equality) on every subsequent call — callers MAY verify caching by asserting that two successive calls return the same object reference.
-- **FR-002**: The module MUST load `rules.json` via the module's classloader (`getResourceAsStream`), NOT via filesystem access. The resource MUST be addressable at the classpath path `dev/zahaand/projectscan/baseline/rules.json`; this path is a contractual constant of the module.
+- **FR-002**: The module MUST load `rules.json` via the module's classloader (`getResourceAsStream`), NOT via filesystem access. The resource MUST be addressable at the classpath path `/dev/zahaand/projectscan/baseline/rules.json` (leading slash required for absolute `getResourceAsStream` lookup); this path is a contractual constant of the module.
 - **FR-003**: The module MUST parse `rules.json` using `kotlinx.serialization` (the only permitted external dependency besides `:model`).
 - **FR-004**: The provider MUST perform structural validation (via the parser) and invariant validation (via explicit post-parse checks) before returning any results.
 - **FR-005**: On any structural or invariant violation, the provider MUST throw `BaselineLoadException` (a custom exception defined in `:baseline`). The exception message MUST identify (a) the kind of violation, (b) the specific rule by its `id` (or by its index in the `rules` array when `id` is blank — whitespace-only; a missing `id` key is a Phase 1 structural failure and is not addressed by the Phase 3 index fallback), and (c) the violated constraint. The exception's `cause` MUST be non-null when wrapping a library failure (e.g., `SerializationException`, `IOException`); for violations detected by the module's own post-parse invariant checks, `cause` MUST be null and all diagnostics live in the message. The provider MUST NOT silently return an empty or partial list.
@@ -110,13 +111,14 @@ The bundled rule set covers all required correctness and best-practice categorie
 
   **Phase 2 — Schema version**: `schemaVersion` MUST equal `1`. Any other integer value causes `BaselineLoadException`; the message states the value found (e.g., `"unsupported schemaVersion: 2"`). Absence is a Phase 1 structural failure.
 
-  **Phase 3 — Per-rule invariants**: The `rules` array MUST be non-empty (checked before per-rule iteration; an empty array throws before any per-rule check). Each rule is then validated; loading fails on the first violation encountered; order among the per-rule checks is not fixed, **except** that the blank-`id` check MUST precede the uniqueness (seenIds) check — a blank `id` MUST be reported as a blank-id violation, not misreported as a duplicate:
-  - `id` is non-blank (empty string or whitespace-only fails) and unique across all rules. Uniqueness is **case-sensitive**: `"correctness.null-deref"` and `"CORRECTNESS.NULL-DEREF"` are considered distinct.
-  - `statement` is non-blank (empty string or whitespace-only fails).
-  - `rationale` is non-blank (empty string or whitespace-only fails).
-  - `minJavaLevel` belongs to `{8, 11, 17, 21}` (LTS Java versions for MVP; intermediate releases such as 9, 10, or 14 are excluded; this set may expand in future sprints).
-  - `languages` list is non-empty.
-  - `category` is consistent with `level` per the following mapping — **authoritative single source of truth** for the category/level constraint:
+  **Phase 3 — Per-rule invariants**: The `rules` array MUST be non-empty (checked before per-rule iteration; an empty array throws before any per-rule check). Each rule is then validated; loading fails on the first violation encountered. The per-rule checks MUST execute in the following **canonical order** — a fixed order yields reproducible, deterministic error messages for any given malformed file:
+  1. `id` is non-blank (empty string or whitespace-only fails) — a blank `id` MUST be reported as a blank-id violation, not misreported as a duplicate.
+  2. `id` is unique across all rules (seenIds check). Uniqueness is **case-sensitive**: `"correctness.null-deref"` and `"CORRECTNESS.NULL-DEREF"` are considered distinct.
+  3. `statement` is non-blank (empty string or whitespace-only fails).
+  4. `rationale` is non-blank (empty string or whitespace-only fails).
+  5. `minJavaLevel` belongs to `{8, 11, 17, 21}` (LTS Java versions for MVP; intermediate releases such as 9, 10, or 14 are excluded; this set may expand in future sprints).
+  6. `languages` list is non-empty.
+  7. `category` is consistent with `level` per the following mapping — **authoritative single source of truth** for the category/level constraint (implemented as a `level` property on the `BaselineCategory` enum):
     - `NULL_SAFETY`, `RESOURCE_MANAGEMENT`, `CONCURRENCY`, `DANGEROUS_CONSTRUCTS` → MUST pair with `level = CORRECTNESS`
     - `EXCEPTION_HANDLING`, `STRING_PERFORMANCE`, `DECOMPOSITION`, `IMMUTABILITY`, `INTERFACE_PROGRAMMING` → MUST pair with `level = BEST_PRACTICE`
 
@@ -158,7 +160,7 @@ The bundled rule set covers all required correctness and best-practice categorie
 
 ## Assumptions
 
-- The module's classloader can always locate `rules.json` at the classpath path `dev/zahaand/projectscan/baseline/rules.json`; this is guaranteed by the Gradle resource configuration.
+- The module's classloader can always locate `rules.json` at the classpath path `/dev/zahaand/projectscan/baseline/rules.json` (leading slash, absolute form for `getResourceAsStream`); this is guaranteed by the Gradle resource configuration.
 - `kotlinx-serialization-json` is acceptable as an external dependency for `:baseline` given that it is already used or planned elsewhere in the plugin (consistent with the technology choices made for `:model`).
 - The allowed set of `minJavaLevel` values is `{8, 11, 17, 21}` — these are the LTS Java versions relevant for the MVP. This set may expand in future sprints.
 - The `:prompt` module (Sprint 4) is the sole consumer of `:baseline`'s public API. No other module in Sprint 3 calls `BaselineRuleProvider`.
