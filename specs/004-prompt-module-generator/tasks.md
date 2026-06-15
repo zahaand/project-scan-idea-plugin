@@ -23,10 +23,10 @@ description: "Task list for :prompt module — Constitution Prompt Generator"
 
 **Purpose**: Register the `:prompt` submodule and create the Gradle build configuration so the module compiles against `:model` and `:baseline`.
 
-- [ ] T000 Verify `:model` and `:baseline` have no transitive `com.intellij.*` dependency: run `./gradlew :model:dependencies :baseline:dependencies --configuration compileClasspath` and confirm no `com.intellij.*` JAR appears — if found, this is a **BLOCKER** and implementation MUST NOT proceed until the upstream module removes the dependency
-- [ ] T001 Register `:prompt` by adding `include(":prompt")` to `settings.gradle.kts`
-- [ ] T002 [P] Create `prompt/build.gradle.kts` mirroring `:baseline` — plugins: kotlin jvm + detekt + ktlint; deps: kotlin stdlib, `project(":model")`, `project(":baseline")`, `libs.junit.jupiter` (test), `junit-platform-launcher` (testRuntime); `tasks.test { useJUnitPlatform() }`; detekt config from `rootProject.files("config/detekt.yml")`
-- [ ] T003 Create source directory tree: `prompt/src/main/kotlin/dev/zahaand/projectscan/prompt/` and `prompt/src/test/kotlin/dev/zahaand/projectscan/prompt/`
+- [x] T000 Verify `:model` and `:baseline` have no transitive `com.intellij.*` dependency: run `./gradlew :model:dependencies :baseline:dependencies --configuration compileClasspath` and confirm no `com.intellij.*` JAR appears — if found, this is a **BLOCKER** and implementation MUST NOT proceed until the upstream module removes the dependency
+- [x] T001 Register `:prompt` by adding `include(":prompt")` to `settings.gradle.kts`
+- [x] T002 [P] Create `prompt/build.gradle.kts` mirroring `:baseline` — plugins: kotlin jvm + detekt + ktlint; deps: kotlin stdlib, `project(":model")`, `project(":baseline")`, `libs.junit.jupiter` (test), `junit-platform-launcher` (testRuntime); `tasks.test { useJUnitPlatform() }`; detekt config from `rootProject.files("config/detekt.yml")`
+- [x] T003 Create source directory tree: `prompt/src/main/kotlin/dev/zahaand/projectscan/prompt/` and `prompt/src/test/kotlin/dev/zahaand/projectscan/prompt/`
 
 **Checkpoint**: `./gradlew :prompt:compileKotlin` succeeds (empty source tree is fine at this stage)
 
@@ -38,9 +38,9 @@ description: "Task list for :prompt module — Constitution Prompt Generator"
 
 **⚠️ CRITICAL**: No user story implementation can begin until this phase is complete.
 
-- [ ] T004 [P] Create `PromptBlock.kt` as a `data class` with `heading: String` and `content: String` in `prompt/src/main/kotlin/dev/zahaand/projectscan/prompt/PromptBlock.kt`
-- [ ] T005 [P] Create `OriginGroup.kt` as a `data class` with `label: String`, `mandatoryRules: List<String>`, `advisoryRules: List<String>`, `emptyNotation: String?` in `prompt/src/main/kotlin/dev/zahaand/projectscan/prompt/OriginGroup.kt`
-- [ ] T006 Create `ConstitutionPrompt.kt` with `class ConstitutionPrompt(val blocks: List<PromptBlock>)` and a `render(): String` stub that returns an empty string in `prompt/src/main/kotlin/dev/zahaand/projectscan/prompt/ConstitutionPrompt.kt`
+- [x] T004 [P] Create `PromptBlock.kt` as a `data class` with `heading: String` and `content: String` in `prompt/src/main/kotlin/dev/zahaand/projectscan/prompt/PromptBlock.kt`
+- [x] T005 [P] Create `OriginGroup.kt` as a `data class` with `label: String`, `mandatoryRules: List<String>`, `advisoryRules: List<String>`, `emptyNotation: String?` in `prompt/src/main/kotlin/dev/zahaand/projectscan/prompt/OriginGroup.kt`
+- [x] T006 Create `ConstitutionPrompt.kt` with `class ConstitutionPrompt(val blocks: List<PromptBlock>)` and a `render(): String` stub that returns an empty string in `prompt/src/main/kotlin/dev/zahaand/projectscan/prompt/ConstitutionPrompt.kt`
 
 **Checkpoint**: `./gradlew :prompt:compileKotlin` still succeeds with the three types present
 
