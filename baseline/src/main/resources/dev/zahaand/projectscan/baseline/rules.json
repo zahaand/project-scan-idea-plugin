@@ -1,5 +1,6 @@
 {
   "schemaVersion": 1,
+  "_curationNote": "FR-014: baseline rules are correctness and architectural best-practice ONLY. Style, formatting, and naming rules are prohibited — those belong exclusively to the project's own linters. This field is ignored by the parser (ignoreUnknownKeys).",
   "rules": [
     {
       "id": "correctness.null-check-before-deref",

@@ -79,7 +79,7 @@ The bundled rule set covers all required correctness and best-practice categorie
 1. **Given** the bundled rules are loaded, **When** rules where `category == NULL_SAFETY` are counted, **Then** there are at least 2 (covering null checks, empty collections, Optional usage).
 2. **Given** the bundled rules are loaded, **When** rules where `category == RESOURCE_MANAGEMENT` are counted, **Then** there are at least 2 (covering try-with-resources, no reliance on finalize).
 3. **Given** the bundled rules are loaded, **When** rules where `category == CONCURRENCY` are counted, **Then** there are at least 2 (covering safe publication, synchronization pitfalls, atomicity).
-4. **Given** the bundled rules are loaded, **When** rules where `category == DANGEROUS_CONSTRUCTS` are counted, **Then** there are at least 2 (covering reference equality, equals/hashCode pairing, ignoring return values).
+4. **Given** the bundled rules are loaded, **When** rules where `category == DANGEROUS_CONSTRUCTS` are counted, **Then** there are at least 2 (covering reflection misuse to access private fields, System.exit() calls in library/plugin code, and reliance on finalizers for resource cleanup).
 5. **Given** the bundled rules are loaded, **When** rules are grouped by `category`, **Then** `EXCEPTION_HANDLING` has ≥1, `STRING_PERFORMANCE` has ≥1, `DECOMPOSITION` has ≥1, `IMMUTABILITY` has ≥1, and `INTERFACE_PROGRAMMING` has ≥1.
 6. **Given** the bundled rules are counted, **When** all levels are combined, **Then** the total count is ≥ 13.
 

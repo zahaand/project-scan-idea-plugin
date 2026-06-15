@@ -17,8 +17,9 @@ JUnit 5 tests.
 ## Technical Context
 
 **Language/Version**: Kotlin 2.2.20, JDK 21 (JetBrains Runtime)
-**Primary Dependencies**: `kotlinx-serialization-json 1.7.3` (parsing); `:model` (permitted but
-not consumed in Sprint 3 — present as an architectural anchor per spec input)
+**Primary Dependencies**: `kotlinx-serialization-json 1.7.3` (parsing); `:model` (approved optional
+dependency, NOT wired in Sprint 3 — `build.gradle.kts` declares no `:model` dependency;
+`:prompt` Sprint 4 is expected to introduce this dependency)
 **Storage**: In-process lazy cache only — `rules.json` is a bundled classloader resource; no
 filesystem writes
 **Testing**: JUnit 5 (pure JVM; no IntelliJ Platform fixtures)
@@ -27,7 +28,10 @@ filesystem writes
 platform-agnostic)
 **Performance Goals**: No explicit latency target; `rules.json` is loaded once per JVM lifetime
 **Constraints**: Zero dependency on `:scan` (FR-013); baseline data types in `:baseline` not
-`:model` (FR-015); `kotlinx.serialization` is the only permitted JSON library (FR-003)
+`:model` (FR-015); `kotlinx.serialization` is the only permitted JSON library (FR-003);
+FR-007 (returned list is unranked — no priority sorting) is verified by code review /
+absence of sorting in source, NOT by an automated test — defining a canonical order
+purely to assert "no ranking" is explicitly out of scope
 **Scale/Scope**: Fixed-size curated rule set (≥13 rules); no runtime growth or dynamic loading
 
 ## Constitution Check
