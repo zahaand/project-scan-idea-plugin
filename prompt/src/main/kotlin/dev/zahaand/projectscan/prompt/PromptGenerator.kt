@@ -46,10 +46,24 @@ class PromptGenerator {
         linters: SectionResult<LinterInfo>,
         baselineRules: List<BaselineRule>,
     ): String {
-        val activeRules = when (linters) {
-            is SectionResult.Ok -> linters.data.activeRules
-            else -> emptyList()
+        val activeRules: List<ActiveRule>
+        val projectStandardEmptyNotation: String?
+
+        when (linters) {
+            is SectionResult.Ok -> {
+                activeRules = linters.data.activeRules
+                projectStandardEmptyNotation = if (activeRules.isEmpty()) "not detected" else null
+            }
+            is SectionResult.Empty -> {
+                activeRules = emptyList()
+                projectStandardEmptyNotation = "not detected"
+            }
+            is SectionResult.Error -> {
+                activeRules = emptyList()
+                projectStandardEmptyNotation = formatError(linters.cause)
+            }
         }
+
         val mandatoryBullets = activeRules.filter { isMandatory(it) }.map { "- ${it.ruleId} [${it.tool}] (${it.severity.name})" }
         val advisoryBullets = activeRules.filterNot { isMandatory(it) }.map { "- ${it.ruleId} [${it.tool}] (${it.severity.name})" }
 
@@ -57,7 +71,7 @@ class PromptGenerator {
             label = "project standard",
             mandatoryRules = mandatoryBullets,
             advisoryRules = advisoryBullets,
-            emptyNotation = if (activeRules.isEmpty()) "No active linter rules were detected." else null,
+            emptyNotation = projectStandardEmptyNotation,
         )
 
         val baselineBullets = baselineRules.map { "- ${it.obligation.name} ${it.statement}" }
