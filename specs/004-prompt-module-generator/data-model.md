@@ -91,6 +91,9 @@ Rendered as a `###` Markdown heading.
 **Applies to**: `"project standard"` group only uses `mandatoryRules`/`advisoryRules` split.
 The `"baseline quality requirement"` group renders all rules as a flat `-` bullet list (no
 mandatory/advisory split — obligation level is expressed in the rule wording via `MUST`/`SHOULD`).
+For the `"baseline quality requirement"` group, baseline rules are placed into `advisoryRules`
+and `mandatoryRules` is always empty; the mandatory/advisory split applies only to the
+`"project standard"` group.
 
 ---
 

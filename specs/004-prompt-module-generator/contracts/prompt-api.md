@@ -94,6 +94,10 @@ data class OriginGroup(
 Used internally by `PromptGenerator` to compose the Core Principles block. Exposed as a public
 type to allow test assertions on the intermediate structure without parsing Markdown.
 
+For the `"baseline quality requirement"` group, baseline rules are placed into `advisoryRules`
+and `mandatoryRules` is always empty; the mandatory/advisory split applies only to the
+`"project standard"` group.
+
 ---
 
 ## Rendered Markdown Structure

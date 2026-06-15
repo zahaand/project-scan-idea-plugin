@@ -132,7 +132,7 @@ description: "Task list for :prompt module — Constitution Prompt Generator"
 
 **Purpose**: Static analysis, style compliance, and final dependency verification.
 
-- [ ] T025 [P] Run `./gradlew :prompt:test` and resolve any remaining failures; run twice with the same input fixture and confirm the rendered string is identical both times (SC-007 determinism)
+- [ ] T025 [P] Run `./gradlew :prompt:test` and resolve any remaining failures; add a `@Test` in an appropriate test class that constructs one `ConstitutionPrompt` and calls `render()` twice on the same instance, asserting the two returned strings are equal (`assertEquals`) — verifies SC-007 determinism as an automated assertion
 - [ ] T026 [P] Run `./gradlew :prompt:detekt :prompt:ktlintCheck` and fix all violations in `prompt/src/main/kotlin/` and `prompt/src/test/kotlin/`
 - [ ] T027 Verify SC-006 compliance: run `./gradlew :prompt:dependencies --configuration compileClasspath` and confirm no `com.intellij.*` JARs appear; confirm `:scan` and `:ui` are absent from all configurations
 
