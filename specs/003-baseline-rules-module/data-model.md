@@ -244,7 +244,12 @@ object BaselineRuleProvider {
 
     private fun validateRules(rules: List<BaselineRule>) {
         val seenIds = mutableSetOf<String>()
-        for (rule in rules) {
+        for ((index, rule) in rules.withIndex()) {
+            // blank-id MUST be checked before uniqueness: a blank id must be reported as
+            // a blank-id violation, not misreported as a duplicate (I1 / FR-008 Phase 3).
+            if (rule.id.isBlank()) {
+                throw BaselineLoadException("Rule at index $index has a blank id")
+            }
             if (!seenIds.add(rule.id)) {
                 throw BaselineLoadException("Duplicate rule id: '${rule.id}'")
             }

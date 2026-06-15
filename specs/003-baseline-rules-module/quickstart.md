@@ -7,13 +7,15 @@ baseline unit tests.
 
 ## Dependency
 
-`:baseline` depends only on `kotlinx-serialization-json` and `:model` (architectural anchor;
-not consumed in Sprint 3). Consumers depend on `:baseline` directly — they do NOT need `:scan`.
+`:baseline` depends only on `kotlinx-serialization-json`. It does **not** declare a dependency
+on `:model` in Sprint 3 — `:model` is an architectural anchor only (conceptual); add
+`implementation(project(":model"))` to `:baseline`'s build file only if/when a shared type is
+actually consumed. Consumers depend on `:baseline` directly — they do NOT need `:scan`.
 
 ```kotlin
 // In the consumer's build.gradle.kts (e.g., :prompt in Sprint 4):
-implementation(project(":model"))
 implementation(project(":baseline"))
+// Add implementation(project(":model")) separately if your component also uses :model types.
 ```
 
 ---
@@ -22,6 +24,10 @@ implementation(project(":baseline"))
 
 `BaselineRuleProvider` is a Kotlin `object` (singleton). Access `.rules` to get the complete,
 validated, immutable list. First call loads and caches; all subsequent calls return the same list.
+
+> **Iteration order**: Rules are returned in JSON insertion order as a de-facto consequence of
+> parsing. This order is **not a contract** — consumers MUST NOT rely on it for determinism, and
+> no test asserts ordering in MVP.
 
 ```kotlin
 import dev.zahaand.projectscan.baseline.BaselineRuleProvider
