@@ -9,16 +9,16 @@ enum class BaselineLevel {
 }
 
 @Serializable
-enum class BaselineCategory {
-    NULL_SAFETY,
-    RESOURCE_MANAGEMENT,
-    CONCURRENCY,
-    DANGEROUS_CONSTRUCTS,
-    EXCEPTION_HANDLING,
-    STRING_PERFORMANCE,
-    DECOMPOSITION,
-    IMMUTABILITY,
-    INTERFACE_PROGRAMMING,
+enum class BaselineCategory(val level: BaselineLevel) {
+    NULL_SAFETY(BaselineLevel.CORRECTNESS),
+    RESOURCE_MANAGEMENT(BaselineLevel.CORRECTNESS),
+    CONCURRENCY(BaselineLevel.CORRECTNESS),
+    DANGEROUS_CONSTRUCTS(BaselineLevel.CORRECTNESS),
+    EXCEPTION_HANDLING(BaselineLevel.BEST_PRACTICE),
+    STRING_PERFORMANCE(BaselineLevel.BEST_PRACTICE),
+    DECOMPOSITION(BaselineLevel.BEST_PRACTICE),
+    IMMUTABILITY(BaselineLevel.BEST_PRACTICE),
+    INTERFACE_PROGRAMMING(BaselineLevel.BEST_PRACTICE),
 }
 
 @Serializable
