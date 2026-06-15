@@ -202,4 +202,41 @@ class PromptGeneratorFullModelTest {
         assertTrue(techStackSection.contains("spring-boot-starter"), "Tech Stack must contain dependency spring-boot-starter")
         assertTrue(techStackSection.contains("jackson-databind"), "Tech Stack must contain dependency jackson-databind")
     }
+
+    @Test
+    fun `scenario 6 - governance block contains all three required elements`() {
+        val rendered = generator.generate(fullScanResult, thirteenBaselineRules).render()
+
+        val governanceStart = rendered.indexOf("## Governance")
+        assertTrue(governanceStart >= 0, "## Governance must be present")
+        val governanceSection = rendered.substring(governanceStart)
+
+        // (1) Semantic-versioning policy: MAJOR/MINOR/PATCH language must appear
+        assertTrue(
+            governanceSection.contains("MAJOR") && governanceSection.contains("MINOR") && governanceSection.contains("PATCH"),
+            "Governance must contain a semantic-versioning policy referencing MAJOR, MINOR, and PATCH",
+        )
+
+        // (2) Changelog convention: some reference to recording/changelog/changelog file
+        assertTrue(
+            governanceSection.contains("changelog", ignoreCase = true) ||
+                governanceSection.contains("CHANGELOG", ignoreCase = false),
+            "Governance must contain a changelog convention",
+        )
+
+        // (3) Amendment and compliance procedure: reference to amendment/amend/compliance/procedure
+        assertTrue(
+            governanceSection.contains("amend", ignoreCase = true) ||
+                governanceSection.contains("compliance", ignoreCase = true) ||
+                governanceSection.contains("procedure", ignoreCase = true),
+            "Governance must contain an amendment and compliance procedure",
+        )
+    }
+
+    @Test
+    fun `scenario 7 - render is deterministic for identical inputs`() {
+        val first = generator.generate(fullScanResult, thirteenBaselineRules).render()
+        val second = generator.generate(fullScanResult, thirteenBaselineRules).render()
+        assertEquals(first, second, "render() must produce identical output for identical inputs (SC-007)")
+    }
 }

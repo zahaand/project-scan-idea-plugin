@@ -121,8 +121,8 @@ description: "Task list for :prompt module — Constitution Prompt Generator"
 
 ### Implementation for User Story 4
 
-- [ ] T023 [US4] Audit all six block builders in `PromptGenerator.kt` and verify every `SectionResult.Empty` branch emits exactly `"not detected"` and every `SectionResult.Error` branch emits `"not available (cause: ${error.cause})"` when `error.cause != null` or plain `"not available"` when `error.cause == null` — add or fix missing cases
-- [ ] T024 [US4] Guard the cause-formatting path in every `SectionResult.Error` branch in `PromptGenerator.kt`: `if (cause != null) "not available (cause: $cause)" else "not available"` — ensure the string `"(cause: null)"` can never appear in the rendered output under any input (FR-008, Edge Cases C3)
+- [ ] T023 [US4] Audit all six block builders in `PromptGenerator.kt` and verify every `SectionResult.Empty` branch emits exactly `"not detected"` and every `SectionResult.Error` branch emits `"not available (cause: ${error.cause})"` when `error.cause != null` or plain `"not available"` when `error.cause == null` — add or fix missing cases; the centralised `formatError()` helper from Phase 3 is the single enforcement point
+- [ ] T024 [US4] ~~Separate cause-null guard task — subsumed by T023~~. Verify the null-cause guard via `PromptGeneratorEmptyModelTest` scenario 5 (mixed Ok/Error with `cause = null`). No additional audit pass needed; `formatError()` from Phase 3 already centralises the guard. Mark complete once T022 scenario 5 passes.
 
 **Checkpoint**: `./gradlew :prompt:test` — all tests across the four test classes pass
 
@@ -132,7 +132,7 @@ description: "Task list for :prompt module — Constitution Prompt Generator"
 
 **Purpose**: Static analysis, style compliance, and final dependency verification.
 
-- [ ] T025 [P] Run `./gradlew :prompt:test` and resolve any remaining failures; add a `@Test` in an appropriate test class that constructs one `ConstitutionPrompt` and calls `render()` twice on the same instance, asserting the two returned strings are equal (`assertEquals`) — verifies SC-007 determinism as an automated assertion
+- [ ] T025 [P] Run `./gradlew :prompt:test` and resolve any remaining failures; SC-007 determinism is already verified by scenario 7 in `PromptGeneratorFullModelTest` (added during post-US1 corrections): calls `generate()` twice with identical inputs and asserts the two `render()` outputs are equal (`assertEquals`) — no additional @Test needed; confirm this scenario is green
 - [ ] T026 [P] Run `./gradlew :prompt:detekt :prompt:ktlintCheck` and fix all violations in `prompt/src/main/kotlin/` and `prompt/src/test/kotlin/`
 - [ ] T027 Verify SC-006 compliance: run `./gradlew :prompt:dependencies --configuration compileClasspath` and confirm no `com.intellij.*` JARs appear; confirm `:scan` and `:ui` are absent from all configurations
 

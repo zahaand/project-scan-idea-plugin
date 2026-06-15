@@ -130,11 +130,16 @@ and `mandatoryRules` is always empty; the mandatory/advisory split applies only 
 ...
 ```
 
+> **Phase note**: The `#### Mandatory (build-breaking)` / `#### Advisory` sub-sections shown above
+> are introduced in **US2 (T017)**. In US1, the `### project standard` group renders all linter
+> rules as a **flat `-` bullet list with no `####` sub-sections**. Do not implement `####` headings
+> until T017.
+
 **Heading level rules** (contractual — verified by unit tests):
 - `##` (level 2) — six block names
 - `###` (level 3) — two origin groups within Core Principles only
 - `####` (level 4) — `Mandatory (build-breaking)` and `Advisory` sub-sections within
-  `### project standard` only; omitted when the sub-section would contain zero rules
+  `### project standard` only; omitted when the sub-section would contain zero rules; **introduced in US2 (T017)**
 - `-` (bullet) — individual rules within their enclosing section
 - `### baseline quality requirement` is ALWAYS a flat `-` bullet list — it NEVER uses `####`
   sub-sections

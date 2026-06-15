@@ -81,9 +81,14 @@ A named section of the generated prompt. Rendered as a `##` Markdown heading fol
 A named grouping of rules sharing the same origin tag, used within the Core Principles block.
 Rendered as a `###` Markdown heading.
 
+The `label` field holds the rule's **origin tag** — the canonical string that identifies which source
+a group of rules came from. The two valid origin tags are `"project standard"` (for linter rules)
+and `"baseline quality requirement"` (for baseline rules). These match the values required by
+FR-004, SC-002, and Constitution Principle IV.
+
 | Field | Type | Notes |
 |---|---|---|
-| `label` | `String` | Exactly `"project standard"` or `"baseline quality requirement"` |
+| `label` | `String` | The origin tag: exactly `"project standard"` or `"baseline quality requirement"` |
 | `mandatoryRules` | `List<String>` | Formatted rules for `#### Mandatory (build-breaking)` sub-section; empty list → sub-section omitted |
 | `advisoryRules` | `List<String>` | Formatted rules for `#### Advisory` sub-section; empty list → sub-section omitted |
 | `emptyNotation` | `String?` | Present only when `mandatoryRules` and `advisoryRules` are both empty; describes that no rules were found |

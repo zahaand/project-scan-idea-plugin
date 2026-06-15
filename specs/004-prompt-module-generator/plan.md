@@ -63,7 +63,7 @@ prompt/
     │   ├── PromptGenerator.kt            # Public entry point — stateless
     │   ├── ConstitutionPrompt.kt         # Output value type with render(): String
     │   ├── PromptBlock.kt                # Named section (one of six blocks)
-    │   └── OriginGroup.kt                # Rule group within Core Principles
+    │   └── OriginGroup.kt                # Rule group within Core Principles; label holds the origin tag
     └── test/kotlin/dev/zahaand/projectscan/prompt/
         ├── PromptGeneratorFullModelTest.kt           # US1 — complete prompt from full scan
         ├── PromptGeneratorPriorityHierarchyTest.kt   # US2 — ordering and sub-headings
