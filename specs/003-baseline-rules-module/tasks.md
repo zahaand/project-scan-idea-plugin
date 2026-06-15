@@ -78,7 +78,7 @@ Gradle submodule layout: `baseline/src/main/kotlin/dev/zahaand/projectscan/basel
 
 ### Tests for User Story 3
 
-- [ ] T009 [US3] Write `baseline/src/test/kotlin/dev/zahaand/projectscan/baseline/BaselineRuleMetadataTest.kt`: load `BaselineRuleProvider.rules`; iterate every rule and assert: `id.isNotBlank()`, `statement.isNotBlank()`, `rationale.isNotBlank()`, `level` is one of `{CORRECTNESS, BEST_PRACTICE}`, `category` is one of the 9 `BaselineCategory` values, `obligation` is one of `{MUST, SHOULD}`, `minJavaLevel` is in `{8, 11, 17, 21}`, `languages` is non-empty, category is consistent with level per the FR-008 mapping (CORRECTNESS-level categories paired with CORRECTNESS; BEST_PRACTICE-level categories paired with BEST_PRACTICE); plus one cross-cutting assertion: `rules.any { it.minJavaLevel > 8 }` is true (SC-007)
+- [X] T009 [US3] Write `baseline/src/test/kotlin/dev/zahaand/projectscan/baseline/BaselineRuleMetadataTest.kt`: load `BaselineRuleProvider.rules`; iterate every rule and assert: `id.isNotBlank()`, `statement.isNotBlank()`, `rationale.isNotBlank()`, `level` is one of `{CORRECTNESS, BEST_PRACTICE}`, `category` is one of the 9 `BaselineCategory` values, `obligation` is one of `{MUST, SHOULD}`, `minJavaLevel` is in `{8, 11, 17, 21}`, `languages` is non-empty, category is consistent with level per the FR-008 mapping (CORRECTNESS-level categories paired with CORRECTNESS; BEST_PRACTICE-level categories paired with BEST_PRACTICE); plus one cross-cutting assertion: `rules.any { it.minJavaLevel > 8 }` is true (SC-007)
 
 **Checkpoint**: All 7 per-field invariants confirmed correct on the real bundled rule set
 
@@ -92,7 +92,7 @@ Gradle submodule layout: `baseline/src/main/kotlin/dev/zahaand/projectscan/basel
 
 ### Tests for User Story 4
 
-- [ ] T010 [US4] Write `baseline/src/test/kotlin/dev/zahaand/projectscan/baseline/BaselineRuleCoverageTest.kt`: load `BaselineRuleProvider.rules` and `groupBy { it.category }`; assert ≥2 for each of `NULL_SAFETY`, `RESOURCE_MANAGEMENT`, `CONCURRENCY`, `DANGEROUS_CONSTRUCTS`; assert ≥1 for each of `EXCEPTION_HANDLING`, `STRING_PERFORMANCE`, `DECOMPOSITION`, `IMMUTABILITY`, `INTERFACE_PROGRAMMING`; assert `rules.size >= 13`
+- [X] T010 [US4] Write `baseline/src/test/kotlin/dev/zahaand/projectscan/baseline/BaselineRuleCoverageTest.kt`: load `BaselineRuleProvider.rules` and `groupBy { it.category }`; assert ≥2 for each of `NULL_SAFETY`, `RESOURCE_MANAGEMENT`, `CONCURRENCY`, `DANGEROUS_CONSTRUCTS`; assert ≥1 for each of `EXCEPTION_HANDLING`, `STRING_PERFORMANCE`, `DECOMPOSITION`, `IMMUTABILITY`, `INTERFACE_PROGRAMMING`; assert `rules.size >= 13`
 
 **Checkpoint**: All 9 category coverage requirements verified; US3 and US4 complete the quality bar for the curated rule set
 
@@ -102,9 +102,9 @@ Gradle submodule layout: `baseline/src/main/kotlin/dev/zahaand/projectscan/basel
 
 **Purpose**: Confirm all 7 success criteria (SC-001–SC-007) are met; static analysis gates pass before merge
 
-- [ ] T011 [P] Run `./gradlew :baseline:build` and confirm: compilation succeeds with zero errors, detekt reports no violations against `config/detekt.yml`, ktlint reports no formatting violations
-- [ ] T012 [P] Run `./gradlew :baseline:dependencies` and verify that `:scan` and all IntelliJ Platform artifacts (`com.jetbrains.intellij.*`, `org.jetbrains.intellij.*`, `com.intellij.*`) are absent from the dependency tree output (SC-005)
-- [ ] T013 Run `./gradlew :baseline:test` and verify: all tests in `BaselineRuleProviderTest`, `BaselineRuleMetadataTest`, and `BaselineRuleCoverageTest` pass; test report shows only JUnit 5 tests with no `LightPlatformTestCase` or `BasePlatformTestCase` in the output (SC-006); exit code is 0
+- [X] T011 [P] Run `./gradlew :baseline:build` and confirm: compilation succeeds with zero errors, detekt reports no violations against `config/detekt.yml`, ktlint reports no formatting violations
+- [X] T012 [P] Run `./gradlew :baseline:dependencies` and verify that `:scan` and all IntelliJ Platform artifacts (`com.jetbrains.intellij.*`, `org.jetbrains.intellij.*`, `com.intellij.*`) are absent from the dependency tree output (SC-005)
+- [X] T013 Run `./gradlew :baseline:test` and verify: all tests in `BaselineRuleProviderTest`, `BaselineRuleMetadataTest`, and `BaselineRuleCoverageTest` pass; test report shows only JUnit 5 tests with no `LightPlatformTestCase` or `BasePlatformTestCase` in the output (SC-006); exit code is 0
 
 ---
 
