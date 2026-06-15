@@ -10,33 +10,48 @@ import dev.zahaand.projectscan.model.LinterInfo
 import dev.zahaand.projectscan.model.Module
 import dev.zahaand.projectscan.model.ScanResult
 import dev.zahaand.projectscan.model.SectionResult
+import dev.zahaand.projectscan.model.StackInfo
 import dev.zahaand.projectscan.model.StructureInfo
 import dev.zahaand.projectscan.model.StyleSource
 import dev.zahaand.projectscan.model.StyleSourceType
+import dev.zahaand.projectscan.model.TestInfo
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class PromptGeneratorEmptyModelTest {
+    private val twoBaselineRules =
+        listOf(
+            BaselineRule(
+                "rule-01",
+                BaselineLevel.CORRECTNESS,
+                BaselineCategory.NULL_SAFETY,
+                Obligation.MUST,
+                "Statement 01 null-check guard.",
+                "Rationale 01.",
+                8,
+                listOf(BaselineLanguage.JAVA),
+            ),
+            BaselineRule(
+                "rule-02",
+                BaselineLevel.BEST_PRACTICE,
+                BaselineCategory.DECOMPOSITION,
+                Obligation.SHOULD,
+                "Statement 02 single-responsibility.",
+                "Rationale 02.",
+                8,
+                listOf(BaselineLanguage.JAVA),
+            ),
+        )
 
-    private val twoBaselineRules = listOf(
-        BaselineRule(
-            "rule-01", BaselineLevel.CORRECTNESS, BaselineCategory.NULL_SAFETY, Obligation.MUST,
-            "Statement 01 null-check guard.", "Rationale 01.", 8, listOf(BaselineLanguage.JAVA),
-        ),
-        BaselineRule(
-            "rule-02", BaselineLevel.BEST_PRACTICE, BaselineCategory.DECOMPOSITION, Obligation.SHOULD,
-            "Statement 02 single-responsibility.", "Rationale 02.", 8, listOf(BaselineLanguage.JAVA),
-        ),
-    )
-
-    private val allEmptyScanResult = ScanResult(
-        stack = SectionResult.Empty,
-        codeStyle = SectionResult.Empty,
-        linters = SectionResult.Empty,
-        tests = SectionResult.Empty,
-        structure = SectionResult.Empty,
-    )
+    private val allEmptyScanResult =
+        ScanResult(
+            stack = SectionResult.Empty,
+            codeStyle = SectionResult.Empty,
+            linters = SectionResult.Empty,
+            tests = SectionResult.Empty,
+            structure = SectionResult.Empty,
+        )
 
     private val generator = PromptGenerator()
 
@@ -58,10 +73,16 @@ class PromptGeneratorEmptyModelTest {
         val rendered = generator.generate(allEmptyScanResult, twoBaselineRules).render()
 
         val projectStandardStart = rendered.indexOf("### project standard")
-        assertTrue(projectStandardStart >= 0, "### project standard must be present even when linters is SectionResult.Empty")
+        assertTrue(
+            projectStandardStart >= 0,
+            "### project standard must be present even when linters is SectionResult.Empty",
+        )
 
         val baselineStart = rendered.indexOf("### baseline quality requirement")
-        assertTrue(baselineStart > projectStandardStart, "### baseline quality requirement must follow ### project standard")
+        assertTrue(
+            baselineStart > projectStandardStart,
+            "### baseline quality requirement must follow ### project standard",
+        )
 
         val projectStandardSection = rendered.substring(projectStandardStart, baselineStart)
 
@@ -71,23 +92,36 @@ class PromptGeneratorEmptyModelTest {
             "project standard emptyNotation must contain 'not detected' when linters is SectionResult.Empty (FR-008)",
         )
         // No #### sub-headings when emptyNotation is shown
-        assertFalse(projectStandardSection.contains("#### Mandatory"), "#### Mandatory must not appear when linters is Empty")
-        assertFalse(projectStandardSection.contains("#### Advisory"), "#### Advisory must not appear when linters is Empty")
+        assertFalse(
+            projectStandardSection.contains("#### Mandatory"),
+            "#### Mandatory must not appear when linters is Empty",
+        )
+        assertFalse(
+            projectStandardSection.contains("#### Advisory"),
+            "#### Advisory must not appear when linters is Empty",
+        )
     }
 
     @Test
-    fun `scenario 3 - all baseline rules present with obligation markers and no language-level filtering when stack is Empty`() {
+    fun `scenario 3 - baseline rules all present with obligation markers and no filtering when stack is Empty`() {
         val rendered = generator.generate(allEmptyScanResult, twoBaselineRules).render()
 
         val baselineStart = rendered.indexOf("### baseline quality requirement")
         assertTrue(baselineStart >= 0, "### baseline quality requirement must be present")
 
         val nextBlockStart = rendered.indexOf("\n## ", baselineStart)
-        val baselineSection = if (nextBlockStart >= 0) rendered.substring(baselineStart, nextBlockStart)
-        else rendered.substring(baselineStart)
+        val baselineSection =
+            if (nextBlockStart >= 0) {
+                rendered.substring(baselineStart, nextBlockStart)
+            } else {
+                rendered.substring(baselineStart)
+            }
 
         twoBaselineRules.forEach { rule ->
-            assertTrue(baselineSection.contains(rule.statement), "Baseline rule '${rule.id}' statement must appear in Core Principles")
+            assertTrue(
+                baselineSection.contains(rule.statement),
+                "Baseline rule '${rule.id}' statement must appear in Core Principles",
+            )
             assertTrue(
                 baselineSection.contains(rule.obligation.name),
                 "Baseline rule '${rule.id}' must carry obligation marker ${rule.obligation.name}",
@@ -96,7 +130,7 @@ class PromptGeneratorEmptyModelTest {
     }
 
     @Test
-    fun `scenario 4 - Tech Stack Code Style Testing Project Structure each contain not detected when all sections Empty`() {
+    fun `scenario 4 - four scan-dependent blocks each contain not detected when all sections Empty`() {
         val rendered = generator.generate(allEmptyScanResult, twoBaselineRules).render()
 
         fun extractBlockContent(heading: String): String {
@@ -108,27 +142,36 @@ class PromptGeneratorEmptyModelTest {
 
         listOf("Tech Stack", "Code Style & Static Analysis", "Testing", "Project Structure").forEach { heading ->
             val section = extractBlockContent(heading)
-            assertTrue(section.contains("not detected"), "## $heading must contain 'not detected' when SectionResult.Empty (FR-008)")
-            assertFalse(section.contains("not available"), "## $heading must NOT contain 'not available' when SectionResult.Empty — wrong marker")
+            assertTrue(
+                section.contains("not detected"),
+                "## $heading must contain 'not detected' when SectionResult.Empty (FR-008)",
+            )
+            assertFalse(
+                section.contains("not available"),
+                "## $heading must NOT contain 'not available' when SectionResult.Empty — wrong marker",
+            )
         }
     }
 
     @Test
     fun `scenario 5 - mixed Ok and Error scan renders error sections as not available and never emits cause-null`() {
-        val mixedScanResult = ScanResult(
-            stack = SectionResult.Error("build system detection failed"),
-            codeStyle = SectionResult.Ok(
-                CodeStyleInfo(sources = listOf(StyleSource(StyleSourceType.CHECKSTYLE, ".checkstyle.xml"))),
-            ),
-            linters = SectionResult.Error("linter tool crashed"),
-            tests = SectionResult.Error(null),
-            structure = SectionResult.Ok(
-                StructureInfo(
-                    modules = listOf(Module("app", emptyList(), emptyList())),
-                    rootPackages = listOf("dev.zahaand.app"),
-                ),
-            ),
-        )
+        val mixedScanResult =
+            ScanResult(
+                stack = SectionResult.Error("build system detection failed"),
+                codeStyle =
+                    SectionResult.Ok(
+                        CodeStyleInfo(sources = listOf(StyleSource(StyleSourceType.CHECKSTYLE, ".checkstyle.xml"))),
+                    ),
+                linters = SectionResult.Error("linter tool crashed"),
+                tests = SectionResult.Error(null),
+                structure =
+                    SectionResult.Ok(
+                        StructureInfo(
+                            modules = listOf(Module("app", emptyList(), emptyList())),
+                            rootPackages = listOf("dev.zahaand.app"),
+                        ),
+                    ),
+            )
 
         val rendered = generator.generate(mixedScanResult, twoBaselineRules).render()
 
@@ -147,8 +190,14 @@ class PromptGeneratorEmptyModelTest {
         assertTrue(testingStart >= 0, "## Testing must be present")
         val nextAfterTesting = rendered.indexOf("\n## ", testingStart + 1)
         val testingSection = rendered.substring(testingStart, nextAfterTesting)
-        assertTrue(testingSection.contains("not available"), "Testing with Error(null cause) must render 'not available'")
-        assertFalse(testingSection.contains("(cause:"), "Testing with Error(null cause) must NOT include any cause fragment")
+        assertTrue(
+            testingSection.contains("not available"),
+            "Testing with Error(null cause) must render 'not available'",
+        )
+        assertFalse(
+            testingSection.contains("(cause:"),
+            "Testing with Error(null cause) must NOT include any cause fragment",
+        )
 
         // linters Error → project standard section shows "not available" indication (FR-008, SC-005)
         val projectStandardStart = rendered.indexOf("### project standard")
@@ -165,14 +214,15 @@ class PromptGeneratorEmptyModelTest {
     }
 
     @Test
-    fun `scenario 6 C1 - linters Ok with empty activeRules renders project standard with not-detected emptyNotation and no mandatory or advisory headings`() {
-        val scanWithEmptyLinterRules = ScanResult(
-            stack = SectionResult.Empty,
-            codeStyle = SectionResult.Empty,
-            linters = SectionResult.Ok(LinterInfo(activeRules = emptyList())),
-            tests = SectionResult.Empty,
-            structure = SectionResult.Empty,
-        )
+    fun `scenario 6 C1 - Ok linters emptyActiveRules renders project standard with not-detected and no subheadings`() {
+        val scanWithEmptyLinterRules =
+            ScanResult(
+                stack = SectionResult.Empty,
+                codeStyle = SectionResult.Empty,
+                linters = SectionResult.Ok(LinterInfo(activeRules = emptyList())),
+                tests = SectionResult.Empty,
+                structure = SectionResult.Empty,
+            )
 
         val rendered = generator.generate(scanWithEmptyLinterRules, twoBaselineRules).render()
 
@@ -180,7 +230,10 @@ class PromptGeneratorEmptyModelTest {
         assertTrue(projectStandardStart >= 0, "(a) ### project standard must be present")
 
         val baselineStart = rendered.indexOf("### baseline quality requirement")
-        assertTrue(baselineStart > projectStandardStart, "### baseline quality requirement must follow ### project standard")
+        assertTrue(
+            baselineStart > projectStandardStart,
+            "### baseline quality requirement must follow ### project standard",
+        )
         val projectStandardSection = rendered.substring(projectStandardStart, baselineStart)
 
         // (b) emptyNotation must contain "not detected" per FR-008 — never omit the notation
@@ -189,7 +242,74 @@ class PromptGeneratorEmptyModelTest {
             "(b) project standard emptyNotation must contain 'not detected' when linters is Ok(emptyList()) (FR-008)",
         )
         // (c) No #### sub-headings when emptyNotation is shown
-        assertFalse(projectStandardSection.contains("#### Mandatory"), "(c) #### Mandatory must not appear when activeRules is empty")
-        assertFalse(projectStandardSection.contains("#### Advisory"), "(c) #### Advisory must not appear when activeRules is empty")
+        assertFalse(
+            projectStandardSection.contains("#### Mandatory"),
+            "(c) #### Mandatory must not appear when activeRules is empty",
+        )
+        assertFalse(
+            projectStandardSection.contains("#### Advisory"),
+            "(c) #### Advisory must not appear when activeRules is empty",
+        )
+    }
+
+    @Test
+    fun `scenario 7 C1 - empty baselineRules renders baseline quality requirement with emptyNotation`() {
+        val rendered = generator.generate(allEmptyScanResult, emptyList()).render()
+
+        // (a) ### baseline quality requirement must be present even when baselineRules is empty
+        val baselineStart = rendered.indexOf("### baseline quality requirement")
+        assertTrue(
+            baselineStart >= 0,
+            "(a) ### baseline quality requirement must be present even when baselineRules is emptyList()",
+        )
+
+        val nextBlockStart = rendered.indexOf("\n## ", baselineStart)
+        val baselineSection =
+            if (nextBlockStart >= 0) {
+                rendered.substring(baselineStart, nextBlockStart)
+            } else {
+                rendered.substring(baselineStart)
+            }
+
+        // (b) emptyNotation "No baseline rules are available." must be rendered
+        assertTrue(
+            baselineSection.contains("No baseline rules are available."),
+            "(b) emptyNotation 'No baseline rules are available.' must be rendered when baselineRules is empty",
+        )
+        // (c) no exception was thrown — reaching this line confirms it
+    }
+
+    @Test
+    fun `scenario 8 C3 - Ok sections with empty collections each render not detected`() {
+        val okEmptyScan =
+            ScanResult(
+                stack = SectionResult.Ok(StackInfo()),
+                codeStyle = SectionResult.Ok(CodeStyleInfo(sources = emptyList())),
+                linters = SectionResult.Ok(LinterInfo(activeRules = emptyList())),
+                tests = SectionResult.Ok(TestInfo()),
+                structure = SectionResult.Ok(StructureInfo()),
+            )
+
+        val rendered = generator.generate(okEmptyScan, twoBaselineRules).render()
+
+        fun extractBlockContent(heading: String): String {
+            val start = rendered.indexOf("## $heading")
+            assertTrue(start >= 0, "## $heading must be present")
+            val nextBlock = rendered.indexOf("\n## ", start + 1)
+            return if (nextBlock >= 0) rendered.substring(start, nextBlock) else rendered.substring(start)
+        }
+
+        // All four scan-dependent blocks with Ok(empty) must render "not detected" per FR-008
+        listOf("Tech Stack", "Code Style & Static Analysis", "Testing", "Project Structure").forEach { heading ->
+            val section = extractBlockContent(heading)
+            assertTrue(
+                section.contains("not detected"),
+                "## $heading must render 'not detected' when Ok section has empty collections (FR-008 Ok-empty)",
+            )
+            assertFalse(
+                section.contains("not available"),
+                "## $heading must NOT render 'not available' when Ok section has empty collections",
+            )
+        }
     }
 }

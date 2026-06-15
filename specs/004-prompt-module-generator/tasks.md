@@ -132,9 +132,9 @@ description: "Task list for :prompt module — Constitution Prompt Generator"
 
 **Purpose**: Static analysis, style compliance, and final dependency verification.
 
-- [ ] T025 [P] Run `./gradlew :prompt:test` and resolve any remaining failures; SC-007 determinism is already verified by scenario 7 in `PromptGeneratorFullModelTest` (added during post-US1 corrections): calls `generate()` twice with identical inputs and asserts the two `render()` outputs are equal (`assertEquals`) — no additional @Test needed; confirm this scenario is green
-- [ ] T026 [P] Run `./gradlew :prompt:detekt :prompt:ktlintCheck` and fix all violations in `prompt/src/main/kotlin/` and `prompt/src/test/kotlin/`
-- [ ] T027 Verify SC-006 compliance: run `./gradlew :prompt:dependencies --configuration compileClasspath` and confirm no `com.intellij.*` JARs appear; confirm `:scan` and `:ui` are absent from all configurations
+- [x] T025 [P] Run `./gradlew :prompt:test` and resolve any remaining failures; SC-007 determinism is already verified by scenario 7 in `PromptGeneratorFullModelTest` (added during post-US1 corrections): calls `generate()` twice with identical inputs and asserts the two `render()` outputs are equal (`assertEquals`) — no additional @Test needed; confirm this scenario is green
+- [x] T026 [P] Run `./gradlew :prompt:detekt :prompt:ktlintCheck` and fix all violations in `prompt/src/main/kotlin/` and `prompt/src/test/kotlin/`
+- [x] T027 Verify SC-006 compliance: run `./gradlew :prompt:dependencies --configuration compileClasspath` and confirm no `com.intellij.*` JARs appear; confirm `:scan` and `:ui` are absent from all configurations
 
 ---
 

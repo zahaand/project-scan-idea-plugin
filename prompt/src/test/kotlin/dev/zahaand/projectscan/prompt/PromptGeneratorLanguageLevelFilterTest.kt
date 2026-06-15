@@ -14,10 +14,18 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class PromptGeneratorLanguageLevelFilterTest {
-
-    private fun rule(id: String, minJavaLevel: Int) = BaselineRule(
-        id, BaselineLevel.CORRECTNESS, BaselineCategory.NULL_SAFETY, Obligation.MUST,
-        "Statement for $id.", "Rationale.", minJavaLevel, listOf(BaselineLanguage.JAVA),
+    private fun rule(
+        id: String,
+        minJavaLevel: Int,
+    ) = BaselineRule(
+        id,
+        BaselineLevel.CORRECTNESS,
+        BaselineCategory.NULL_SAFETY,
+        Obligation.MUST,
+        "Statement for $id.",
+        "Rationale.",
+        minJavaLevel,
+        listOf(BaselineLanguage.JAVA),
     )
 
     private val ruleLevel8 = rule("rule-8", 8)
@@ -27,21 +35,31 @@ class PromptGeneratorLanguageLevelFilterTest {
 
     private val allRules = listOf(ruleLevel8, ruleLevel11, ruleLevel17, ruleLevel21)
 
-    private fun scanWithLevel(languageLevel: String?) = ScanResult(
-        stack = SectionResult.Ok(StackInfo(buildSystem = null, jdkVersion = null, languageLevel = languageLevel, dependencies = emptyList())),
-        codeStyle = SectionResult.Empty,
-        linters = SectionResult.Ok(LinterInfo(activeRules = emptyList())),
-        tests = SectionResult.Empty,
-        structure = SectionResult.Empty,
-    )
+    private fun scanWithLevel(languageLevel: String?) =
+        ScanResult(
+            stack =
+                SectionResult.Ok(
+                    StackInfo(
+                        buildSystem = null,
+                        jdkVersion = null,
+                        languageLevel = languageLevel,
+                        dependencies = emptyList(),
+                    ),
+                ),
+            codeStyle = SectionResult.Empty,
+            linters = SectionResult.Ok(LinterInfo(activeRules = emptyList())),
+            tests = SectionResult.Empty,
+            structure = SectionResult.Empty,
+        )
 
-    private val emptyStackScan = ScanResult(
-        stack = SectionResult.Empty,
-        codeStyle = SectionResult.Empty,
-        linters = SectionResult.Ok(LinterInfo(activeRules = emptyList())),
-        tests = SectionResult.Empty,
-        structure = SectionResult.Empty,
-    )
+    private val emptyStackScan =
+        ScanResult(
+            stack = SectionResult.Empty,
+            codeStyle = SectionResult.Empty,
+            linters = SectionResult.Ok(LinterInfo(activeRules = emptyList())),
+            tests = SectionResult.Empty,
+            structure = SectionResult.Empty,
+        )
 
     private val generator = PromptGenerator()
 
@@ -58,8 +76,14 @@ class PromptGeneratorLanguageLevelFilterTest {
 
         assertTrue(section.contains("Statement for rule-8"), "rule-8 (minJavaLevel=8) must pass level-11 filter")
         assertTrue(section.contains("Statement for rule-11"), "rule-11 (minJavaLevel=11) must pass level-11 filter")
-        assertFalse(section.contains("Statement for rule-17"), "rule-17 (minJavaLevel=17) must be filtered out at level 11")
-        assertFalse(section.contains("Statement for rule-21"), "rule-21 (minJavaLevel=21) must be filtered out at level 11")
+        assertFalse(
+            section.contains("Statement for rule-17"),
+            "rule-17 (minJavaLevel=17) must be filtered out at level 11",
+        )
+        assertFalse(
+            section.contains("Statement for rule-21"),
+            "rule-21 (minJavaLevel=21) must be filtered out at level 11",
+        )
     }
 
     @Test
@@ -76,9 +100,18 @@ class PromptGeneratorLanguageLevelFilterTest {
         val section = baselineSection(generator.generate(scanWithLevel("8"), allRules).render())
 
         assertTrue(section.contains("Statement for rule-8"), "rule-8 (minJavaLevel=8) must pass level-8 filter")
-        assertFalse(section.contains("Statement for rule-11"), "rule-11 (minJavaLevel=11) must be filtered out at level 8")
-        assertFalse(section.contains("Statement for rule-17"), "rule-17 (minJavaLevel=17) must be filtered out at level 8")
-        assertFalse(section.contains("Statement for rule-21"), "rule-21 (minJavaLevel=21) must be filtered out at level 8")
+        assertFalse(
+            section.contains("Statement for rule-11"),
+            "rule-11 (minJavaLevel=11) must be filtered out at level 8",
+        )
+        assertFalse(
+            section.contains("Statement for rule-17"),
+            "rule-17 (minJavaLevel=17) must be filtered out at level 8",
+        )
+        assertFalse(
+            section.contains("Statement for rule-21"),
+            "rule-21 (minJavaLevel=21) must be filtered out at level 8",
+        )
     }
 
     @Test
@@ -86,7 +119,10 @@ class PromptGeneratorLanguageLevelFilterTest {
         val section = baselineSection(generator.generate(scanWithLevel(null), allRules).render())
 
         allRules.forEach { rule ->
-            assertTrue(section.contains("Statement for ${rule.id}"), "${rule.id} must appear when languageLevel is null")
+            assertTrue(
+                section.contains("Statement for ${rule.id}"),
+                "${rule.id} must appear when languageLevel is null",
+            )
         }
     }
 
@@ -95,7 +131,10 @@ class PromptGeneratorLanguageLevelFilterTest {
         val section = baselineSection(generator.generate(scanWithLevel("unknown"), allRules).render())
 
         allRules.forEach { rule ->
-            assertTrue(section.contains("Statement for ${rule.id}"), "${rule.id} must appear when languageLevel is 'unknown'")
+            assertTrue(
+                section.contains("Statement for ${rule.id}"),
+                "${rule.id} must appear when languageLevel is 'unknown'",
+            )
         }
     }
 
@@ -104,7 +143,10 @@ class PromptGeneratorLanguageLevelFilterTest {
         val section = baselineSection(generator.generate(emptyStackScan, allRules).render())
 
         allRules.forEach { rule ->
-            assertTrue(section.contains("Statement for ${rule.id}"), "${rule.id} must appear when stack section is Empty")
+            assertTrue(
+                section.contains("Statement for ${rule.id}"),
+                "${rule.id} must appear when stack section is Empty",
+            )
         }
     }
 
@@ -114,11 +156,17 @@ class PromptGeneratorLanguageLevelFilterTest {
         assertTrue(sectionDot.contains("Statement for rule-8"), "rule-8 must pass level-17 filter from '17.0.1'")
         assertTrue(sectionDot.contains("Statement for rule-11"), "rule-11 must pass level-17 filter from '17.0.1'")
         assertTrue(sectionDot.contains("Statement for rule-17"), "rule-17 must pass level-17 filter from '17.0.1'")
-        assertFalse(sectionDot.contains("Statement for rule-21"), "rule-21 must be filtered out at level 17 from '17.0.1'")
+        assertFalse(
+            sectionDot.contains("Statement for rule-21"),
+            "rule-21 must be filtered out at level 17 from '17.0.1'",
+        )
 
         val sectionPreview = baselineSection(generator.generate(scanWithLevel("21_PREVIEW"), allRules).render())
         allRules.forEach { rule ->
-            assertTrue(sectionPreview.contains("Statement for ${rule.id}"), "${rule.id} must pass level-21 filter from '21_PREVIEW'")
+            assertTrue(
+                sectionPreview.contains("Statement for ${rule.id}"),
+                "${rule.id} must pass level-21 filter from '21_PREVIEW'",
+            )
         }
     }
 
@@ -147,7 +195,10 @@ class PromptGeneratorLanguageLevelFilterTest {
         val section = baselineSection(generator.generate(scanWithLevel(""), allRules).render())
 
         allRules.forEach { rule ->
-            assertTrue(section.contains("Statement for ${rule.id}"), "${rule.id} must appear when languageLevel is empty string")
+            assertTrue(
+                section.contains("Statement for ${rule.id}"),
+                "${rule.id} must appear when languageLevel is empty string",
+            )
         }
     }
 }

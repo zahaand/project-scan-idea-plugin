@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class PromptGeneratorPriorityHierarchyTest {
-
     private val errorSeverityRule = ActiveRule("rule-ERROR", "checkstyle", RuleSeverity.ERROR, null)
     private val breaksBuildTrueRule = ActiveRule("rule-BREAKS", "pmd", RuleSeverity.WARNING, true)
     private val breaksBuildNullRule = ActiveRule("rule-NULL", "detekt", RuleSeverity.WARNING, null)
@@ -23,20 +22,31 @@ class PromptGeneratorPriorityHierarchyTest {
 
     private val linterRules = listOf(errorSeverityRule, breaksBuildTrueRule, breaksBuildNullRule, advisoryOnlyRule)
 
-    private val baselineRules = listOf(
-        BaselineRule(
-            "b-01", BaselineLevel.CORRECTNESS, BaselineCategory.NULL_SAFETY, Obligation.MUST,
-            "Baseline statement 01.", "Rationale.", 8, listOf(BaselineLanguage.JAVA),
-        ),
-    )
+    private val baselineRules =
+        listOf(
+            BaselineRule(
+                "b-01",
+                BaselineLevel.CORRECTNESS,
+                BaselineCategory.NULL_SAFETY,
+                Obligation.MUST,
+                "Baseline statement 01.",
+                "Rationale.",
+                8,
+                listOf(BaselineLanguage.JAVA),
+            ),
+        )
 
-    private val scanResult = ScanResult(
-        stack = SectionResult.Ok(StackInfo(buildSystem = null, jdkVersion = null, languageLevel = null, dependencies = emptyList())),
-        codeStyle = SectionResult.Empty,
-        linters = SectionResult.Ok(LinterInfo(activeRules = linterRules)),
-        tests = SectionResult.Empty,
-        structure = SectionResult.Empty,
-    )
+    private val scanResult =
+        ScanResult(
+            stack =
+                SectionResult.Ok(
+                    StackInfo(buildSystem = null, jdkVersion = null, languageLevel = null, dependencies = emptyList()),
+                ),
+            codeStyle = SectionResult.Empty,
+            linters = SectionResult.Ok(LinterInfo(activeRules = linterRules)),
+            tests = SectionResult.Empty,
+            structure = SectionResult.Empty,
+        )
 
     private val generator = PromptGenerator()
 
@@ -85,16 +95,29 @@ class PromptGeneratorPriorityHierarchyTest {
         val advisoryStart = section.indexOf("#### Advisory")
 
         val mandatorySection = section.substring(mandatoryStart, advisoryStart)
-        assertTrue(mandatorySection.contains("rule-ERROR"), "rule-ERROR (severity=ERROR) must be under #### Mandatory (build-breaking)")
-        assertTrue(mandatorySection.contains("rule-BREAKS"), "rule-BREAKS (breaksBuild=true) must be under #### Mandatory (build-breaking)")
+        assertTrue(
+            mandatorySection.contains("rule-ERROR"),
+            "rule-ERROR (severity=ERROR) must be under #### Mandatory (build-breaking)",
+        )
+        assertTrue(
+            mandatorySection.contains("rule-BREAKS"),
+            "rule-BREAKS (breaksBuild=true) must be under #### Mandatory (build-breaking)",
+        )
 
         val advisorySection = section.substring(advisoryStart)
-        assertTrue(advisorySection.contains("rule-NULL"), "rule-NULL (breaksBuild=null) must be under #### Advisory — no exception for null")
-        assertTrue(advisorySection.contains("rule-ADVISORY"), "rule-ADVISORY (breaksBuild=false) must be under #### Advisory")
+        assertTrue(
+            advisorySection.contains("rule-NULL"),
+            "rule-NULL (breaksBuild=null) must be under #### Advisory — no exception for null",
+        )
+        assertTrue(
+            advisorySection.contains("rule-ADVISORY"),
+            "rule-ADVISORY (breaksBuild=false) must be under #### Advisory",
+        )
 
         assertTrue(
             section.contains("#### Mandatory (build-breaking)\n-"),
-            "No blank line between '#### Mandatory (build-breaking)' heading and its first bullet (prompt-api.md separator contract)",
+            "No blank line between '#### Mandatory (build-breaking)' heading" +
+                " and its first bullet (prompt-api.md separator contract)",
         )
         assertTrue(
             section.contains("#### Advisory\n-"),
@@ -103,7 +126,7 @@ class PromptGeneratorPriorityHierarchyTest {
     }
 
     @Test
-    fun `scenario 3 - every bullet in core principles is under a project standard or baseline quality requirement heading`() {
+    fun `scenario 3 - every core principles bullet is under a valid ### heading (SC-002)`() {
         val section = corePrinciplesSection(generator.generate(scanResult, baselineRules).render())
 
         val validHeadings = setOf("project standard", "baseline quality requirement")
@@ -114,14 +137,14 @@ class PromptGeneratorPriorityHierarchyTest {
                 val heading = line.removePrefix("### ").trim()
                 assertTrue(
                     heading in validHeadings,
-                    "### heading must be exactly 'project standard' or 'baseline quality requirement', found: '$heading'",
+                    "### heading '$heading' is not in valid set {project standard, baseline quality requirement}",
                 )
                 currentH3 = heading
             }
             if (line.trimStart().startsWith("- ")) {
                 assertTrue(
                     currentH3 != null,
-                    "Bullet '$line' must appear under a ### project standard or ### baseline quality requirement heading",
+                    "Bullet must appear under a valid ### heading (project/baseline), line: '$line'",
                 )
             }
         }

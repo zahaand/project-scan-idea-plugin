@@ -74,7 +74,7 @@ A developer opens a brand-new or not-yet-imported project in IntelliJ. The scan 
 **Acceptance Scenarios**:
 
 1. **Given** a `ScanResult` where all five sections are `SectionResult.Empty`, **When** the generator is called with a non-empty baseline list, **Then** the returned prompt is non-empty and its rendered text contains six block headings.
-2. **Given** all scan sections are `SectionResult.Empty`, **When** the generated prompt is inspected, **Then** the "project standard" principle group is present but explicitly notes that no project linter rules were detected — it does NOT omit the group entirely.
+2. **Given** all scan sections are `SectionResult.Empty`, **When** the generated prompt is inspected, **Then** the "project standard" principle group is present and renders the FR-008 canonical marker `not detected` — it does NOT omit the group entirely.
 3. **Given** all scan sections are `SectionResult.Empty`, **When** the generated prompt is inspected, **Then** all baseline rules appear in the Core Principles block (language-level filtering is inactive: no level to compare against).
 4. **Given** all scan sections are `SectionResult.Empty`, **When** the generated prompt is inspected, **Then** the Tech Stack, Code Style, Testing, and Project Structure blocks each contain an explicit "not detected" or "not available" marker — none contain guessed or inferred data.
 5. **Given** a `ScanResult` where some sections are `SectionResult.Ok` and others are `SectionResult.Error`, **When** the generator is called, **Then** Ok sections contribute their data, Error sections are marked as "not available" with an optional error note, and no exception is thrown.

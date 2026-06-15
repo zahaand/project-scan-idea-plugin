@@ -25,3 +25,6 @@ complexity:
   LongParameterList:
     # ScanService wires 7 parameters by design (F-D01 / I1): 6 port interfaces + linterConfigParsers map
     constructorThreshold: 8
+  TooManyFunctions:
+    # PromptGenerator has one builder per output block (6 blocks) + 4 helpers + generate() = 11 functions
+    thresholdInClasses: 12

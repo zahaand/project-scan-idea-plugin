@@ -26,86 +26,199 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class PromptGeneratorFullModelTest {
+    private val fiveLinterRules =
+        listOf(
+            ActiveRule("checkstyle:MagicNumber", "checkstyle", RuleSeverity.WARNING, null),
+            ActiveRule("checkstyle:EmptyBlock", "checkstyle", RuleSeverity.ERROR, true),
+            ActiveRule("pmd:ExcessiveMethodLength", "pmd", RuleSeverity.WARNING, false),
+            ActiveRule("pmd:NullAssignment", "pmd", RuleSeverity.ERROR, null),
+            ActiveRule("detekt:TooManyFunctions", "detekt", RuleSeverity.WARNING, null),
+        )
 
-    private val fiveLinterRules = listOf(
-        ActiveRule("checkstyle:MagicNumber", "checkstyle", RuleSeverity.WARNING, null),
-        ActiveRule("checkstyle:EmptyBlock", "checkstyle", RuleSeverity.ERROR, true),
-        ActiveRule("pmd:ExcessiveMethodLength", "pmd", RuleSeverity.WARNING, false),
-        ActiveRule("pmd:NullAssignment", "pmd", RuleSeverity.ERROR, null),
-        ActiveRule("detekt:TooManyFunctions", "detekt", RuleSeverity.WARNING, null),
-    )
+    private val thirteenBaselineRules =
+        listOf(
+            BaselineRule(
+                "rule-01",
+                BaselineLevel.CORRECTNESS,
+                BaselineCategory.NULL_SAFETY,
+                Obligation.MUST,
+                "Statement 01 null-check guard.",
+                "Rationale 01.",
+                8,
+                listOf(BaselineLanguage.JAVA),
+            ),
+            BaselineRule(
+                "rule-02",
+                BaselineLevel.CORRECTNESS,
+                BaselineCategory.NULL_SAFETY,
+                Obligation.MUST,
+                "Statement 02 optional-get-check.",
+                "Rationale 02.",
+                8,
+                listOf(BaselineLanguage.JAVA),
+            ),
+            BaselineRule(
+                "rule-03",
+                BaselineLevel.CORRECTNESS,
+                BaselineCategory.RESOURCE_MANAGEMENT,
+                Obligation.MUST,
+                "Statement 03 try-with-resources.",
+                "Rationale 03.",
+                8,
+                listOf(BaselineLanguage.JAVA),
+            ),
+            BaselineRule(
+                "rule-04",
+                BaselineLevel.CORRECTNESS,
+                BaselineCategory.RESOURCE_MANAGEMENT,
+                Obligation.MUST,
+                "Statement 04 no-stream-after-close.",
+                "Rationale 04.",
+                8,
+                listOf(BaselineLanguage.JAVA),
+            ),
+            BaselineRule(
+                "rule-05",
+                BaselineLevel.CORRECTNESS,
+                BaselineCategory.CONCURRENCY,
+                Obligation.MUST,
+                "Statement 05 synchronized-on-non-final.",
+                "Rationale 05.",
+                8,
+                listOf(BaselineLanguage.JAVA),
+            ),
+            BaselineRule(
+                "rule-06",
+                BaselineLevel.CORRECTNESS,
+                BaselineCategory.CONCURRENCY,
+                Obligation.MUST,
+                "Statement 06 double-checked-locking-volatile.",
+                "Rationale 06.",
+                8,
+                listOf(BaselineLanguage.JAVA),
+            ),
+            BaselineRule(
+                "rule-07",
+                BaselineLevel.CORRECTNESS,
+                BaselineCategory.DANGEROUS_CONSTRUCTS,
+                Obligation.MUST,
+                "Statement 07 no-reflection-access.",
+                "Rationale 07.",
+                8,
+                listOf(BaselineLanguage.JAVA),
+            ),
+            BaselineRule(
+                "rule-08",
+                BaselineLevel.CORRECTNESS,
+                BaselineCategory.DANGEROUS_CONSTRUCTS,
+                Obligation.MUST,
+                "Statement 08 no-system-exit.",
+                "Rationale 08.",
+                8,
+                listOf(BaselineLanguage.JAVA),
+            ),
+            BaselineRule(
+                "rule-09",
+                BaselineLevel.CORRECTNESS,
+                BaselineCategory.DANGEROUS_CONSTRUCTS,
+                Obligation.MUST,
+                "Statement 09 no-finalizer.",
+                "Rationale 09.",
+                8,
+                listOf(BaselineLanguage.JAVA),
+            ),
+            BaselineRule(
+                "rule-10",
+                BaselineLevel.CORRECTNESS,
+                BaselineCategory.CONCURRENCY,
+                Obligation.MUST,
+                "Statement 10 parallel-streams-no-shared-state.",
+                "Rationale 10.",
+                8,
+                listOf(BaselineLanguage.JAVA),
+            ),
+            BaselineRule(
+                "rule-11",
+                BaselineLevel.BEST_PRACTICE,
+                BaselineCategory.EXCEPTION_HANDLING,
+                Obligation.SHOULD,
+                "Statement 11 checked-exceptions-for-api.",
+                "Rationale 11.",
+                8,
+                listOf(BaselineLanguage.JAVA),
+            ),
+            BaselineRule(
+                "rule-12",
+                BaselineLevel.BEST_PRACTICE,
+                BaselineCategory.STRING_PERFORMANCE,
+                Obligation.MUST,
+                "Statement 12 string-builder-in-loop.",
+                "Rationale 12.",
+                8,
+                listOf(BaselineLanguage.JAVA),
+            ),
+            BaselineRule(
+                "rule-13",
+                BaselineLevel.BEST_PRACTICE,
+                BaselineCategory.DECOMPOSITION,
+                Obligation.SHOULD,
+                "Statement 13 single-responsibility.",
+                "Rationale 13.",
+                8,
+                listOf(BaselineLanguage.JAVA),
+            ),
+        )
 
-    private val thirteenBaselineRules = listOf(
-        BaselineRule("rule-01", BaselineLevel.CORRECTNESS, BaselineCategory.NULL_SAFETY, Obligation.MUST,
-            "Statement 01 null-check guard.", "Rationale 01.", 8, listOf(BaselineLanguage.JAVA)),
-        BaselineRule("rule-02", BaselineLevel.CORRECTNESS, BaselineCategory.NULL_SAFETY, Obligation.MUST,
-            "Statement 02 optional-get-check.", "Rationale 02.", 8, listOf(BaselineLanguage.JAVA)),
-        BaselineRule("rule-03", BaselineLevel.CORRECTNESS, BaselineCategory.RESOURCE_MANAGEMENT, Obligation.MUST,
-            "Statement 03 try-with-resources.", "Rationale 03.", 8, listOf(BaselineLanguage.JAVA)),
-        BaselineRule("rule-04", BaselineLevel.CORRECTNESS, BaselineCategory.RESOURCE_MANAGEMENT, Obligation.MUST,
-            "Statement 04 no-stream-after-close.", "Rationale 04.", 8, listOf(BaselineLanguage.JAVA)),
-        BaselineRule("rule-05", BaselineLevel.CORRECTNESS, BaselineCategory.CONCURRENCY, Obligation.MUST,
-            "Statement 05 synchronized-on-non-final.", "Rationale 05.", 8, listOf(BaselineLanguage.JAVA)),
-        BaselineRule("rule-06", BaselineLevel.CORRECTNESS, BaselineCategory.CONCURRENCY, Obligation.MUST,
-            "Statement 06 double-checked-locking-volatile.", "Rationale 06.", 8, listOf(BaselineLanguage.JAVA)),
-        BaselineRule("rule-07", BaselineLevel.CORRECTNESS, BaselineCategory.DANGEROUS_CONSTRUCTS, Obligation.MUST,
-            "Statement 07 no-reflection-access.", "Rationale 07.", 8, listOf(BaselineLanguage.JAVA)),
-        BaselineRule("rule-08", BaselineLevel.CORRECTNESS, BaselineCategory.DANGEROUS_CONSTRUCTS, Obligation.MUST,
-            "Statement 08 no-system-exit.", "Rationale 08.", 8, listOf(BaselineLanguage.JAVA)),
-        BaselineRule("rule-09", BaselineLevel.CORRECTNESS, BaselineCategory.DANGEROUS_CONSTRUCTS, Obligation.MUST,
-            "Statement 09 no-finalizer.", "Rationale 09.", 8, listOf(BaselineLanguage.JAVA)),
-        BaselineRule("rule-10", BaselineLevel.CORRECTNESS, BaselineCategory.CONCURRENCY, Obligation.MUST,
-            "Statement 10 parallel-streams-no-shared-state.", "Rationale 10.", 8, listOf(BaselineLanguage.JAVA)),
-        BaselineRule("rule-11", BaselineLevel.BEST_PRACTICE, BaselineCategory.EXCEPTION_HANDLING, Obligation.SHOULD,
-            "Statement 11 checked-exceptions-for-api.", "Rationale 11.", 8, listOf(BaselineLanguage.JAVA)),
-        BaselineRule("rule-12", BaselineLevel.BEST_PRACTICE, BaselineCategory.STRING_PERFORMANCE, Obligation.MUST,
-            "Statement 12 string-builder-in-loop.", "Rationale 12.", 8, listOf(BaselineLanguage.JAVA)),
-        BaselineRule("rule-13", BaselineLevel.BEST_PRACTICE, BaselineCategory.DECOMPOSITION, Obligation.SHOULD,
-            "Statement 13 single-responsibility.", "Rationale 13.", 8, listOf(BaselineLanguage.JAVA)),
-    )
-
-    private val fullScanResult = ScanResult(
-        stack = SectionResult.Ok(
-            StackInfo(
-                buildSystem = BuildSystem.GRADLE,
-                jdkVersion = "21",
-                languageLevel = "17",
-                dependencies = listOf(
-                    Dependency("org.junit.jupiter", "junit-jupiter", "5.11.0"),
-                    Dependency("org.springframework.boot", "spring-boot-starter", "3.3.0"),
-                    Dependency("com.fasterxml.jackson.core", "jackson-databind", "2.17.0"),
-                ),
-            ),
-        ),
-        codeStyle = SectionResult.Ok(
-            CodeStyleInfo(
-                sources = listOf(StyleSource(StyleSourceType.CHECKSTYLE, ".checkstyle.xml")),
-            ),
-        ),
-        linters = SectionResult.Ok(
-            LinterInfo(activeRules = fiveLinterRules),
-        ),
-        tests = SectionResult.Ok(
-            TestInfo(
-                frameworks = listOf(TestFramework("JUnit Jupiter", "5.11.0")),
-                sourceRoots = listOf("src/test/kotlin"),
-                namingSuffixes = listOf("Test"),
-                coverageThreshold = 0.8,
-            ),
-        ),
-        structure = SectionResult.Ok(
-            StructureInfo(
-                modules = listOf(
-                    Module(
-                        "app",
-                        listOf(Dependency("org.junit.jupiter", "junit-jupiter", "5.11.0")),
-                        emptyList(),
+    private val fullScanResult =
+        ScanResult(
+            stack =
+                SectionResult.Ok(
+                    StackInfo(
+                        buildSystem = BuildSystem.GRADLE,
+                        jdkVersion = "21",
+                        languageLevel = "17",
+                        dependencies =
+                            listOf(
+                                Dependency("org.junit.jupiter", "junit-jupiter", "5.11.0"),
+                                Dependency("org.springframework.boot", "spring-boot-starter", "3.3.0"),
+                                Dependency("com.fasterxml.jackson.core", "jackson-databind", "2.17.0"),
+                            ),
                     ),
                 ),
-                rootPackages = listOf("dev.zahaand.projectscan"),
-            ),
-        ),
-    )
+            codeStyle =
+                SectionResult.Ok(
+                    CodeStyleInfo(
+                        sources = listOf(StyleSource(StyleSourceType.CHECKSTYLE, ".checkstyle.xml")),
+                    ),
+                ),
+            linters =
+                SectionResult.Ok(
+                    LinterInfo(activeRules = fiveLinterRules),
+                ),
+            tests =
+                SectionResult.Ok(
+                    TestInfo(
+                        frameworks = listOf(TestFramework("JUnit Jupiter", "5.11.0")),
+                        sourceRoots = listOf("src/test/kotlin"),
+                        namingSuffixes = listOf("Test"),
+                        coverageThreshold = 0.8,
+                    ),
+                ),
+            structure =
+                SectionResult.Ok(
+                    StructureInfo(
+                        modules =
+                            listOf(
+                                Module(
+                                    "app",
+                                    listOf(Dependency("org.junit.jupiter", "junit-jupiter", "5.11.0")),
+                                    emptyList(),
+                                ),
+                            ),
+                        rootPackages = listOf("dev.zahaand.projectscan"),
+                    ),
+                ),
+        )
 
     private val generator = PromptGenerator()
 
@@ -115,7 +228,10 @@ class PromptGeneratorFullModelTest {
 
         val specKitIndex = rendered.indexOf("/speckit-constitution")
         assertTrue(specKitIndex >= 0, "Rendered text must contain reference to /speckit-constitution")
-        assertTrue(specKitIndex < 200, "Reference to /speckit-constitution must appear near the beginning (within 200 chars)")
+        assertTrue(
+            specKitIndex < 200,
+            "Reference to /speckit-constitution must appear near the beginning (within 200 chars)",
+        )
 
         assertTrue(rendered.contains("## Core Principles"), "Must contain ## Core Principles")
         assertTrue(rendered.contains("## Tech Stack"), "Must contain ## Tech Stack")
@@ -132,7 +248,10 @@ class PromptGeneratorFullModelTest {
         val projectStandardStart = rendered.indexOf("### project standard")
         val baselineStart = rendered.indexOf("### baseline quality requirement")
         assertTrue(projectStandardStart >= 0, "### project standard must be present")
-        assertTrue(baselineStart > projectStandardStart, "### baseline quality requirement must follow ### project standard")
+        assertTrue(
+            baselineStart > projectStandardStart,
+            "### baseline quality requirement must follow ### project standard",
+        )
 
         val projectStandardSection = rendered.substring(projectStandardStart, baselineStart)
         fiveLinterRules.forEach { rule ->
@@ -151,8 +270,12 @@ class PromptGeneratorFullModelTest {
         assertTrue(baselineStart >= 0, "### baseline quality requirement must be present")
 
         val nextBlockStart = rendered.indexOf("\n## ", baselineStart)
-        val baselineSection = if (nextBlockStart >= 0) rendered.substring(baselineStart, nextBlockStart)
-        else rendered.substring(baselineStart)
+        val baselineSection =
+            if (nextBlockStart >= 0) {
+                rendered.substring(baselineStart, nextBlockStart)
+            } else {
+                rendered.substring(baselineStart)
+            }
 
         thirteenBaselineRules.forEach { rule ->
             val marker = rule.obligation.name
@@ -179,7 +302,8 @@ class PromptGeneratorFullModelTest {
         assertTrue(baselineOffset >= 0, "### baseline quality requirement must be present")
         assertTrue(
             projectStandardOffset < baselineOffset,
-            "### project standard (at $projectStandardOffset) must precede ### baseline quality requirement (at $baselineOffset)",
+            "### project standard must precede ### baseline quality requirement" +
+                " (positions $projectStandardOffset vs $baselineOffset)",
         )
     }
 
@@ -191,15 +315,22 @@ class PromptGeneratorFullModelTest {
         assertTrue(techStackStart >= 0, "## Tech Stack must be present")
 
         val nextBlockStart = rendered.indexOf("\n## ", techStackStart + 1)
-        val techStackSection = if (nextBlockStart >= 0) rendered.substring(techStackStart, nextBlockStart)
-        else rendered.substring(techStackStart)
+        val techStackSection =
+            if (nextBlockStart >= 0) {
+                rendered.substring(techStackStart, nextBlockStart)
+            } else {
+                rendered.substring(techStackStart)
+            }
 
         assertTrue(techStackSection.contains("GRADLE"), "Tech Stack must contain build system GRADLE")
         assertTrue(techStackSection.contains("21"), "Tech Stack must contain JDK version 21")
         assertTrue(techStackSection.contains("Language Level"), "Tech Stack must contain language level label")
         assertTrue(techStackSection.contains("17"), "Tech Stack must contain language level value 17")
         assertTrue(techStackSection.contains("junit-jupiter"), "Tech Stack must contain dependency junit-jupiter")
-        assertTrue(techStackSection.contains("spring-boot-starter"), "Tech Stack must contain dependency spring-boot-starter")
+        assertTrue(
+            techStackSection.contains("spring-boot-starter"),
+            "Tech Stack must contain dependency spring-boot-starter",
+        )
         assertTrue(techStackSection.contains("jackson-databind"), "Tech Stack must contain dependency jackson-databind")
     }
 
@@ -213,7 +344,9 @@ class PromptGeneratorFullModelTest {
 
         // (1) Semantic-versioning policy: MAJOR/MINOR/PATCH language must appear
         assertTrue(
-            governanceSection.contains("MAJOR") && governanceSection.contains("MINOR") && governanceSection.contains("PATCH"),
+            governanceSection.contains("MAJOR") &&
+                governanceSection.contains("MINOR") &&
+                governanceSection.contains("PATCH"),
             "Governance must contain a semantic-versioning policy referencing MAJOR, MINOR, and PATCH",
         )
 

@@ -208,7 +208,7 @@ and a notation line replaces the bullet list:
 
 | Condition | Required rendering |
 |---|---|
-| `LinterInfo.activeRules` is empty | `### project standard` present; notation line states no active linter rules were detected; NO `####` headings |
+| `LinterInfo.activeRules` is empty | `### project standard` present; notation renders as `not detected` (FR-008 canonical marker for SectionResult.Empty and Ok-empty); NO `####` headings |
 | `baselineRules` list is empty | `### baseline quality requirement` present; notation line states no baseline rules are available |
 
 Both groups follow the same structural pattern: group NOT omitted, notation line MUST be present.

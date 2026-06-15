@@ -12,21 +12,24 @@ import dev.zahaand.projectscan.model.StructureInfo
 import dev.zahaand.projectscan.model.TestInfo
 
 class PromptGenerator {
-
     private fun extractLanguageLevel(languageLevel: String?): Int? {
         if (languageLevel == null || languageLevel.isBlank()) return null
         val digits = languageLevel.trimStart().takeWhile { it.isDigit() }
         return if (digits.isEmpty()) null else digits.toInt()
     }
 
-    fun generate(scanResult: ScanResult, baselineRules: List<BaselineRule>): ConstitutionPrompt {
-        val filteredBaseline = when (val stack = scanResult.stack) {
-            is SectionResult.Ok -> {
-                val level = extractLanguageLevel(stack.data.languageLevel)
-                if (level != null) baselineRules.filter { it.minJavaLevel <= level } else baselineRules
+    fun generate(
+        scanResult: ScanResult,
+        baselineRules: List<BaselineRule>,
+    ): ConstitutionPrompt {
+        val filteredBaseline =
+            when (val stack = scanResult.stack) {
+                is SectionResult.Ok -> {
+                    val level = extractLanguageLevel(stack.data.languageLevel)
+                    if (level != null) baselineRules.filter { it.minJavaLevel <= level } else baselineRules
+                }
+                else -> baselineRules
             }
-            else -> baselineRules
-        }
         return ConstitutionPrompt(
             listOf(
                 PromptBlock("Core Principles", buildCorePrinciplesBlock(scanResult.linters, filteredBaseline)),
@@ -39,8 +42,24 @@ class PromptGenerator {
         )
     }
 
-    private fun isMandatory(rule: ActiveRule): Boolean =
-        rule.severity == RuleSeverity.ERROR || rule.breaksBuild == true
+    private fun isMandatory(rule: ActiveRule): Boolean = rule.severity == RuleSeverity.ERROR || rule.breaksBuild == true
+
+    private fun renderProjectStandardGroup(group: OriginGroup): String =
+        buildString {
+            if (group.emptyNotation != null) {
+                append(group.emptyNotation)
+            } else {
+                if (group.mandatoryRules.isNotEmpty()) {
+                    append("#### Mandatory (build-breaking)\n")
+                    append(group.mandatoryRules.joinToString("\n"))
+                    append("\n\n")
+                }
+                if (group.advisoryRules.isNotEmpty()) {
+                    append("#### Advisory\n")
+                    append(group.advisoryRules.joinToString("\n"))
+                }
+            }
+        }
 
     private fun buildCorePrinciplesBlock(
         linters: SectionResult<LinterInfo>,
@@ -64,44 +83,36 @@ class PromptGenerator {
             }
         }
 
-        val mandatoryBullets = activeRules.filter { isMandatory(it) }.map { "- ${it.ruleId} [${it.tool}] (${it.severity.name})" }
-        val advisoryBullets = activeRules.filterNot { isMandatory(it) }.map { "- ${it.ruleId} [${it.tool}] (${it.severity.name})" }
-
-        val projectStandard = OriginGroup(
-            label = "project standard",
-            mandatoryRules = mandatoryBullets,
-            advisoryRules = advisoryBullets,
-            emptyNotation = projectStandardEmptyNotation,
-        )
+        val mandatoryBullets =
+            activeRules.filter { isMandatory(it) }.map { "- ${it.ruleId} [${it.tool}] (${it.severity.name})" }
+        val advisoryBullets =
+            activeRules.filterNot { isMandatory(it) }.map { "- ${it.ruleId} [${it.tool}] (${it.severity.name})" }
+        val projectStandard =
+            OriginGroup(
+                label = "project standard",
+                mandatoryRules = mandatoryBullets,
+                advisoryRules = advisoryBullets,
+                emptyNotation = projectStandardEmptyNotation,
+            )
 
         val baselineBullets = baselineRules.map { "- ${it.obligation.name} ${it.statement}" }
-        val baseline = OriginGroup(
-            label = "baseline quality requirement",
-            mandatoryRules = emptyList(),
-            advisoryRules = baselineBullets,
-            emptyNotation = if (baselineBullets.isEmpty()) "No baseline rules are available." else null,
-        )
+        val baseline =
+            OriginGroup(
+                label = "baseline quality requirement",
+                mandatoryRules = emptyList(),
+                advisoryRules = baselineBullets,
+                emptyNotation = if (baselineBullets.isEmpty()) "No baseline rules are available." else null,
+            )
 
-        val preamble = "When rules conflict: project standard rules take precedence over baseline quality requirements; " +
-            "baseline quality requirements take precedence over unwritten team practice."
+        val preamble =
+            "When rules conflict: project standard rules take precedence over baseline quality requirements; " +
+                "baseline quality requirements take precedence over unwritten team practice."
 
         return buildString {
             append(preamble)
             append("\n\n")
             append("### ${projectStandard.label}\n\n")
-            if (projectStandard.emptyNotation != null) {
-                append(projectStandard.emptyNotation)
-            } else {
-                if (projectStandard.mandatoryRules.isNotEmpty()) {
-                    append("#### Mandatory (build-breaking)\n")
-                    append(projectStandard.mandatoryRules.joinToString("\n"))
-                    append("\n\n")
-                }
-                if (projectStandard.advisoryRules.isNotEmpty()) {
-                    append("#### Advisory\n")
-                    append(projectStandard.advisoryRules.joinToString("\n"))
-                }
-            }
+            append(renderProjectStandardGroup(projectStandard))
             append("\n\n")
             append("### ${baseline.label}\n\n")
             append(baseline.emptyNotation ?: baseline.advisoryRules.joinToString("\n"))
@@ -130,8 +141,11 @@ class PromptGenerator {
         when (codeStyle) {
             is SectionResult.Ok -> {
                 val sources = codeStyle.data.sources
-                if (sources.isEmpty()) "not detected"
-                else sources.joinToString("\n") { "- ${it.type.name}: ${it.path}" }
+                if (sources.isEmpty()) {
+                    "not detected"
+                } else {
+                    sources.joinToString("\n") { "- ${it.type.name}: ${it.path}" }
+                }
             }
             is SectionResult.Empty -> "not detected"
             is SectionResult.Error -> formatError(codeStyle.cause)
@@ -167,9 +181,10 @@ class PromptGenerator {
                 info.modules.forEach { module ->
                     lines.add("- Module: ${module.name}")
                     if (module.declaredDependencies.isNotEmpty()) {
-                        val deps = module.declaredDependencies.joinToString(", ") {
-                            "${it.groupId}:${it.artifactId}"
-                        }
+                        val deps =
+                            module.declaredDependencies.joinToString(", ") {
+                                "${it.groupId}:${it.artifactId}"
+                            }
                         lines.add("  - Dependencies: $deps")
                     }
                     if (module.moduleDependencies.isNotEmpty()) {
