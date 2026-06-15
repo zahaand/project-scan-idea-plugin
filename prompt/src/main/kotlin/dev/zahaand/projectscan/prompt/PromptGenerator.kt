@@ -1,8 +1,10 @@
 package dev.zahaand.projectscan.prompt
 
 import dev.zahaand.projectscan.baseline.BaselineRule
+import dev.zahaand.projectscan.model.ActiveRule
 import dev.zahaand.projectscan.model.CodeStyleInfo
 import dev.zahaand.projectscan.model.LinterInfo
+import dev.zahaand.projectscan.model.RuleSeverity
 import dev.zahaand.projectscan.model.ScanResult
 import dev.zahaand.projectscan.model.SectionResult
 import dev.zahaand.projectscan.model.StackInfo
@@ -11,10 +13,23 @@ import dev.zahaand.projectscan.model.TestInfo
 
 class PromptGenerator {
 
-    fun generate(scanResult: ScanResult, baselineRules: List<BaselineRule>): ConstitutionPrompt =
-        ConstitutionPrompt(
+    private fun extractLanguageLevel(languageLevel: String?): Int? {
+        if (languageLevel == null || languageLevel.isBlank()) return null
+        val digits = languageLevel.trimStart().takeWhile { it.isDigit() }
+        return if (digits.isEmpty()) null else digits.toInt()
+    }
+
+    fun generate(scanResult: ScanResult, baselineRules: List<BaselineRule>): ConstitutionPrompt {
+        val filteredBaseline = when (val stack = scanResult.stack) {
+            is SectionResult.Ok -> {
+                val level = extractLanguageLevel(stack.data.languageLevel)
+                if (level != null) baselineRules.filter { it.minJavaLevel <= level } else baselineRules
+            }
+            else -> baselineRules
+        }
+        return ConstitutionPrompt(
             listOf(
-                PromptBlock("Core Principles", buildCorePrinciplesBlock(scanResult.linters, baselineRules)),
+                PromptBlock("Core Principles", buildCorePrinciplesBlock(scanResult.linters, filteredBaseline)),
                 PromptBlock("Tech Stack", buildTechStackBlock(scanResult.stack)),
                 PromptBlock("Code Style & Static Analysis", buildCodeStyleBlock(scanResult.codeStyle)),
                 PromptBlock("Testing", buildTestingBlock(scanResult.tests)),
@@ -22,27 +37,30 @@ class PromptGenerator {
                 PromptBlock("Governance", buildGovernanceBlock()),
             ),
         )
+    }
+
+    private fun isMandatory(rule: ActiveRule): Boolean =
+        rule.severity == RuleSeverity.ERROR || rule.breaksBuild == true
 
     private fun buildCorePrinciplesBlock(
         linters: SectionResult<LinterInfo>,
         baselineRules: List<BaselineRule>,
     ): String {
-        val linterBullets = when (linters) {
-            is SectionResult.Ok -> linters.data.activeRules.map { rule ->
-                "- ${rule.ruleId} [${rule.tool}] (${rule.severity.name})"
-            }
+        val activeRules = when (linters) {
+            is SectionResult.Ok -> linters.data.activeRules
             else -> emptyList()
         }
+        val mandatoryBullets = activeRules.filter { isMandatory(it) }.map { "- ${it.ruleId} [${it.tool}] (${it.severity.name})" }
+        val advisoryBullets = activeRules.filterNot { isMandatory(it) }.map { "- ${it.ruleId} [${it.tool}] (${it.severity.name})" }
+
         val projectStandard = OriginGroup(
             label = "project standard",
-            mandatoryRules = emptyList(),
-            advisoryRules = linterBullets,
-            emptyNotation = if (linterBullets.isEmpty()) "No active linter rules were detected." else null,
+            mandatoryRules = mandatoryBullets,
+            advisoryRules = advisoryBullets,
+            emptyNotation = if (activeRules.isEmpty()) "No active linter rules were detected." else null,
         )
 
-        val baselineBullets = baselineRules.map { rule ->
-            "- ${rule.obligation.name} ${rule.statement}"
-        }
+        val baselineBullets = baselineRules.map { "- ${it.obligation.name} ${it.statement}" }
         val baseline = OriginGroup(
             label = "baseline quality requirement",
             mandatoryRules = emptyList(),
@@ -50,9 +68,26 @@ class PromptGenerator {
             emptyNotation = if (baselineBullets.isEmpty()) "No baseline rules are available." else null,
         )
 
+        val preamble = "When rules conflict: project standard rules take precedence over baseline quality requirements; " +
+            "baseline quality requirements take precedence over unwritten team practice."
+
         return buildString {
+            append(preamble)
+            append("\n\n")
             append("### ${projectStandard.label}\n\n")
-            append(projectStandard.emptyNotation ?: projectStandard.advisoryRules.joinToString("\n"))
+            if (projectStandard.emptyNotation != null) {
+                append(projectStandard.emptyNotation)
+            } else {
+                if (projectStandard.mandatoryRules.isNotEmpty()) {
+                    append("#### Mandatory (build-breaking)\n\n")
+                    append(projectStandard.mandatoryRules.joinToString("\n"))
+                    append("\n\n")
+                }
+                if (projectStandard.advisoryRules.isNotEmpty()) {
+                    append("#### Advisory\n\n")
+                    append(projectStandard.advisoryRules.joinToString("\n"))
+                }
+            }
             append("\n\n")
             append("### ${baseline.label}\n\n")
             append(baseline.emptyNotation ?: baseline.advisoryRules.joinToString("\n"))
