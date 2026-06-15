@@ -1,0 +1,7 @@
+style:
+  MagicNumber:
+    ignoreEnums: true
+    ignorePropertyDeclaration: true
+  WildcardImport:
+    excludeImports:
+      - 'org.junit.jupiter.api.Assertions.*'

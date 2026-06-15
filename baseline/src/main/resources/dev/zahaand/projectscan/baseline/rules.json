@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "_curationNote": "FR-014: baseline rules are correctness and architectural best-practice ONLY. Style, formatting, and naming rules are prohibited — those belong exclusively to the project's own linters. This field is ignored by the parser (ignoreUnknownKeys).",
+  "rules": [
+    {
+      "id": "correctness.null-check-before-deref",
+      "level": "CORRECTNESS",
+      "category": "NULL_SAFETY",
+      "obligation": "MUST",
+      "statement": "Never dereference a reference that may be null without a prior null guard or Optional unwrap.",
+      "rationale": "Unconditional dereference of a potentially null reference is the single most common source of NullPointerExceptions in Java codebases. An explicit null guard makes defensive intent visible and eliminates an entire class of runtime failures that are impossible to reproduce deterministically in tests.",
+      "minJavaLevel": 8,
+      "languages": ["JAVA"]
+    },
+    {
+      "id": "correctness.optional-no-get-without-check",
+      "level": "CORRECTNESS",
+      "category": "NULL_SAFETY",
+      "obligation": "MUST",
+      "statement": "Never call Optional.get() without first verifying isPresent(), or use orElse()/orElseThrow() instead.",
+      "rationale": "Optional.get() on an empty Optional throws NoSuchElementException, which is semantically identical to a NullPointerException and defeats Optional's purpose as a null-safe container. The safe terminal operations make the absence case explicit and force the caller to handle it.",
+      "minJavaLevel": 8,
+      "languages": ["JAVA"]
+    },
+    {
+      "id": "correctness.try-with-resources",
+      "level": "CORRECTNESS",
+      "category": "RESOURCE_MANAGEMENT",
+      "obligation": "MUST",
+      "statement": "Always close AutoCloseable resources in a try-with-resources block rather than manually in a finally clause.",
+      "rationale": "Manual finally-based close is error-prone: an exception thrown during close can suppress the original exception, and omissions in multi-resource scenarios are frequent. Try-with-resources guarantees correct close ordering, suppressed-exception chaining, and eliminates an entire class of resource leaks.",
+      "minJavaLevel": 8,
+      "languages": ["JAVA"]
+    },
+    {
+      "id": "correctness.no-stream-after-close",
+      "level": "CORRECTNESS",
+      "category": "RESOURCE_MANAGEMENT",
+      "obligation": "MUST",
+      "statement": "Never read from or write to a stream, connection, or channel after it has been closed.",
+      "rationale": "Post-close I/O access causes unpredictable failures at the point of use rather than at the point of misuse, making the root cause difficult to trace. Closing a resource must be the final operation on it; callers must not retain references beyond the resource's scope.",
+      "minJavaLevel": 8,
+      "languages": ["JAVA"]
+    },
+    {
+      "id": "correctness.synchronized-on-non-final-field",
+      "level": "CORRECTNESS",
+      "category": "CONCURRENCY",
+      "obligation": "MUST",
+      "statement": "Never synchronize on a non-final field or a reference that may be reassigned after the lock is acquired.",
+      "rationale": "Synchronizing on a mutable reference means two threads may observe different monitor objects, making the critical section entirely unprotected. The bug is invisible to static analysis at call sites and produces intermittent data races that are extremely hard to reproduce.",
+      "minJavaLevel": 8,
+      "languages": ["JAVA"]
+    },
+    {
+      "id": "correctness.double-checked-locking-volatile",
+      "level": "CORRECTNESS",
+      "category": "CONCURRENCY",
+      "obligation": "MUST",
+      "statement": "When using double-checked locking, the guarded field must be declared volatile.",
+      "rationale": "Without volatile, the JVM memory model permits the compiler and CPU to reorder writes inside the synchronized block, allowing a second thread to observe a partially constructed object through the non-null reference check. This breaks the pattern's safety guarantee silently under JIT optimization.",
+      "minJavaLevel": 8,
+      "languages": ["JAVA"]
+    },
+    {
+      "id": "correctness.no-reflection-field-access",
+      "level": "CORRECTNESS",
+      "category": "DANGEROUS_CONSTRUCTS",
+      "obligation": "MUST",
+      "statement": "Do not use reflection to access or mutate private fields of classes you do not own.",
+      "rationale": "Bypassing access modifiers via reflection breaks encapsulation contracts, prevents refactoring of internal types, and silently fails when running under a SecurityManager or module system (JPMS) that enforces access restrictions. Reflection-based mutation can also violate object invariants that normal constructors maintain.",
+      "minJavaLevel": 8,
+      "languages": ["JAVA"]
+    },
+    {
+      "id": "correctness.no-system-exit-in-library",
+      "level": "CORRECTNESS",
+      "category": "DANGEROUS_CONSTRUCTS",
+      "obligation": "MUST",
+      "statement": "Never call System.exit() from library or plugin code; only entry-point classes that own the JVM process may terminate the process.",
+      "rationale": "System.exit() in a library immediately halts the entire JVM without running shutdown hooks or finalizers in the host application. In a plugin or embedded context the host application cannot recover or clean up, leading to data loss and unpredictable state corruption in the surrounding process.",
+      "minJavaLevel": 8,
+      "languages": ["JAVA"]
+    },
+    {
+      "id": "correctness.no-finalizer",
+      "level": "CORRECTNESS",
+      "category": "DANGEROUS_CONSTRUCTS",
+      "obligation": "MUST",
+      "statement": "Do not override Object.finalize() for resource cleanup; use try-with-resources, Cleaner, or explicit close() instead.",
+      "rationale": "Finalizers have non-deterministic execution timing, can resurrect objects, introduce serious security vulnerabilities (finalizer attacks), and impose GC overhead. The JVM provides safe, deterministic alternatives via AutoCloseable and the Cleaner API, both of which are reliable and easy to reason about.",
+      "minJavaLevel": 8,
+      "languages": ["JAVA"]
+    },
+    {
+      "id": "correctness.streams-parallel-shared-state",
+      "level": "CORRECTNESS",
+      "category": "CONCURRENCY",
+      "obligation": "MUST",
+      "statement": "Do not use parallel streams to operate on shared mutable state without external synchronization.",
+      "rationale": "Parallel streams execute operations concurrently on the common fork-join pool. Mutating shared state from stream operations without synchronization introduces data races that are non-deterministic and may not surface under single-threaded tests, making them production-only failures.",
+      "minJavaLevel": 11,
+      "languages": ["JAVA"]
+    },
+    {
+      "id": "best-practice.checked-exceptions-for-api",
+      "level": "BEST_PRACTICE",
+      "category": "EXCEPTION_HANDLING",
+      "obligation": "SHOULD",
+      "statement": "Throw checked exceptions for recoverable failure conditions in public APIs and unchecked exceptions for programming errors.",
+      "rationale": "Checked exceptions force callers to acknowledge recoverable failures at compile time, making the API contract explicit and preventing silent propagation. Unchecked exceptions for programming errors avoid cluttering call sites with unrecoverable conditions that callers cannot meaningfully handle.",
+      "minJavaLevel": 8,
+      "languages": ["JAVA"]
+    },
+    {
+      "id": "best-practice.string-builder-in-loop",
+      "level": "BEST_PRACTICE",
+      "category": "STRING_PERFORMANCE",
+      "obligation": "MUST",
+      "statement": "Use StringBuilder or String.join() to concatenate strings in a loop rather than the + operator.",
+      "rationale": "Each use of the + operator on String inside a loop allocates a new String object and copies all prior content, producing O(n²) time and memory complexity. StringBuilder appends in amortized O(1) and is the correct tool for any non-trivial string assembly.",
+      "minJavaLevel": 8,
+      "languages": ["JAVA"]
+    },
+    {
+      "id": "best-practice.single-responsibility",
+      "level": "BEST_PRACTICE",
+      "category": "DECOMPOSITION",
+      "obligation": "SHOULD",
+      "statement": "Each class and method should have a single, clearly stated responsibility; extract cohesive behavior into separate types when a class takes on more than one distinct concern.",
+      "rationale": "A class with multiple responsibilities must change for multiple unrelated reasons, increasing the probability of introducing regressions. Single-responsibility types are independently testable, replaceable, and understandable without loading surrounding context.",
+      "minJavaLevel": 8,
+      "languages": ["JAVA"]
+    },
+    {
+      "id": "best-practice.prefer-immutable-value-objects",
+      "level": "BEST_PRACTICE",
+      "category": "IMMUTABILITY",
+      "obligation": "SHOULD",
+      "statement": "Design value objects as immutable by making all fields final and providing no mutating methods.",
+      "rationale": "Immutable objects cannot experience partially-constructed or inconsistent state, are inherently thread-safe without synchronization, and can be shared freely across threads and caches. They eliminate an entire category of bugs caused by unexpected aliasing and in-place mutation.",
+      "minJavaLevel": 8,
+      "languages": ["JAVA"]
+    },
+    {
+      "id": "best-practice.program-to-interface",
+      "level": "BEST_PRACTICE",
+      "category": "INTERFACE_PROGRAMMING",
+      "obligation": "SHOULD",
+      "statement": "Declare variables and method parameters using interface or abstract types rather than concrete implementation types.",
+      "rationale": "Programming to interfaces decouples call sites from implementation details, enabling substitution of alternative implementations (including test doubles) without changing callers. Concrete types in signatures leak implementation choices that are hard to change without breaking dependents.",
+      "minJavaLevel": 8,
+      "languages": ["JAVA"]
+    },
+    {
+      "id": "correctness.record-fields-defensive-copy",
+      "level": "CORRECTNESS",
+      "category": "NULL_SAFETY",
+      "obligation": "MUST",
+      "statement": "When a record or value object accepts mutable collections or arrays as constructor arguments, store a defensive copy rather than the original reference.",
+      "rationale": "Storing the caller's mutable reference allows external code to modify the object's state after construction, breaking the immutability contract. Defensive copies ensure the object controls its own invariants for its entire lifetime regardless of what the caller does with the original.",
+      "minJavaLevel": 17,
+      "languages": ["JAVA"]
+    }
+  ]
+}

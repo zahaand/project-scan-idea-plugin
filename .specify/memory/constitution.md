@@ -119,6 +119,8 @@ are decided at implementation/publication time and are not pinned in this consti
 - `model` has NO outgoing dependencies on any other component.
 - `scan`, `prompt`, and `ui` each depend on `model`.
 - `scan`, `prompt`, and `ui` MUST NOT depend on each other.
+- `baseline` has no outgoing dependencies on `scan`, `prompt`, or `ui`; it MAY depend on `model` if/when a shared type is consumed (not in Sprint 3).
+- `prompt` and `ui` MAY depend on `baseline`; `scan` MUST NOT depend on `baseline`.
 
 ## Governance
 
@@ -135,4 +137,4 @@ are decided at implementation/publication time and are not pinned in this consti
 - **Amendment procedure**: Proposed amendments are documented, the constitution version is bumped
   per the rules above, and the change is recorded in `CHANGELOG.md`.
 
-**Version**: 1.0.0 | **Ratified**: 2026-06-12 | **Last Amended**: 2026-06-12
+**Version**: 1.0.1 | **Ratified**: 2026-06-12 | **Last Amended**: 2026-06-15
