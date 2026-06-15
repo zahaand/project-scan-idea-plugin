@@ -5,6 +5,7 @@ rootProject.name = "project-scan-idea-plugin"
 include(":model")
 include(":scan")
 include(":baseline")
+include(":prompt")
 
 pluginManagement {
     plugins {
