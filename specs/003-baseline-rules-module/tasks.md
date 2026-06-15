@@ -30,9 +30,9 @@ Gradle submodule layout: `baseline/src/main/kotlin/dev/zahaand/projectscan/basel
 
 **Purpose**: Register `:baseline` as a Gradle submodule and configure its build script
 
-- [ ] T001 Update `settings.gradle.kts`: add `include(":baseline")` to the includes block and add `id("org.jetbrains.kotlin.plugin.serialization") version "2.2.20"` inside the `pluginManagement.plugins` block (same version as the Kotlin JVM plugin)
-- [ ] T002 [P] Create `baseline/build.gradle.kts`: apply plugins `kotlin("jvm")`, `id("org.jetbrains.kotlin.plugin.serialization")`, `id("io.gitlab.arturbosch.detekt")`, `id("org.jlleitschuh.gradle.ktlint")`; add dependencies `implementation(kotlin("stdlib"))`, `implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")`, `testImplementation(libs.junit.jupiter)`, `testRuntimeOnly("org.junit.platform:junit-platform-launcher")`; configure `tasks.test { useJUnitPlatform() }` and `detekt { config.setFrom(files("config/detekt.yml")); buildUponDefaultConfig = true }`
-- [ ] T003 [P] Create the source directory tree: `baseline/src/main/kotlin/dev/zahaand/projectscan/baseline/`, `baseline/src/main/resources/dev/zahaand/projectscan/baseline/`, and `baseline/src/test/kotlin/dev/zahaand/projectscan/baseline/`
+- [X] T001 Update `settings.gradle.kts`: add `include(":baseline")` to the includes block and add `id("org.jetbrains.kotlin.plugin.serialization") version "2.2.20"` inside the `pluginManagement.plugins` block (same version as the Kotlin JVM plugin)
+- [X] T002 [P] Create `baseline/build.gradle.kts`: apply plugins `kotlin("jvm")`, `id("org.jetbrains.kotlin.plugin.serialization")`, `id("io.gitlab.arturbosch.detekt")`, `id("org.jlleitschuh.gradle.ktlint")`; add dependencies `implementation(kotlin("stdlib"))`, `implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")`, `testImplementation(libs.junit.jupiter)`, `testRuntimeOnly("org.junit.platform:junit-platform-launcher")`; configure `tasks.test { useJUnitPlatform() }` and `detekt { config.setFrom(files("config/detekt.yml")); buildUponDefaultConfig = true }`
+- [X] T003 [P] Create the source directory tree: `baseline/src/main/kotlin/dev/zahaand/projectscan/baseline/`, `baseline/src/main/resources/dev/zahaand/projectscan/baseline/`, and `baseline/src/test/kotlin/dev/zahaand/projectscan/baseline/`
 
 ---
 
@@ -42,8 +42,8 @@ Gradle submodule layout: `baseline/src/main/kotlin/dev/zahaand/projectscan/basel
 
 **⚠️ CRITICAL**: No user story implementation can begin until these types exist
 
-- [ ] T004 [P] Create `baseline/src/main/kotlin/dev/zahaand/projectscan/baseline/BaselineRule.kt`: define `@Serializable enum class BaselineLevel { CORRECTNESS, BEST_PRACTICE }`, `@Serializable enum class BaselineCategory { NULL_SAFETY, RESOURCE_MANAGEMENT, CONCURRENCY, DANGEROUS_CONSTRUCTS, EXCEPTION_HANDLING, STRING_PERFORMANCE, DECOMPOSITION, IMMUTABILITY, INTERFACE_PROGRAMMING }`, `@Serializable enum class Obligation { MUST, SHOULD }`, `@Serializable enum class BaselineLanguage { JAVA }`, and `@Serializable data class BaselineRule(val id: String, val level: BaselineLevel, val category: BaselineCategory, val obligation: Obligation, val statement: String, val rationale: String, val minJavaLevel: Int, val languages: List<BaselineLanguage>)`
-- [ ] T005 [P] Create `baseline/src/main/kotlin/dev/zahaand/projectscan/baseline/BaselineLoadException.kt`: define `class BaselineLoadException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)` — the single unchecked failure signal for all load and validation errors in `:baseline`
+- [X] T004 [P] Create `baseline/src/main/kotlin/dev/zahaand/projectscan/baseline/BaselineRule.kt`: define `@Serializable enum class BaselineLevel { CORRECTNESS, BEST_PRACTICE }`, `@Serializable enum class BaselineCategory { NULL_SAFETY, RESOURCE_MANAGEMENT, CONCURRENCY, DANGEROUS_CONSTRUCTS, EXCEPTION_HANDLING, STRING_PERFORMANCE, DECOMPOSITION, IMMUTABILITY, INTERFACE_PROGRAMMING }`, `@Serializable enum class Obligation { MUST, SHOULD }`, `@Serializable enum class BaselineLanguage { JAVA }`, and `@Serializable data class BaselineRule(val id: String, val level: BaselineLevel, val category: BaselineCategory, val obligation: Obligation, val statement: String, val rationale: String, val minJavaLevel: Int, val languages: List<BaselineLanguage>)`
+- [X] T005 [P] Create `baseline/src/main/kotlin/dev/zahaand/projectscan/baseline/BaselineLoadException.kt`: define `class BaselineLoadException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)` — the single unchecked failure signal for all load and validation errors in `:baseline`
 
 **Checkpoint**: Data types compile — Phase 3 implementation can now begin
 

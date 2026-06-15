@@ -4,10 +4,12 @@ rootProject.name = "project-scan-idea-plugin"
 
 include(":model")
 include(":scan")
+include(":baseline")
 
 pluginManagement {
     plugins {
         id("org.jetbrains.kotlin.jvm") version "2.2.20"
+        id("org.jetbrains.kotlin.plugin.serialization") version "2.2.20"
         id("org.jetbrains.changelog") version "2.5.0"
         id("io.gitlab.arturbosch.detekt") version "1.23.8"
         id("org.jlleitschuh.gradle.ktlint") version "12.2.0"
