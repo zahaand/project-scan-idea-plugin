@@ -122,7 +122,7 @@ description: "Task list for :prompt module — Constitution Prompt Generator"
 ### Implementation for User Story 4
 
 - [ ] T023 [US4] Audit all six block builders in `PromptGenerator.kt` and verify every `SectionResult.Empty` branch emits exactly `"not detected"` and every `SectionResult.Error` branch emits `"not available (cause: ${error.cause})"` when `error.cause != null` or plain `"not available"` when `error.cause == null` — add or fix missing cases; the centralised `formatError()` helper from Phase 3 is the single enforcement point
-- [ ] T024 [US4] ~~Separate cause-null guard task — subsumed by T023~~. Verify the null-cause guard via `PromptGeneratorEmptyModelTest` scenario 5 (mixed Ok/Error with `cause = null`). No additional audit pass needed; `formatError()` from Phase 3 already centralises the guard. Mark complete once T022 scenario 5 passes.
+- [x] T024 [US4] ~~Separate cause-null guard task — subsumed by T023~~. Subsumed by T023; automatically satisfied when T022 scenario 5 (mixed Ok/Error) passes — no independent work.
 
 **Checkpoint**: `./gradlew :prompt:test` — all tests across the four test classes pass
 

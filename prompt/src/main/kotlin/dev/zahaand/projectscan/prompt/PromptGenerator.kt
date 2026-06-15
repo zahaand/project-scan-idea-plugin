@@ -79,12 +79,12 @@ class PromptGenerator {
                 append(projectStandard.emptyNotation)
             } else {
                 if (projectStandard.mandatoryRules.isNotEmpty()) {
-                    append("#### Mandatory (build-breaking)\n\n")
+                    append("#### Mandatory (build-breaking)\n")
                     append(projectStandard.mandatoryRules.joinToString("\n"))
                     append("\n\n")
                 }
                 if (projectStandard.advisoryRules.isNotEmpty()) {
-                    append("#### Advisory\n\n")
+                    append("#### Advisory\n")
                     append(projectStandard.advisoryRules.joinToString("\n"))
                 }
             }

@@ -91,6 +91,15 @@ class PromptGeneratorPriorityHierarchyTest {
         val advisorySection = section.substring(advisoryStart)
         assertTrue(advisorySection.contains("rule-NULL"), "rule-NULL (breaksBuild=null) must be under #### Advisory — no exception for null")
         assertTrue(advisorySection.contains("rule-ADVISORY"), "rule-ADVISORY (breaksBuild=false) must be under #### Advisory")
+
+        assertTrue(
+            section.contains("#### Mandatory (build-breaking)\n-"),
+            "No blank line between '#### Mandatory (build-breaking)' heading and its first bullet (prompt-api.md separator contract)",
+        )
+        assertTrue(
+            section.contains("#### Advisory\n-"),
+            "No blank line between '#### Advisory' heading and its first bullet (prompt-api.md separator contract)",
+        )
     }
 
     @Test
