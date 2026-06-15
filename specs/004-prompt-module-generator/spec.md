@@ -69,14 +69,14 @@ A developer opens a brand-new or not-yet-imported project in IntelliJ. The scan 
 
 **Why this priority**: The baseline always applies, even when no project data exists. An empty-project case that crashes or returns garbage would make the module unreliable.
 
-**Independent Test**: A unit test that provides a `ScanResult` with all five sections as `SectionResult.Empty` and a non-empty baseline list, calls the generator, and asserts that (a) the prompt is non-empty, (b) the Core Principles block contains baseline rules, (c) the "project standard" group contains a "no rules detected" notation, and (d) none of the other five blocks contains fabricated content.
+**Independent Test**: A unit test that provides a `ScanResult` with all five sections as `SectionResult.Empty` and a non-empty baseline list, calls the generator, and asserts that (a) the prompt is non-empty, (b) the Core Principles block contains baseline rules, (c) the "project standard" group contains the FR-008 canonical marker `"not detected"`, and (d) none of the other five blocks contains fabricated content.
 
 **Acceptance Scenarios**:
 
 1. **Given** a `ScanResult` where all five sections are `SectionResult.Empty`, **When** the generator is called with a non-empty baseline list, **Then** the returned prompt is non-empty and its rendered text contains six block headings.
 2. **Given** all scan sections are `SectionResult.Empty`, **When** the generated prompt is inspected, **Then** the "project standard" principle group is present and renders the FR-008 canonical marker `not detected` — it does NOT omit the group entirely.
 3. **Given** all scan sections are `SectionResult.Empty`, **When** the generated prompt is inspected, **Then** all baseline rules appear in the Core Principles block (language-level filtering is inactive: no level to compare against).
-4. **Given** all scan sections are `SectionResult.Empty`, **When** the generated prompt is inspected, **Then** the Tech Stack, Code Style, Testing, and Project Structure blocks each contain an explicit "not detected" or "not available" marker — none contain guessed or inferred data.
+4. **Given** all scan sections are `SectionResult.Empty`, **When** the generated prompt is inspected, **Then** the Tech Stack, Code Style, Testing, and Project Structure blocks each contain exactly `"not detected"` — the FR-008 marker for `SectionResult.Empty`; `"not available"` MUST NOT appear (the two markers are not interchangeable per SC-005).
 5. **Given** a `ScanResult` where some sections are `SectionResult.Ok` and others are `SectionResult.Error`, **When** the generator is called, **Then** Ok sections contribute their data, Error sections are marked as "not available" with an optional error note, and no exception is thrown.
 
 ---
