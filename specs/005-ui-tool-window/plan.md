@@ -85,9 +85,28 @@ src/main/resources/messages/MyMessageBundle.properties
 
 Use a custom expandable panel built from `JBPanel` + `JButton` toggle (shows/hides the body `JPanel` via `isVisible`). `CollapsiblePanel` is internal API and not reliably available. See [research.md § 1](research.md).
 
-### 2. ScanService Wiring
+### 2. ScanService Wiring Contract
 
-Wire all six IJ adapters and two config parsers directly in `ProjectScanToolWindowFactory.createToolWindowContent()`. No DI framework or IntelliJ Service registration required. See [research.md § 2](research.md).
+Wire all six IJ adapters and two config parsers directly in `ProjectScanToolWindowFactory.createToolWindowContent()`. No DI framework, factory method, or companion object exists in `:scan` — the `ScanService` constructor is the only wiring point. No IntelliJ Service registration is required.
+
+**Exact constructor parameter order** (verified against `scan/ScanService.kt`):
+
+```kotlin
+ScanService(
+    buildSystemPort    = IjBuildSystemAdapter(project),
+    dependencyPort     = IjDependencyAdapter(project),
+    styleSourcePort    = IjStyleSourceAdapter(project),
+    linterPort         = IjLinterAdapter(project),
+    linterConfigParsers = mapOf(
+        "checkstyle" to CheckstyleConfigParser(),
+        "pmd"        to PmdConfigParser(),
+    ),
+    testInfoPort       = IjTestInfoAdapter(project),
+    moduleStructurePort = IjModuleStructureAdapter(project),
+)
+```
+
+`PromptGenerator` takes no constructor arguments. `BaselineRuleProvider.rules` is a lazy-loaded singleton list — pass it unfiltered (see spec Assumptions). See [research.md § 2](research.md).
 
 ### 3. Section Body Rendering
 
