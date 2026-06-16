@@ -158,7 +158,7 @@ FR-003, FR-016, FR-017, FR-018, FR-019, FR-020, FR-021, FR-022 are structural re
 - The UI is English-only; no localization infrastructure is built.
 - Testing of the thin UI/assembly layer is proportionate: no mandatory unit-test coverage is required; manual verification via IDE run is the primary validation method.
 - The `:ui` module is the only module that may depend on the IntelliJ Platform SDK; lower modules remain platform-free.
-- Collapsible sections use the standard IntelliJ Platform collapsible panel mechanism; no custom expand/collapse widgets are built.
+- Collapsible sections are built from a `JBPanel` + a `JButton` toggle that flips body visibility; the platform's internal `CollapsiblePanel` API is not used (it is internal and not reliably available).
 - The `:scan` module isolates collection errors per section (Sprint 2 design): `ScanService.scan()` always returns a `ScanResult` under normal operation. A top-level exception (FR-006a) is an anomaly outside per-section isolation — a service bug or infrastructure failure — not an expected code path.
 - `:ui` passes the **full, unfiltered** `BaselineRuleProvider.rules` list to `PromptGenerator.generate()`. Baseline filtering by Java language level is performed inside `:prompt`; `:ui` MUST NOT pre-filter the baseline list, or the prompt output would differ from the intended constitution content.
 - Accessibility (keyboard navigation, screen reader labels for the tool window and section panels) is out of MVP scope. Standard Swing/IntelliJ Platform components provide baseline keyboard navigation. Tracked as post-MVP technical debt.

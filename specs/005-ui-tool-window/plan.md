@@ -58,10 +58,15 @@ src/
     │       ├── ProjectScanToolWindowFactory.kt   # ToolWindowFactory entry point; wires all adapters + ScanService
     │       ├── ProjectScanPanel.kt               # Main JBPanel; manages PreScan / PostScan state transitions
     │       ├── SectionPanel.kt                   # Collapsible section: header toggle + body + copy button
-    │       └── ScanResultRenderer.kt             # Pure functions: SectionResult<T> → display string per section
+    │       ├── ScanResultRenderer.kt             # Pure functions: SectionResult<T> → display string per section
+    │       ├── ProjectScanBundle.kt              # DynamicBundle wrapper for messages/ProjectScanBundle.properties
+    │       ├── ScanPanelState.kt                 # Sealed class: PreScan | PostScan(PostScanData)
+    │       └── UiSection.kt                      # Data class: flattened section ready for rendering
     └── resources/
         ├── META-INF/
-        │   └── plugin.xml                        # Updated: factoryClass + resource-bundle updated
+        │   └── plugin.xml                        # Updated: factoryClass, resource-bundle, icon, anchor
+        ├── icons/
+        │   └── projectScanToolWindow.svg         # 16×16 tool window icon (distinct from pluginIcon.svg)
         └── messages/
             └── ProjectScanBundle.properties      # All UI strings (replaces MyMessageBundle.properties)
 
