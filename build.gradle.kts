@@ -24,6 +24,8 @@ dependencies {
 
         // Add plugin dependencies for compilation here:
         bundledPlugin("com.intellij.java")
+        bundledPlugin("org.jetbrains.idea.maven")
+        bundledPlugin("com.intellij.gradle")
     }
 }
 
