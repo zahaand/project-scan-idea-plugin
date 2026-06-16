@@ -60,7 +60,6 @@ src/
     │       ├── SectionPanel.kt                   # Collapsible section: header toggle + body + copy button
     │       ├── ScanResultRenderer.kt             # Pure functions: SectionResult<T> → display string per section
     │       ├── ProjectScanBundle.kt              # DynamicBundle wrapper for messages/ProjectScanBundle.properties
-    │       ├── ScanPanelState.kt                 # Sealed class: PreScan | PostScan(PostScanData)
     │       └── UiSection.kt                      # Data class: flattened section ready for rendering
     └── resources/
         ├── META-INF/
@@ -75,6 +74,8 @@ src/main/kotlin/dev/zahaand/MyToolWindowFactory.kt
 src/main/kotlin/dev/zahaand/MyMessageBundle.kt
 src/main/resources/messages/MyMessageBundle.properties
 ```
+
+*Note: `ScanPanelState.kt` was removed during implementation; UI state (PreScan / PostScan) is managed inline via `@Volatile` fields in `ProjectScanPanel.kt` rather than a dedicated sealed class.*
 
 **Structure Decision**: Root module only. No new Gradle subproject is created for `:ui`. The root module is already the plugin module — code is added to `src/main/kotlin/dev/zahaand/projectscan/ui/`. The `build.gradle.kts` is updated to add `:scan`, `:baseline`, `:prompt` dependencies.
 

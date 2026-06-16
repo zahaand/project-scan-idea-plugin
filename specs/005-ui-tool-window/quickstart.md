@@ -20,6 +20,7 @@ This launches a sandboxed IntelliJ IDEA instance with the plugin loaded. Open an
    Tech Stack → Code Style → Linters → Tests → Project Structure → Constitution Prompt.
 5. Confirm the first five sections are expanded and the Constitution Prompt is collapsed.
 6. Click **Copy** on any `Ok` section. Paste into a text editor and verify the text matches.
+7. Click **Scan** a second time. Confirm the existing sections remain visible during the scan and are replaced only on completion. Confirm the collapse state resets to the default (collection sections expanded, Constitution Prompt collapsed). *(Covers FR-019, FR-020)*
 
 ## Key source locations after Sprint 5
 

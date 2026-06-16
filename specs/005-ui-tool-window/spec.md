@@ -50,8 +50,8 @@ A developer scans a project that has no linter configuration. They can tell at a
 
 **Acceptance Scenarios**:
 
-1. **Given** a collection section produces no data because nothing was found, **When** the section is rendered, **Then** the body shows a "not detected" placeholder message and the "Copy" button is disabled.
-2. **Given** a collection section fails with an error during collection, **When** the section is rendered, **Then** the body shows a "not available" placeholder (optionally with a short cause) that is textually distinct from the "not detected" placeholder, and the "Copy" button is disabled.
+1. **Given** a collection section produces no data because nothing was found, **When** the section is rendered, **Then** the body shows a "Not detected" placeholder message and the "Copy" button is disabled.
+2. **Given** a collection section fails with an error during collection, **When** the section is rendered, **Then** the body shows a "Not available" placeholder (optionally with a short cause) that is textually distinct from the "Not detected" placeholder, and the "Copy" button is disabled.
 
 ---
 
@@ -93,8 +93,8 @@ A developer installs the plugin and opens the tool window for the first time. Th
 - **FR-008**: After a scan **successfully** completes, the panel MUST render six collapsible sections in this order, with these exact displayed titles: "Tech Stack", "Code Style", "Linters", "Tests", "Project Structure", "Constitution Prompt". The five collection sections MUST be expanded by default; the Constitution Prompt section MUST be collapsed by default. If the background task ends with a top-level exception, sections are NOT rendered — see FR-006a.
 - **FR-009**: Each of the five collection sections MUST display a human-readable text body rendered from the corresponding `SectionResult`. For `Ok` sections, the body is rendered as plain text presenting the collected fields as-is, following the "facts, not interpretation" principle: the renderer shows what was found without classifying or interpreting the data. Per-section formatting detail is specified in the implementation plan.
 - **FR-010**: For a collection section in the `Ok` state, the body MUST show rendered section data and the "Copy" button MUST be enabled.
-- **FR-011**: For a collection section in the `Empty` state, the body MUST show the placeholder text "not detected" and the "Copy" button MUST be disabled.
-- **FR-012**: For a collection section in the `Error` state, the body MUST show the placeholder text "not available" (optionally appended with a short cause) and the "Copy" button MUST be disabled. The "not available" text is textually distinct from the "not detected" text of FR-011; textual distinction alone satisfies SC-004 — color or icon differentiation is not required.
+- **FR-011**: For a collection section in the `Empty` state, the body MUST show the placeholder text "Not detected" and the "Copy" button MUST be disabled.
+- **FR-012**: For a collection section in the `Error` state, the body MUST show the placeholder text "Not available" (optionally appended with a short cause) and the "Copy" button MUST be disabled. The "Not available" text is textually distinct from the "Not detected" text of FR-011; textual distinction alone satisfies SC-004 — color or icon differentiation is not required.
 - **FR-013**: The Constitution Prompt section MUST display the full output of `ConstitutionPrompt.render()` verbatim, without modification.
 - **FR-014**: The Constitution Prompt section's "Copy" button MUST always be enabled after any successful scan, regardless of the states of the five collection sections. The prompt is always generated from `PromptGenerator.generate()` even when all collection sections are `Empty` or `Error`.
 - **FR-015**: Clicking "Copy" on any enabled section MUST place the section's displayed text on the system clipboard.
@@ -136,7 +136,7 @@ FR-003, FR-016, FR-017, FR-018, FR-019, FR-020, FR-021, FR-022 are structural re
 - **SC-001**: A developer can open the tool window, click "Scan", and see all six sections populated within the time it takes the IDE's existing project model to be queried — no artificial delays.
 - **SC-002**: Clicking "Copy" on an enabled section always places the exact displayed text on the clipboard, verified by paste into any text field.
 - **SC-003**: The IDE remains fully responsive (no UI freeze, no modal dialog) throughout a scan run. Responsiveness is guaranteed by design (off-EDT execution via `Task.Backgroundable`; no modal dialogs) and verified by the IDE not freezing during a scan.
-- **SC-004**: The `Empty` and `Error` section states are textually distinguishable by their placeholder text alone: `Empty` shows "not detected"; `Error` shows "not available" (optionally with a short cause). Textual distinction alone satisfies this criterion; color or icon differentiation is not required.
+- **SC-004**: The `Empty` and `Error` section states are textually distinguishable by their placeholder text alone: `Empty` shows "Not detected"; `Error` shows "Not available" (optionally with a short cause). Textual distinction alone satisfies this criterion; color or icon differentiation is not required.
 - **SC-005**: After demo-file cleanup, no reference to `MyToolWindowFactory`, `MyMessageBundle`, or the demo `.properties` file remains anywhere in the plugin's source or configuration. "Configuration" for this criterion includes: `plugin.xml`, Gradle build files, `.run` run-configuration files, and Kotlin source files.
 - **SC-006**: All six sections appear in the following order on every scan: Tech Stack → Code Style → Linters → Tests → Project Structure → Constitution Prompt.
 
