@@ -66,7 +66,7 @@ A developer installs the plugin and opens the tool window for the first time. Th
 **Acceptance Scenarios**:
 
 1. **Given** the tool window has never been used, **When** the user opens it, **Then** only the "Scan" button and optional hint text are visible; no section panels are rendered.
-2. **Given** the tool window is in the pre-scan state, **When** the user clicks "Scan" and the scan completes, **Then** all six section panels appear and remain visible for subsequent opens of the tool window.
+2. **Given** the tool window is in the pre-scan state, **When** the user clicks "Scan" and the scan completes, **Then** all six section panels appear and remain visible for the duration of the current IDE session (results are held in memory and are not restored after an IDE restart).
 
 ---
 
@@ -76,6 +76,7 @@ A developer installs the plugin and opens the tool window for the first time. Th
 - What happens if the user clicks "Scan" while a scan is already running? — The "Scan" button is disabled during the scan, so re-entry is prevented.
 - What happens if one section errors but others succeed? — Each section is rendered independently with its own state; the erroring section shows the error placeholder, and other sections with `Ok` state have their "Copy" buttons enabled.
 - What happens when the tool window is closed and reopened mid-scan? — The background task continues; upon reopening, the state reflects whatever the scan has produced so far or the completed result.
+- What happens when `ScanService` throws an unexpected top-level exception (not a per-section `SectionResult.Error`)? — The panel reverts to the pre-scan state, the "Scan" button is re-enabled, and an IDE error notification balloon is shown describing the failure.
 
 ## Requirements *(mandatory)*
 
@@ -86,9 +87,10 @@ A developer installs the plugin and opens the tool window for the first time. Th
 - **FR-003**: The Tool Window panel MUST be vertically scrollable via a single scroll pane.
 - **FR-004**: The panel MUST show a single "Scan" button at the top with a fixed label that does not change based on prior scan history.
 - **FR-005**: Clicking "Scan" MUST disable the button immediately and run the collection and prompt generation in the background without blocking the IDE.
-- **FR-006**: The "Scan" button MUST be re-enabled once the background task completes (success or failure).
+- **FR-006**: The "Scan" button MUST be re-enabled once the background task completes (success or failure), including when a top-level exception aborts the scan.
+- **FR-006a**: If `ScanService` throws an unexpected top-level exception, the panel MUST revert to the pre-scan state and the IDE MUST display an error notification balloon describing the failure.
 - **FR-007**: Before the first scan completes, the panel MUST NOT render the six section panels.
-- **FR-008**: After a scan completes, the panel MUST render six collapsible sections in order: Tech Stack, Code Style, Linters, Tests, Project Structure, Constitution Prompt.
+- **FR-008**: After a scan completes, the panel MUST render six collapsible sections in order: Tech Stack, Code Style, Linters, Tests, Project Structure, Constitution Prompt. The five collection sections MUST be expanded by default; the Constitution Prompt section MUST be collapsed by default.
 - **FR-009**: Each of the five collection sections MUST display a human-readable text body rendered from the corresponding `SectionResult`.
 - **FR-010**: For a collection section in the `Ok` state, the body MUST show rendered section data and the "Copy" button MUST be enabled.
 - **FR-011**: For a collection section in the `Empty` state, the body MUST show a "not detected" placeholder and the "Copy" button MUST be disabled.
@@ -119,10 +121,19 @@ A developer installs the plugin and opens the tool window for the first time. Th
 - **SC-005**: After demo-file cleanup, no reference to `MyToolWindowFactory`, `MyMessageBundle`, or the demo `.properties` file remains anywhere in the plugin's source or configuration.
 - **SC-006**: All six sections appear in the correct declared order on every scan.
 
+## Clarifications
+
+### Session 2026-06-16
+
+- Q: Are scan results persisted across IDE restarts, or held in memory for the current session only? → A: Session-only — results are kept in memory and lost when the IDE is restarted.
+- Q: What happens when ScanService throws an unexpected top-level exception (not a per-section SectionResult.Error)? → A: Show an IDE error notification balloon; revert the panel to the pre-scan state; re-enable the "Scan" button.
+- Q: What is the default expand/collapse state of sections when first rendered after a scan? → A: The five collection sections are expanded by default; the Constitution Prompt section is collapsed by default (the prompt body is long).
+
 ## Assumptions
 
 - The four lower modules (`:model`, `:scan`, `:baseline`, `:prompt`) are complete, stable, and their public APIs will not change during this sprint.
 - The plugin is create-only: it never reads an existing Constitution file and never distinguishes a "first run" from a "rescan" at the data level.
+- Scan results are held in memory for the current IDE session only; no persistent state storage is required. Opening a new IDE window or restarting the IDE shows the pre-scan state again.
 - File-export of section content is out of scope; clipboard copy is the only output action.
 - No Kotlin coroutines are introduced; `Task.Backgroundable` is sufficient for the single button-triggered background task.
 - The UI is English-only; no localization infrastructure is built.
