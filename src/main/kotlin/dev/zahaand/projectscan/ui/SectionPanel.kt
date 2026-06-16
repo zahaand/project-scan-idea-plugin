@@ -1,6 +1,6 @@
 package dev.zahaand.projectscan.ui
 
-import com.intellij.ide.CopyPasteManager
+import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
