@@ -12,6 +12,9 @@ plugins {
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin.html
 dependencies {
     implementation(project(":model"))
+    implementation(project(":scan"))
+    implementation(project(":baseline"))
+    implementation(project(":prompt"))
     testImplementation(libs.junit)
 
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html

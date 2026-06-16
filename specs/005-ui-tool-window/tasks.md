@@ -24,10 +24,10 @@ description: "Task list for UI Tool Window implementation"
 
 **Purpose**: Remove the generated scaffold and put foundational infrastructure in place. Every subsequent phase depends on these tasks being done.
 
-- [ ] T001 Delete demo scaffold files: `src/main/kotlin/dev/zahaand/MyToolWindowFactory.kt`, `src/main/kotlin/dev/zahaand/MyMessageBundle.kt`, `src/main/resources/messages/MyMessageBundle.properties` (FR-017, FR-018)
-- [ ] T002 [P] Create tool window SVG icon `src/main/resources/icons/projectScanToolWindow.svg` — minimal 16×16 SVG with a visually distinct mark from `pluginIcon.svg`; use `viewBox="0 0 16 16"` (FR-002)
-- [ ] T003 Update root `build.gradle.kts` — add `implementation(project(":scan"))`, `implementation(project(":baseline"))`, `implementation(project(":prompt"))` to the root module's `dependencies {}` block
-- [ ] T004 Update `src/main/resources/META-INF/plugin.xml` — change `factoryClass` to `dev.zahaand.projectscan.ui.ProjectScanToolWindowFactory`; update `<resource-bundle>` to `messages.ProjectScanBundle`; add `icon="/icons/projectScanToolWindow.svg"` attribute to `<toolWindow>`; remove all `My*` class and bundle references (FR-017)
+- [X] T001 Delete demo scaffold files: `src/main/kotlin/dev/zahaand/MyToolWindowFactory.kt`, `src/main/kotlin/dev/zahaand/MyMessageBundle.kt`, `src/main/resources/messages/MyMessageBundle.properties` (FR-017, FR-018)
+- [X] T002 [P] Create tool window SVG icon `src/main/resources/icons/projectScanToolWindow.svg` — minimal 16×16 SVG with a visually distinct mark from `pluginIcon.svg`; use `viewBox="0 0 16 16"` (FR-002)
+- [X] T003 Update root `build.gradle.kts` — add `implementation(project(":scan"))`, `implementation(project(":baseline"))`, `implementation(project(":prompt"))` to the root module's `dependencies {}` block
+- [X] T004 Update `src/main/resources/META-INF/plugin.xml` — change `factoryClass` to `dev.zahaand.projectscan.ui.ProjectScanToolWindowFactory`; update `<resource-bundle>` to `messages.ProjectScanBundle`; add `icon="/icons/projectScanToolWindow.svg"` attribute to `<toolWindow>`; remove all `My*` class and bundle references (FR-017)
 
 ---
 
@@ -37,7 +37,7 @@ description: "Task list for UI Tool Window implementation"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T005 Create `src/main/resources/messages/ProjectScanBundle.properties` with all 13 key-value pairs from research.md §7 (FR-016):
+- [X] T005 Create `src/main/resources/messages/ProjectScanBundle.properties` with all 13 key-value pairs from research.md §7 (FR-016):
   ```
   toolwindow.ProjectScan.title=Project Scan
   toolwindow.ProjectScan.scan.button=Scan
@@ -54,10 +54,10 @@ description: "Task list for UI Tool Window implementation"
   section.copy.button=Copy
   scan.error.notification.title=Project Scan Failed
   ```
-- [ ] T006 Create `src/main/kotlin/dev/zahaand/projectscan/ui/ProjectScanBundle.kt` — `object` extending `DynamicBundle("messages/ProjectScanBundle")` with a `message(key: String, vararg params: Any): String` companion function (FR-016)
-- [ ] T007 [P] Create `src/main/kotlin/dev/zahaand/projectscan/ui/ScanPanelState.kt` — `sealed class ScanPanelState` with `object PreScan` and `data class PostScan(val data: PostScanData)`; `data class PostScanData(val scanResult: ScanResult, val constitutionPrompt: ConstitutionPrompt)` per data-model.md
-- [ ] T008 [P] Create `src/main/kotlin/dev/zahaand/projectscan/ui/UiSection.kt` — `data class UiSection(val title: String, val body: String, val copyEnabled: Boolean, val collapsedByDefault: Boolean)` per data-model.md
-- [ ] T009 Create `src/main/kotlin/dev/zahaand/projectscan/ui/ScanResultRenderer.kt` — `object` with `render(scanResult: ScanResult, constitutionPrompt: ConstitutionPrompt): List<UiSection>` returning exactly 6 items in declared order; implement all rendering rules from data-model.md: Tech Stack/Code Style/Linters/Tests/Project Structure each produce bullet-list text for `Ok` and bundle-keyed placeholders for `Empty`/`Error` (with optional cause); `copyEnabled = result is SectionResult.Ok`; `collapsedByDefault = false` for collection sections, `true` for Constitution section; Constitution section always returns `constitutionPrompt.render()` with `copyEnabled = true`
+- [X] T006 Create `src/main/kotlin/dev/zahaand/projectscan/ui/ProjectScanBundle.kt` — `object` extending `DynamicBundle("messages/ProjectScanBundle")` with a `message(key: String, vararg params: Any): String` companion function (FR-016)
+- [X] T007 [P] Create `src/main/kotlin/dev/zahaand/projectscan/ui/ScanPanelState.kt` — `sealed class ScanPanelState` with `object PreScan` and `data class PostScan(val data: PostScanData)`; `data class PostScanData(val scanResult: ScanResult, val constitutionPrompt: ConstitutionPrompt)` per data-model.md
+- [X] T008 [P] Create `src/main/kotlin/dev/zahaand/projectscan/ui/UiSection.kt` — `data class UiSection(val title: String, val body: String, val copyEnabled: Boolean, val collapsedByDefault: Boolean)` per data-model.md
+- [X] T009 Create `src/main/kotlin/dev/zahaand/projectscan/ui/ScanResultRenderer.kt` — `object` with `render(scanResult: ScanResult, constitutionPrompt: ConstitutionPrompt): List<UiSection>` returning exactly 6 items in declared order; implement all rendering rules from data-model.md: Tech Stack/Code Style/Linters/Tests/Project Structure each produce bullet-list text for `Ok` and bundle-keyed placeholders for `Empty`/`Error` (with optional cause); `copyEnabled = result is SectionResult.Ok`; `collapsedByDefault = false` for collection sections, `true` for Constitution section; Constitution section always returns `constitutionPrompt.render()` with `copyEnabled = true`
 
 **Checkpoint**: Foundation ready — user story implementation can now begin.
 
