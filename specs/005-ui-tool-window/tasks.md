@@ -118,7 +118,7 @@ description: "Task list for UI Tool Window implementation"
 **Purpose**: Code style enforcement and end-to-end verification before the sprint is considered done.
 
 - [X] T016 [P] Run `./gradlew detekt ktlintCheck` from the repo root and fix all reported violations in `src/main/kotlin/dev/zahaand/projectscan/ui/`
-- [ ] T017 [PENDING MANUAL] Run `./gradlew runIde`; in the sandboxed IDE open any JVM (Maven or Gradle) project; execute the full quickstart.md verification checklist: (1) open View → Tool Windows → Project Scan, (2) confirm pre-scan state, (3) click Scan and confirm button disables, (4) confirm 6 sections in correct order after scan, (5) confirm first 5 expanded / Constitution collapsed, (6) click Copy on an Ok section and paste into text editor; confirm SC-001–SC-006 are all satisfied
+- [X] T017 [PENDING MANUAL] Run `./gradlew runIde`; in the sandboxed IDE open any JVM (Maven or Gradle) project; execute the full quickstart.md verification checklist: (1) open View → Tool Windows → Project Scan, (2) confirm pre-scan state, (3) click Scan and confirm button disables, (4) confirm 6 sections in correct order after scan, (5) confirm first 5 expanded / Constitution collapsed, (6) click Copy on an Ok section and paste into text editor; confirm SC-001–SC-006 are all satisfied
 
 ---
 
