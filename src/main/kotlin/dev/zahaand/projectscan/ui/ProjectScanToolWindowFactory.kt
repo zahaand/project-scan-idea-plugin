@@ -16,19 +16,24 @@ import dev.zahaand.projectscan.scan.adapter.IjTestInfoAdapter
 import dev.zahaand.projectscan.scan.adapter.PmdConfigParser
 
 class ProjectScanToolWindowFactory : ToolWindowFactory {
-    override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        val scanService = ScanService(
-            buildSystemPort = IjBuildSystemAdapter(project),
-            dependencyPort = IjDependencyAdapter(project),
-            styleSourcePort = IjStyleSourceAdapter(project),
-            linterPort = IjLinterAdapter(project),
-            linterConfigParsers = mapOf(
-                "checkstyle" to CheckstyleConfigParser(),
-                "pmd" to PmdConfigParser(),
-            ),
-            testInfoPort = IjTestInfoAdapter(project),
-            moduleStructurePort = IjModuleStructureAdapter(project),
-        )
+    override fun createToolWindowContent(
+        project: Project,
+        toolWindow: ToolWindow,
+    ) {
+        val scanService =
+            ScanService(
+                buildSystemPort = IjBuildSystemAdapter(project),
+                dependencyPort = IjDependencyAdapter(project),
+                styleSourcePort = IjStyleSourceAdapter(project),
+                linterPort = IjLinterAdapter(project),
+                linterConfigParsers =
+                    mapOf(
+                        "checkstyle" to CheckstyleConfigParser(),
+                        "pmd" to PmdConfigParser(),
+                    ),
+                testInfoPort = IjTestInfoAdapter(project),
+                moduleStructurePort = IjModuleStructureAdapter(project),
+            )
         val promptGenerator = PromptGenerator()
         val baselineRules = BaselineRuleProvider.rules
         val panel = ProjectScanPanel(project, scanService, promptGenerator, baselineRules)

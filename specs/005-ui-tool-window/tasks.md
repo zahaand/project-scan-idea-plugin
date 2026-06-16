@@ -83,7 +83,7 @@ description: "Task list for UI Tool Window implementation"
 
 **Independent Test**: After a scan on a project with at least one `Ok` section, click "Copy" on that section and paste into any text editor — pasted content must match the displayed section body exactly.
 
-- [ ] T013 [US2] Wire clipboard copy action in `src/main/kotlin/dev/zahaand/projectscan/ui/SectionPanel.kt` — replace the no-op `copyButton.ActionListener` with `CopyPasteManager.getInstance().setContents(StringSelection(bodyTextArea.text))`; confirm `copyButton.isEnabled` is driven by `UiSection.copyEnabled` passed at construction (already set in T010); no additional change needed for Constitution section — `ScanResultRenderer` already sets `copyEnabled = true` for it (FR-014, FR-015, SC-002)
+- [X] T013 [US2] Wire clipboard copy action in `src/main/kotlin/dev/zahaand/projectscan/ui/SectionPanel.kt` — replace the no-op `copyButton.ActionListener` with `CopyPasteManager.getInstance().setContents(StringSelection(bodyTextArea.text))`; confirm `copyButton.isEnabled` is driven by `UiSection.copyEnabled` passed at construction (already set in T010); no additional change needed for Constitution section — `ScanResultRenderer` already sets `copyEnabled = true` for it (FR-014, FR-015, SC-002)
 
 **Checkpoint**: At this point, clipboard copy works on `Ok` sections and the button is correctly disabled on `Empty`/`Error` sections.
 
@@ -95,7 +95,7 @@ description: "Task list for UI Tool Window implementation"
 
 **Independent Test**: On a project without linter config, verify the Linters section shows "Not detected". Verify that the Error placeholder "Not available" is textually distinct from "Not detected" (SC-004).
 
-- [ ] T014 [US3] Review `src/main/kotlin/dev/zahaand/projectscan/ui/ScanResultRenderer.kt` — confirm `SectionResult.Empty` renders `ProjectScanBundle.message("section.state.empty")` → `"Not detected"` with `copyEnabled = false`; confirm `SectionResult.Error` without cause renders `ProjectScanBundle.message("section.state.error")` → `"Not available"` with `copyEnabled = false`; confirm `SectionResult.Error` with non-null cause renders `ProjectScanBundle.message("section.state.error.with.cause", cause)` → `"Not available (cause: …)"` with `copyEnabled = false`; verify the two placeholder strings are textually distinct (FR-011, FR-012, SC-004)
+- [X] T014 [US3] Review `src/main/kotlin/dev/zahaand/projectscan/ui/ScanResultRenderer.kt` — confirm `SectionResult.Empty` renders `ProjectScanBundle.message("section.state.empty")` → `"Not detected"` with `copyEnabled = false`; confirm `SectionResult.Error` without cause renders `ProjectScanBundle.message("section.state.error")` → `"Not available"` with `copyEnabled = false`; confirm `SectionResult.Error` with non-null cause renders `ProjectScanBundle.message("section.state.error.with.cause", cause)` → `"Not available (cause: …)"` with `copyEnabled = false`; verify the two placeholder strings are textually distinct (FR-011, FR-012, SC-004)
 
 **Checkpoint**: Empty and Error section states are visually and textually distinguishable.
 
@@ -107,7 +107,7 @@ description: "Task list for UI Tool Window implementation"
 
 **Independent Test**: Open the tool window with no prior scan; verify only the "Scan" button and hint text are visible and no `SectionPanel` rows exist in the UI.
 
-- [ ] T015 [US4] Review `src/main/kotlin/dev/zahaand/projectscan/ui/ProjectScanPanel.kt` — confirm that at construction `sectionContainer` is empty (no `SectionPanel` rows added); confirm `scanButton` is enabled and `hintLabel` is visible; confirm `revertToPreScan()` clears all `SectionPanel` rows from `sectionContainer` and `revalidate()`/`repaint()` is called, restoring the same appearance as initial construction (FR-007)
+- [X] T015 [US4] Review `src/main/kotlin/dev/zahaand/projectscan/ui/ProjectScanPanel.kt` — confirm that at construction `sectionContainer` is empty (no `SectionPanel` rows added); confirm `scanButton` is enabled and `hintLabel` is visible; confirm `revertToPreScan()` clears all `SectionPanel` rows from `sectionContainer` and `revalidate()`/`repaint()` is called, restoring the same appearance as initial construction (FR-007)
 
 **Checkpoint**: Pre-scan state is correct on first open and after a failed scan.
 
@@ -117,8 +117,8 @@ description: "Task list for UI Tool Window implementation"
 
 **Purpose**: Code style enforcement and end-to-end verification before the sprint is considered done.
 
-- [ ] T016 [P] Run `./gradlew detekt ktlintCheck` from the repo root and fix all reported violations in `src/main/kotlin/dev/zahaand/projectscan/ui/`
-- [ ] T017 Run `./gradlew runIde`; in the sandboxed IDE open any JVM (Maven or Gradle) project; execute the full quickstart.md verification checklist: (1) open View → Tool Windows → Project Scan, (2) confirm pre-scan state, (3) click Scan and confirm button disables, (4) confirm 6 sections in correct order after scan, (5) confirm first 5 expanded / Constitution collapsed, (6) click Copy on an Ok section and paste into text editor; confirm SC-001–SC-006 are all satisfied
+- [X] T016 [P] Run `./gradlew detekt ktlintCheck` from the repo root and fix all reported violations in `src/main/kotlin/dev/zahaand/projectscan/ui/`
+- [ ] T017 [PENDING MANUAL] Run `./gradlew runIde`; in the sandboxed IDE open any JVM (Maven or Gradle) project; execute the full quickstart.md verification checklist: (1) open View → Tool Windows → Project Scan, (2) confirm pre-scan state, (3) click Scan and confirm button disables, (4) confirm 6 sections in correct order after scan, (5) confirm first 5 expanded / Constitution collapsed, (6) click Copy on an Ok section and paste into text editor; confirm SC-001–SC-006 are all satisfied
 
 ---
 

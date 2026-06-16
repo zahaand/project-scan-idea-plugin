@@ -1,48 +1,52 @@
 package dev.zahaand.projectscan.ui
 
-import dev.zahaand.projectscan.model.ScanResult
-import dev.zahaand.projectscan.model.SectionResult
 import dev.zahaand.projectscan.model.CodeStyleInfo
 import dev.zahaand.projectscan.model.LinterInfo
+import dev.zahaand.projectscan.model.ScanResult
+import dev.zahaand.projectscan.model.SectionResult
 import dev.zahaand.projectscan.model.StackInfo
 import dev.zahaand.projectscan.model.StructureInfo
 import dev.zahaand.projectscan.model.TestInfo
 import dev.zahaand.projectscan.prompt.ConstitutionPrompt
 
 object ScanResultRenderer {
-    fun render(scanResult: ScanResult, constitutionPrompt: ConstitutionPrompt): List<UiSection> = listOf(
-        section(
-            titleKey = "section.TechStack.title",
-            result = scanResult.stack,
-            render = ::renderStack,
-        ),
-        section(
-            titleKey = "section.CodeStyle.title",
-            result = scanResult.codeStyle,
-            render = ::renderCodeStyle,
-        ),
-        section(
-            titleKey = "section.Linters.title",
-            result = scanResult.linters,
-            render = ::renderLinters,
-        ),
-        section(
-            titleKey = "section.Tests.title",
-            result = scanResult.tests,
-            render = ::renderTests,
-        ),
-        section(
-            titleKey = "section.Structure.title",
-            result = scanResult.structure,
-            render = ::renderStructure,
-        ),
-        UiSection(
-            title = ProjectScanBundle.message("section.Constitution.title"),
-            body = constitutionPrompt.render(),
-            copyEnabled = true,
-            collapsedByDefault = true,
-        ),
-    )
+    fun render(
+        scanResult: ScanResult,
+        constitutionPrompt: ConstitutionPrompt,
+    ): List<UiSection> =
+        listOf(
+            section(
+                titleKey = "section.TechStack.title",
+                result = scanResult.stack,
+                render = ::renderStack,
+            ),
+            section(
+                titleKey = "section.CodeStyle.title",
+                result = scanResult.codeStyle,
+                render = ::renderCodeStyle,
+            ),
+            section(
+                titleKey = "section.Linters.title",
+                result = scanResult.linters,
+                render = ::renderLinters,
+            ),
+            section(
+                titleKey = "section.Tests.title",
+                result = scanResult.tests,
+                render = ::renderTests,
+            ),
+            section(
+                titleKey = "section.Structure.title",
+                result = scanResult.structure,
+                render = ::renderStructure,
+            ),
+            UiSection(
+                title = ProjectScanBundle.message("section.Constitution.title"),
+                body = constitutionPrompt.render(),
+                copyEnabled = true,
+                collapsedByDefault = true,
+            ),
+        )
 
     private fun <T> section(
         titleKey: String,
@@ -52,8 +56,9 @@ object ScanResultRenderer {
         val title = ProjectScanBundle.message(titleKey)
         return when (result) {
             is SectionResult.Ok -> {
-                val body = render(result.data)
-                    ?: ProjectScanBundle.message("section.state.empty")
+                val body =
+                    render(result.data)
+                        ?: ProjectScanBundle.message("section.state.empty")
                 UiSection(title = title, body = body, copyEnabled = true, collapsedByDefault = false)
             }
             is SectionResult.Empty ->
@@ -65,10 +70,12 @@ object ScanResultRenderer {
                 )
             is SectionResult.Error -> {
                 val cause = result.cause
-                val body = if (cause != null)
-                    ProjectScanBundle.message("section.state.error.with.cause", cause)
-                else
-                    ProjectScanBundle.message("section.state.error")
+                val body =
+                    if (cause != null) {
+                        ProjectScanBundle.message("section.state.error.with.cause", cause)
+                    } else {
+                        ProjectScanBundle.message("section.state.error")
+                    }
                 UiSection(title = title, body = body, copyEnabled = false, collapsedByDefault = false)
             }
         }
