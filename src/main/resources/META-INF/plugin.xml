@@ -27,7 +27,7 @@
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="ProjectScan" factoryClass="dev.zahaand.projectscan.ui.ProjectScanToolWindowFactory"
-                    icon="/icons/projectScanToolWindow.svg" anchor="RIGHT"/>
+                    icon="/icons/projectScanToolWindow.svg" anchor="right"/>
     </extensions>
 
 </idea-plugin>
