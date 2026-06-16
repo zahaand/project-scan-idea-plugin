@@ -61,11 +61,11 @@ A developer installs the plugin and opens the tool window for the first time. Th
 
 **Why this priority**: Avoids rendering six empty or placeholder sections that could confuse the user about whether a scan has run.
 
-**Independent Test**: Open the tool window with no prior scan state; verify only the "Scan" button (and optional hint text) are visible, and no section panels exist in the UI.
+**Independent Test**: Open the tool window with no prior scan state; verify only the "Scan" button and hint text are visible, and no section panels exist in the UI.
 
 **Acceptance Scenarios**:
 
-1. **Given** the tool window has never been used, **When** the user opens it, **Then** only the "Scan" button and optional hint text are visible; no section panels are rendered.
+1. **Given** the tool window has never been used, **When** the user opens it, **Then** only the "Scan" button and hint text are visible; no section panels are rendered.
 2. **Given** the tool window is in the pre-scan state, **When** the user clicks "Scan" and the scan completes successfully, **Then** all six section panels appear and remain visible for the duration of the current IDE session. Results are held in memory only; they are not persisted and are not restored after an IDE restart.
 
 ---
@@ -89,7 +89,7 @@ A developer installs the plugin and opens the tool window for the first time. Th
 - **FR-005**: Clicking "Scan" MUST disable the button immediately and run the collection, baseline loading, and prompt generation in the background — within a single `Task.Backgroundable` run — without blocking the IDE. The complete result (scan sections and generated prompt) is returned to the EDT together when the run finishes.
 - **FR-006**: The "Scan" button MUST be re-enabled once the background task completes (success or failure), including when a top-level exception aborts the scan. "The background task" refers to the single `Task.Backgroundable` run described in FR-005.
 - **FR-006a**: If the background task throws an unexpected top-level exception, the panel MUST revert to the pre-scan state (identical to FR-007: section panels removed, only the "Scan" button and hint text visible) and the IDE MUST display an error notification balloon describing the failure. A "top-level exception" is a thrown `java.lang.Exception` subtype that escapes the background run; `java.lang.Error` subtypes (e.g., `OutOfMemoryError`, `StackOverflowError`) are NOT caught — they are left to the platform.
-- **FR-007**: Before the first scan completes successfully, the panel MUST NOT render the six section panels. Only the "Scan" button and optional hint text are visible.
+- **FR-007**: Before the first scan completes successfully, the panel MUST NOT render the six section panels. Only the "Scan" button and hint text are visible.
 - **FR-008**: After a scan **successfully** completes, the panel MUST render six collapsible sections in this order, with these exact displayed titles: "Tech Stack", "Code Style", "Linters", "Tests", "Project Structure", "Constitution Prompt". The five collection sections MUST be expanded by default; the Constitution Prompt section MUST be collapsed by default. If the background task ends with a top-level exception, sections are NOT rendered — see FR-006a.
 - **FR-009**: Each of the five collection sections MUST display a human-readable text body rendered from the corresponding `SectionResult`. For `Ok` sections, the body is rendered as plain text presenting the collected fields as-is, following the "facts, not interpretation" principle: the renderer shows what was found without classifying or interpreting the data. Per-section formatting detail is specified in the implementation plan.
 - **FR-010**: For a collection section in the `Ok` state, the body MUST show rendered section data and the "Copy" button MUST be enabled.

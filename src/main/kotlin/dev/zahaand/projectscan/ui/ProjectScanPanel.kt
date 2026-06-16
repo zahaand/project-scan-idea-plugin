@@ -6,6 +6,7 @@ import com.intellij.notification.Notifications
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import dev.zahaand.projectscan.baseline.BaselineRule
 import dev.zahaand.projectscan.prompt.ConstitutionPrompt
@@ -16,7 +17,6 @@ import java.awt.BorderLayout
 import java.awt.FlowLayout
 import javax.swing.BoxLayout
 import javax.swing.JButton
-import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JScrollPane
 
@@ -27,7 +27,7 @@ class ProjectScanPanel(
     private val baselineRules: List<BaselineRule>,
 ) : JBPanel<ProjectScanPanel>(BorderLayout()) {
     private val scanButton = JButton(ProjectScanBundle.message("toolwindow.ProjectScan.scan.button"))
-    private val hintLabel = JLabel(ProjectScanBundle.message("toolwindow.ProjectScan.hint"))
+    private val hintLabel = JBLabel(ProjectScanBundle.message("toolwindow.ProjectScan.hint"))
 
     private val sectionContainer = JPanel().apply {
         layout = BoxLayout(this, BoxLayout.Y_AXIS)

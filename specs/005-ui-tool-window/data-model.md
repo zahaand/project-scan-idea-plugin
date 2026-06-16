@@ -40,25 +40,6 @@ ConstitutionPrompt
 
 These types exist only within the `:ui` module and are not shared with lower modules.
 
-### ScanPanelState (sealed class)
-
-Controls what the main panel renders.
-
-| State | Contents |
-|-------|----------|
-| `PreScan` | Scan button + hint text; no section panels |
-| `PostScan(data: PostScanData)` | Scan button (re-enabled) + six SectionPanel rows |
-
-### PostScanData (data class)
-
-Carries the scan results after a successful scan. Built on the EDT in `onSuccess()`.
-
-```
-PostScanData
-├── scanResult:         ScanResult
-└── constitutionPrompt: ConstitutionPrompt
-```
-
 ### UiSection (data class)
 
 A flattened view of one section ready for rendering. Built by `ScanResultRenderer`.
@@ -70,7 +51,7 @@ A flattened view of one section ready for rendering. Built by `ScanResultRendere
 | `copyEnabled` | Boolean | Whether the Copy button is interactive |
 | `collapsedByDefault` | Boolean | Initial collapse state |
 
-**Mapping** (produced by `ScanResultRenderer.render(scanResult, constitutionPrompt, bundle)`):
+**Mapping** (produced by `ScanResultRenderer.render(scanResult, constitutionPrompt)`):
 
 | # | Title | Source | copyEnabled | collapsedByDefault |
 |---|-------|--------|-------------|-------------------|
@@ -147,19 +128,18 @@ ProjectScanToolWindowFactory
   └── creates → ProjectScanPanel(project, scanService, promptGenerator, baselineRules)
 
 ProjectScanPanel
-  ├── state: ScanPanelState  (PreScan initially)
   ├── scanButton: JButton
   ├── hintLabel: JBLabel
   └── (post-scan) → [SectionPanel × 6]
 
 SectionPanel
-  ├── titleButton: JButton  (acts as expand/collapse toggle)
-  ├── bodyPanel: JBPanel    (hidden when collapsed)
-  ├── bodyLabel: JBTextArea (non-editable)
+  ├── toggleButton: JButton  (expand/collapse toggle)
+  ├── bodyScrollPane: JBScrollPane  (hidden when collapsed)
+  ├── bodyTextArea: JBTextArea (non-editable)
   └── copyButton: JButton
 
 ScanResultRenderer
-  └── render(scanResult, constitutionPrompt, bundle) → List<UiSection>  (always 6 items, ordered)
+  └── render(scanResult, constitutionPrompt) → List<UiSection>  (always 6 items, ordered)
 ```
 
 ---

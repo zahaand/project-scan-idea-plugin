@@ -1,12 +1,12 @@
 package dev.zahaand.projectscan.ui
 
+import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
 import java.awt.BorderLayout
 import java.awt.FlowLayout
 import javax.swing.JButton
-import javax.swing.JLabel
 import javax.swing.JPanel
 
 class SectionPanel(section: UiSection) : JBPanel<SectionPanel>(BorderLayout()) {
@@ -29,7 +29,7 @@ class SectionPanel(section: UiSection) : JBPanel<SectionPanel>(BorderLayout()) {
 
         val northBar = JPanel(FlowLayout(FlowLayout.LEFT, 4, 2)).apply {
             add(toggleButton)
-            add(JLabel(section.title))
+            add(JBLabel(section.title))
             add(copyButton)
         }
 
