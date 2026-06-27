@@ -70,11 +70,11 @@ A developer scans a monorepo where every one of the 80 modules declares `junit-j
 ### Functional Requirements
 
 - **FR-001**: Both `:prompt` (PromptGenerator) and `:ui` (ScanResultRenderer) MUST group `StackInfo.dependencies` by `groupId` when rendering the Tech Stack section.
-- **FR-002**: When all artifacts within a `groupId` group share the same `resolvedVersion`, both consumers MUST render that version once at the group level and omit per-artifact version repetition.
+- **FR-002**: When all artifacts within a `groupId` group share the same `resolvedVersion`, both consumers MUST render that version once at the group level using the format `groupId:* @ version` (e.g., `org.springframework:* @ 6.1.4`) and omit per-artifact version repetition.
 - **FR-003**: When artifacts within a `groupId` group have differing `resolvedVersion` values, both consumers MUST render each artifact with its individual version.
 - **FR-004**: Both consumers MUST NOT include per-module external dependency lists in the Project Structure section.
-- **FR-005**: Both consumers MUST render the inter-module dependency graph (`Module.moduleDependencies`) in the Project Structure section.
-- **FR-006**: Both consumers MUST compute and render a Version discrepancies sub-block in the Project Structure section, listing only artifacts whose `resolvedVersion` differs across the modules that declare them, in the form `groupId:artifactId → {moduleName: version, ...}`.
+- **FR-005**: Both consumers MUST render the inter-module dependency graph (`Module.moduleDependencies`) in the Project Structure section using the format `moduleName → [dep1, dep2]` per line; modules with no inter-module dependencies are omitted from this list.
+- **FR-006**: Both consumers MUST compute and render a Version discrepancies sub-block in the Project Structure section, listing only artifacts whose `resolvedVersion` differs across the modules that declare them, using the same text format in both `:prompt` and `:ui`: `groupId:artifactId → {moduleName: version, ...}`.
 - **FR-007**: Artifacts that appear at the same version in every module that declares them MUST NOT appear in the Version discrepancies sub-block.
 - **FR-008**: Both consumers MUST deduplicate `TestInfo.frameworks` by `(name, version)` so each distinct framework appears exactly once in the Testing section.
 - **FR-009**: Both consumers MUST normalise `TestInfo.sourceRoots` to relative path templates by stripping the longest common absolute prefix, then collapse identical relative paths to a single line with a count of contributing modules.
@@ -97,8 +97,18 @@ A developer scans a monorepo where every one of the 80 modules declares `junit-j
 - **SC-002**: On a 80-module project, the Project Structure section no longer lists per-module external dependency lines; only module names, inter-module links, root packages, and version discrepancies appear.
 - **SC-003**: On a project where all 80 modules declare the same 3 test frameworks, the Testing section shows exactly 3 framework lines regardless of module count.
 - **SC-004**: On a project with 80 modules each contributing one `src/test/java` source root, the Testing section shows exactly one source-root line with `— 80 modules`.
-- **SC-005**: All new `PromptGenerator` formatting logic is verified by automated tests; no regression in existing `PromptGenerator` tests.
+- **SC-005**: All new `PromptGenerator` formatting logic is verified by automated tests; no regression in existing `PromptGenerator` tests. Each changed section in `ScanResultRenderer` is covered by at least one smoke test asserting the key positive and negative rendering signals.
 - **SC-006**: Both consumers (`:prompt` and `:ui`) produce consistent section content for the same `ScanResult` — the same grouping and deduplication logic is applied in both.
+
+## Clarifications
+
+### Session 2026-06-27
+
+- Q: Should grouping/deduplication logic be shared between `:prompt` and `:ui` or duplicated independently? → A: Extract to a shared utility class in `:model` (preferred) or a new `:shared` module.
+- Q: What is the canonical format for a Tech Stack group header when all artifacts share a version? → A: `groupId:* @ version` (e.g., `org.springframework:* @ 6.1.4`).
+- Q: What is the canonical format for the inter-module dependency graph in Project Structure? → A: `moduleName → [dep1, dep2]` per line; modules with no inter-module dependencies are omitted.
+- Q: What level of automated test coverage is required for `:ui` (ScanResultRenderer) changes? → A: One smoke test per changed section — assert key positive and negative signals in rendered output; full unit-test parity with `:prompt` is out of scope.
+- Q: Should the version discrepancy block use the same text format in both `:prompt` and `:ui`, or a richer HTML format in `:ui`? → A: Same text format `groupId:artifactId → {module: version, ...}` in both consumers.
 
 ## Assumptions
 
@@ -106,5 +116,5 @@ A developer scans a monorepo where every one of the 80 modules declares `junit-j
 - Source roots in `TestInfo.sourceRoots` are stored as absolute paths on the scanning machine; the consumer strips the longest common prefix to derive relative templates.
 - A "module count" per source-root template is inferred by counting how many raw entries in `TestInfo.sourceRoots` normalize to that template — no per-module attribution is stored in the model.
 - Dependencies with `resolvedVersion == null` are treated as "version unknown" and excluded from version-discrepancy detection; they are still rendered in Tech Stack without a version.
-- The `:ui` module's `ScanResultRenderer` is not covered by unit tests at the same level as `:prompt`; the spec requires tests for `:prompt` changes and leaves `:ui` testing to manual verification or a future sprint.
-- Both consumers will share the same folding algorithm but via independent implementations (not a shared utility module), to avoid coupling `:prompt` and `:ui` — unless the implementation naturally leads to a shared internal helper within one module.
+- The `:ui` module's `ScanResultRenderer` requires one smoke test per changed section (Tech Stack, Project Structure, Testing) asserting key positive and negative signals in the rendered output. Full unit-test parity with `:prompt` is deferred to a future sprint.
+- Both consumers will share the same folding algorithm via a shared utility class. Grouping and deduplication helpers (Tech Stack grouping, version-discrepancy detection, source-root normalization) will be extracted to `:model` (preferred, if it keeps the module cohesive) or a new `:shared` module, and both `:prompt` and `:ui` will depend on it. This avoids SC-006 drift between consumers.
