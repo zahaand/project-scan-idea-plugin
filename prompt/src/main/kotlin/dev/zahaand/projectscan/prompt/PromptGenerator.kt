@@ -10,6 +10,12 @@ import dev.zahaand.projectscan.model.SectionResult
 import dev.zahaand.projectscan.model.StackInfo
 import dev.zahaand.projectscan.model.StructureInfo
 import dev.zahaand.projectscan.model.TestInfo
+import dev.zahaand.projectscan.shared.deduplicateFrameworks
+import dev.zahaand.projectscan.shared.detectVersionDiscrepancies
+import dev.zahaand.projectscan.shared.filterInternalDependencies
+import dev.zahaand.projectscan.shared.groupDependencies
+import dev.zahaand.projectscan.shared.normalizeSourceRoots
+import dev.zahaand.projectscan.shared.renderVersionDiscrepancyLine
 
 class PromptGenerator {
     private fun extractLanguageLevel(languageLevel: String?): Int? {
@@ -33,7 +39,7 @@ class PromptGenerator {
         return ConstitutionPrompt(
             listOf(
                 PromptBlock("Core Principles", buildCorePrinciplesBlock(scanResult.linters, filteredBaseline)),
-                PromptBlock("Tech Stack", buildTechStackBlock(scanResult.stack)),
+                PromptBlock("Tech Stack", buildTechStackBlock(scanResult.stack, scanResult.structure)),
                 PromptBlock("Code Style & Static Analysis", buildCodeStyleBlock(scanResult.codeStyle)),
                 PromptBlock("Testing", buildTestingBlock(scanResult.tests)),
                 PromptBlock("Project Structure", buildProjectStructureBlock(scanResult.structure)),
@@ -119,17 +125,26 @@ class PromptGenerator {
         }
     }
 
-    private fun buildTechStackBlock(stack: SectionResult<StackInfo>): String =
+    private fun buildTechStackBlock(stack: SectionResult<StackInfo>, structure: SectionResult<StructureInfo>): String =
         when (stack) {
             is SectionResult.Ok -> {
                 val info = stack.data
+                val moduleNames = (structure as? SectionResult.Ok)
+                    ?.data?.modules?.map { it.name }?.toSet() ?: emptySet()
                 val lines = mutableListOf<String>()
                 info.buildSystem?.let { lines.add("- Build System: ${it.name}") }
                 info.jdkVersion?.let { lines.add("- JDK Version: $it") }
                 info.languageLevel?.let { lines.add("- Language Level: $it") }
-                info.dependencies.forEach { dep ->
-                    val version = dep.resolvedVersion?.let { ":$it" } ?: ""
-                    lines.add("- ${dep.groupId}:${dep.artifactId}$version")
+                groupDependencies(filterInternalDependencies(info.dependencies, moduleNames)).forEach { group ->
+                    if (group.sharedVersion != null) {
+                        lines.add("- ${group.groupId}:* @ ${group.sharedVersion}")
+                        group.artifacts.forEach { dep -> lines.add("  - ${dep.artifactId}") }
+                    } else {
+                        group.artifacts.forEach { dep ->
+                            val version = dep.resolvedVersion?.let { ":$it" } ?: ""
+                            lines.add("- ${dep.groupId}:${dep.artifactId}$version")
+                        }
+                    }
                 }
                 if (lines.isEmpty()) "not detected" else lines.joinToString("\n")
             }
@@ -156,12 +171,12 @@ class PromptGenerator {
             is SectionResult.Ok -> {
                 val info = tests.data
                 val lines = mutableListOf<String>()
-                info.frameworks.forEach { fw ->
+                deduplicateFrameworks(info.frameworks).forEach { fw ->
                     val version = fw.version?.let { " $it" } ?: ""
                     lines.add("- Framework: ${fw.name}$version")
                 }
-                if (info.sourceRoots.isNotEmpty()) {
-                    lines.add("- Source Roots: ${info.sourceRoots.joinToString(", ")}")
+                normalizeSourceRoots(info.sourceRoots).forEach { t ->
+                    lines.add("- Source Roots: ${t.relativePath}")
                 }
                 if (info.namingSuffixes.isNotEmpty()) {
                     lines.add("- Naming Suffixes: ${info.namingSuffixes.joinToString(", ")}")
@@ -173,32 +188,36 @@ class PromptGenerator {
             is SectionResult.Error -> formatError(tests.cause)
         }
 
-    private fun buildProjectStructureBlock(structure: SectionResult<StructureInfo>): String =
-        when (structure) {
+    private fun buildProjectStructureBlock(structure: SectionResult<StructureInfo>): String {
+        return when (structure) {
             is SectionResult.Ok -> {
                 val info = structure.data
                 val lines = mutableListOf<String>()
                 info.modules.forEach { module ->
                     lines.add("- Module: ${module.name}")
-                    if (module.declaredDependencies.isNotEmpty()) {
-                        val deps =
-                            module.declaredDependencies.joinToString(", ") {
-                                "${it.groupId}:${it.artifactId}"
-                            }
-                        lines.add("  - Dependencies: $deps")
-                    }
-                    if (module.moduleDependencies.isNotEmpty()) {
-                        lines.add("  - Module Dependencies: ${module.moduleDependencies.joinToString(", ")}")
-                    }
+                }
+                if (info.packageSegments.isNotEmpty()) {
+                    lines.add("- Package segments: ${info.packageSegments.joinToString(", ")}")
                 }
                 if (info.rootPackages.isNotEmpty()) {
                     lines.add("- Root Packages: ${info.rootPackages.joinToString(", ")}")
                 }
-                if (lines.isEmpty()) "not detected" else lines.joinToString("\n")
+                if (lines.isEmpty()) return "not detected"
+                lines.add("- Version discrepancies:")
+                val discrepancies = detectVersionDiscrepancies(info.modules)
+                if (discrepancies.isEmpty()) {
+                    lines.add("  - none")
+                } else {
+                    discrepancies.forEach { d ->
+                        lines.add("  - ${renderVersionDiscrepancyLine(d)}")
+                    }
+                }
+                lines.joinToString("\n")
             }
             is SectionResult.Empty -> "not detected"
             is SectionResult.Error -> formatError(structure.cause)
         }
+    }
 
     private fun buildGovernanceBlock(): String =
         """
