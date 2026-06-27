@@ -79,7 +79,7 @@ All functions are **pure** (no side effects, no IntelliJ API calls).
 
 ### `groupDependencies(deps: List<Dependency>): List<DependencyGroup>`
 
-- Groups `deps` by `groupId`, preserving insertion order of first occurrence.
+- Groups `deps` by `groupId`, ordered lexicographically by `groupId` (per FR-001).
 - Within each group, sets `sharedVersion` to the common `resolvedVersion` if ALL artifacts have the same non-null version; otherwise `null`.
 - Artifacts with `resolvedVersion == null` within a group cause `sharedVersion` to be `null` for that group.
 

@@ -203,4 +203,3 @@ US1 → US2 → US3 are sequential because all three modify the same two files (
 - `renderStack`, `renderStructure`, `renderTests` in `ScanResultRenderer` must become `internal` (T011) to enable direct smoke testing without IntelliJ platform startup
 - SC-006/NFR-001 byte-identical constraint applies to section body strings on non-empty `ScanResult` only; empty/error wrapper strings differ between consumers by design (FR-011)
 - Source-root count suffix `— N modules` is omitted when `N == 1`
-- `data-model.md` notes "preserving insertion order" for `groupDependencies` — superseded by FR-001 lexicographic ordering; implement as sorted, not insertion-order
