@@ -21,6 +21,7 @@ import dev.zahaand.projectscan.model.StyleSourceType
 import dev.zahaand.projectscan.model.TestFramework
 import dev.zahaand.projectscan.model.TestInfo
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -308,7 +309,7 @@ class PromptGeneratorFullModelTest {
     }
 
     @Test
-    fun `scenario 5 - tech stack block contains all stack info and all dependencies verbatim`() {
+    fun `scenario 5 - tech stack block contains all stack info and all dependencies in per-artifact format`() {
         val rendered = generator.generate(fullScanResult, thirteenBaselineRules).render()
 
         val techStackStart = rendered.indexOf("## Tech Stack")
@@ -332,6 +333,10 @@ class PromptGeneratorFullModelTest {
             "Tech Stack must contain dependency spring-boot-starter",
         )
         assertTrue(techStackSection.contains("jackson-databind"), "Tech Stack must contain dependency jackson-databind")
+        assertFalse(
+            techStackSection.contains(":* @"),
+            "Single-artifact groups must use per-artifact format (no group headers)",
+        )
     }
 
     @Test

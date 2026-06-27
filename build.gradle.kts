@@ -12,6 +12,7 @@ plugins {
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin.html
 dependencies {
     implementation(project(":model"))
+    implementation(project(":shared"))
     implementation(project(":scan"))
     implementation(project(":baseline"))
     implementation(project(":prompt"))

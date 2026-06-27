@@ -8,6 +8,10 @@ import dev.zahaand.projectscan.model.StackInfo
 import dev.zahaand.projectscan.model.StructureInfo
 import dev.zahaand.projectscan.model.TestInfo
 import dev.zahaand.projectscan.prompt.ConstitutionPrompt
+import dev.zahaand.projectscan.shared.detectVersionDiscrepancies
+import dev.zahaand.projectscan.shared.deduplicateFrameworks
+import dev.zahaand.projectscan.shared.groupDependencies
+import dev.zahaand.projectscan.shared.normalizeSourceRoots
 
 object ScanResultRenderer {
     fun render(
@@ -81,14 +85,21 @@ object ScanResultRenderer {
         }
     }
 
-    private fun renderStack(info: StackInfo): String? {
+    internal fun renderStack(info: StackInfo): String? {
         val lines = mutableListOf<String>()
         info.buildSystem?.let { lines += "Build system: $it" }
         info.jdkVersion?.let { lines += "JDK version: $it" }
         info.languageLevel?.let { lines += "Language level: $it" }
-        info.dependencies.forEach { dep ->
-            val ver = dep.resolvedVersion?.let { ":$it" } ?: ""
-            lines += "${dep.groupId}:${dep.artifactId}$ver"
+        groupDependencies(info.dependencies).forEach { group ->
+            if (group.sharedVersion != null) {
+                lines += "${group.groupId}:* @ ${group.sharedVersion}"
+                group.artifacts.forEach { dep -> lines += "  ${dep.artifactId}" }
+            } else {
+                group.artifacts.forEach { dep ->
+                    val ver = dep.resolvedVersion?.let { ":$it" } ?: ""
+                    lines += "${dep.groupId}:${dep.artifactId}$ver"
+                }
+            }
         }
         return lines.joinToString("\n").ifBlank { null }
     }
@@ -103,29 +114,44 @@ object ScanResultRenderer {
         return info.activeRules.joinToString("\n") { "${it.ruleId} [${it.tool}] (${it.severity})" }
     }
 
-    private fun renderTests(info: TestInfo): String? {
+    internal fun renderTests(info: TestInfo): String? {
         val lines = mutableListOf<String>()
-        info.frameworks.forEach { fw ->
+        deduplicateFrameworks(info.frameworks).forEach { fw ->
             val ver = fw.version?.let { " $it" } ?: ""
             lines += "Framework: ${fw.name}$ver"
         }
-        info.sourceRoots.forEach { lines += "Source root: $it" }
+        normalizeSourceRoots(info.sourceRoots).forEach { t ->
+            val suffix = if (t.count > 1) " — ${t.count} modules" else ""
+            lines += "Source root: ${t.relativePath}$suffix"
+        }
         info.namingSuffixes.forEach { lines += "Naming suffix: $it" }
         info.coverageThreshold?.let { lines += "Coverage threshold: $it" }
         return lines.joinToString("\n").ifBlank { null }
     }
 
-    private fun renderStructure(info: StructureInfo): String? {
+    internal fun renderStructure(info: StructureInfo): String? {
         val lines = mutableListOf<String>()
         info.modules.forEach { mod ->
             lines += "Module: ${mod.name}"
-            mod.declaredDependencies.forEach { dep ->
-                val ver = dep.resolvedVersion?.let { ":$it" } ?: ""
-                lines += "  Dependency: ${dep.groupId}:${dep.artifactId}$ver"
+            if (mod.moduleDependencies.isNotEmpty()) {
+                lines += "  ${mod.name} → [${mod.moduleDependencies.joinToString(", ")}]"
             }
-            mod.moduleDependencies.forEach { lines += "  Module dep: $it" }
+        }
+        if (info.packageSegments.isNotEmpty()) {
+            lines += "Package segments: ${info.packageSegments.joinToString(", ")}"
         }
         info.rootPackages.forEach { lines += "Root package: $it" }
-        return lines.joinToString("\n").ifBlank { null }
+        if (lines.isEmpty()) return null
+        lines += "Version discrepancies:"
+        val discrepancies = detectVersionDiscrepancies(info.modules)
+        if (discrepancies.isEmpty()) {
+            lines += "  none"
+        } else {
+            discrepancies.forEach { d ->
+                val versions = d.versions.entries.sortedBy { it.key }.joinToString(", ") { "${it.key}: ${it.value}" }
+                lines += "  ${d.groupId}:${d.artifactId} → {$versions}"
+            }
+        }
+        return lines.joinToString("\n")
     }
 }

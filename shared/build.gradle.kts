@@ -7,8 +7,6 @@ plugins {
 dependencies {
     implementation(kotlin("stdlib"))
     implementation(project(":model"))
-    implementation(project(":shared"))
-    implementation(project(":baseline"))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
