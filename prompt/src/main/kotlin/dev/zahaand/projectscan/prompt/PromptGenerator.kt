@@ -10,10 +10,12 @@ import dev.zahaand.projectscan.model.SectionResult
 import dev.zahaand.projectscan.model.StackInfo
 import dev.zahaand.projectscan.model.StructureInfo
 import dev.zahaand.projectscan.model.TestInfo
-import dev.zahaand.projectscan.shared.detectVersionDiscrepancies
 import dev.zahaand.projectscan.shared.deduplicateFrameworks
+import dev.zahaand.projectscan.shared.detectVersionDiscrepancies
+import dev.zahaand.projectscan.shared.filterInternalDependencies
 import dev.zahaand.projectscan.shared.groupDependencies
 import dev.zahaand.projectscan.shared.normalizeSourceRoots
+import dev.zahaand.projectscan.shared.renderVersionDiscrepancyLine
 
 class PromptGenerator {
     private fun extractLanguageLevel(languageLevel: String?): Int? {
@@ -37,7 +39,7 @@ class PromptGenerator {
         return ConstitutionPrompt(
             listOf(
                 PromptBlock("Core Principles", buildCorePrinciplesBlock(scanResult.linters, filteredBaseline)),
-                PromptBlock("Tech Stack", buildTechStackBlock(scanResult.stack)),
+                PromptBlock("Tech Stack", buildTechStackBlock(scanResult.stack, scanResult.structure)),
                 PromptBlock("Code Style & Static Analysis", buildCodeStyleBlock(scanResult.codeStyle)),
                 PromptBlock("Testing", buildTestingBlock(scanResult.tests)),
                 PromptBlock("Project Structure", buildProjectStructureBlock(scanResult.structure)),
@@ -123,15 +125,17 @@ class PromptGenerator {
         }
     }
 
-    private fun buildTechStackBlock(stack: SectionResult<StackInfo>): String =
+    private fun buildTechStackBlock(stack: SectionResult<StackInfo>, structure: SectionResult<StructureInfo>): String =
         when (stack) {
             is SectionResult.Ok -> {
                 val info = stack.data
+                val moduleNames = (structure as? SectionResult.Ok)
+                    ?.data?.modules?.map { it.name }?.toSet() ?: emptySet()
                 val lines = mutableListOf<String>()
                 info.buildSystem?.let { lines.add("- Build System: ${it.name}") }
                 info.jdkVersion?.let { lines.add("- JDK Version: $it") }
                 info.languageLevel?.let { lines.add("- Language Level: $it") }
-                groupDependencies(info.dependencies).forEach { group ->
+                groupDependencies(filterInternalDependencies(info.dependencies, moduleNames)).forEach { group ->
                     if (group.sharedVersion != null) {
                         lines.add("- ${group.groupId}:* @ ${group.sharedVersion}")
                         group.artifacts.forEach { dep -> lines.add("  - ${dep.artifactId}") }
@@ -172,8 +176,7 @@ class PromptGenerator {
                     lines.add("- Framework: ${fw.name}$version")
                 }
                 normalizeSourceRoots(info.sourceRoots).forEach { t ->
-                    val suffix = if (t.count > 1) " — ${t.count} modules" else ""
-                    lines.add("- Source Roots: ${t.relativePath}$suffix")
+                    lines.add("- Source Roots: ${t.relativePath}")
                 }
                 if (info.namingSuffixes.isNotEmpty()) {
                     lines.add("- Naming Suffixes: ${info.namingSuffixes.joinToString(", ")}")
@@ -192,9 +195,6 @@ class PromptGenerator {
                 val lines = mutableListOf<String>()
                 info.modules.forEach { module ->
                     lines.add("- Module: ${module.name}")
-                    if (module.moduleDependencies.isNotEmpty()) {
-                        lines.add("  - ${module.name} → [${module.moduleDependencies.joinToString(", ")}]")
-                    }
                 }
                 if (info.packageSegments.isNotEmpty()) {
                     lines.add("- Package segments: ${info.packageSegments.joinToString(", ")}")
@@ -209,8 +209,7 @@ class PromptGenerator {
                     lines.add("  - none")
                 } else {
                     discrepancies.forEach { d ->
-                        val versions = d.versions.entries.sortedBy { it.key }.joinToString(", ") { "${it.key}: ${it.value}" }
-                        lines.add("  - ${d.groupId}:${d.artifactId} → {$versions}")
+                        lines.add("  - ${renderVersionDiscrepancyLine(d)}")
                     }
                 }
                 lines.joinToString("\n")

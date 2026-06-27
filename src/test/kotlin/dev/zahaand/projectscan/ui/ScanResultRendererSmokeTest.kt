@@ -93,12 +93,14 @@ class ScanResultRendererSmokeTest {
     }
 
     @Test
-    fun `US3 positive - collapsed source-root line with 80 modules suffix`() {
+    fun `US3 positive - many paths with same recognized suffix collapse to one line`() {
         val roots = List(80) { "/home/ci/workspace/module-$it/src/test/java" }
         val info = TestInfo(sourceRoots = roots)
         val output = ScanResultRenderer.renderTests(info)
         assertNotNull(output)
-        assertTrue("Collapsed line with 80 modules must be present", output!!.contains("80 modules"))
+        assertTrue("Collapsed src/test/java line must be present", output!!.contains("src/test/java"))
+        assertEquals("Exactly one src/test/java line", 1, output.lines().count { it.contains("src/test/java") })
+        assertFalse("No module count suffix", output.contains("modules"))
     }
 
     @Test
@@ -185,11 +187,55 @@ class ScanResultRendererSmokeTest {
         assertTrue("Source root template in prompt", promptTestSection.contains("src/test/java"))
         assertTrue("Source root template in renderer", rendererTestOutput.contains("src/test/java"))
 
-        assertTrue("2 modules count in prompt", promptTestSection.contains("2 modules"))
-        assertTrue("2 modules count in renderer", rendererTestOutput.contains("2 modules"))
+        assertFalse("No module count in prompt test section", promptTestSection.contains("modules"))
+        assertFalse("No module count in renderer test output", rendererTestOutput.contains("modules"))
 
         assertEquals("Framework count same",
             promptTestSection.lines().count { it.contains("Framework:") },
             rendererTestOutput.lines().count { it.contains("Framework:") })
+    }
+
+    @Test
+    fun `Change 1 - internal module deps excluded from renderStack when module names provided`() {
+        val info = StackInfo(
+            dependencies = listOf(
+                Dependency("com.example", "document-engine-spi", "1.0"),
+                Dependency("org.spring", "spring-web", "6.0"),
+            ),
+        )
+        val output = ScanResultRenderer.renderStack(info, internalModuleNames = setOf("document-engine-spi"))
+        assertNotNull(output)
+        assertFalse("Internal dep must not appear", output!!.contains("document-engine-spi"))
+        assertTrue("External dep must appear", output.contains("spring-web"))
+    }
+
+    @Test
+    fun `Change 4 - inter-module graph not rendered in renderStructure`() {
+        val info = StructureInfo(
+            modules = listOf(
+                Module("api", moduleDependencies = listOf("core")),
+                Module("core", moduleDependencies = emptyList()),
+            ),
+        )
+        val output = ScanResultRenderer.renderStructure(info)
+        assertNotNull(output)
+        assertFalse("Inter-module graph must not be rendered", output!!.contains("api → ["))
+        assertTrue("Module names still appear", output.contains("api"))
+        assertTrue("Module names still appear", output.contains("core"))
+    }
+
+    @Test
+    fun `Change 5 - dominant-version format in renderStructure discrepancy block`() {
+        val info = StructureInfo(
+            modules = listOf(
+                Module("api", listOf(Dependency("org.mapstruct", "mapstruct", "1.5.5"))),
+                Module("core", listOf(Dependency("org.mapstruct", "mapstruct", "1.6.0"))),
+            ),
+        )
+        val output = ScanResultRenderer.renderStructure(info)
+        assertNotNull(output)
+        assertTrue("Dominant-version keyword present", output!!.contains("mostly"))
+        assertTrue("Exceptions keyword present", output.contains("except"))
+        assertTrue("Artifact coordinate present", output.contains("org.mapstruct:mapstruct"))
     }
 }

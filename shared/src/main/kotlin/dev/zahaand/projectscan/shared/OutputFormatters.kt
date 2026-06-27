@@ -18,8 +18,28 @@ data class VersionDiscrepancy(
 
 data class SourceRootTemplate(
     val relativePath: String,
-    val count: Int,
 )
+
+private val RECOGNIZED_TEST_SUFFIXES = listOf(
+    "src/test/java",
+    "src/test/kotlin",
+    "src/test/groovy",
+    "src/test/scala",
+    "src/integration-test/java",
+    "src/integration-test/kotlin",
+    "src/integration-test/groovy",
+    "src/integrationTest/java",
+    "src/integrationTest/kotlin",
+    "src/integrationTest/groovy",
+    "src/testFixtures/java",
+    "src/testFixtures/kotlin",
+    "src/testFixtures/groovy",
+)
+
+private val BUILD_OUTPUT_SEGMENTS = setOf("target", "build")
+
+fun filterInternalDependencies(deps: List<Dependency>, internalModuleNames: Set<String>): List<Dependency> =
+    if (internalModuleNames.isEmpty()) deps else deps.filter { it.artifactId !in internalModuleNames }
 
 fun groupDependencies(deps: List<Dependency>): List<DependencyGroup> =
     deps
@@ -64,59 +84,58 @@ fun detectVersionDiscrepancies(modules: List<Module>): List<VersionDiscrepancy> 
         }
 }
 
+fun renderVersionDiscrepancyLine(d: VersionDiscrepancy): String {
+    val versionCounts = d.versions.values.groupingBy { it }.eachCount()
+    val dominant = versionCounts.entries
+        .sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key })
+        .first().key
+    val exceptions = d.versions.entries
+        .filter { it.value != dominant }
+        .sortedBy { it.key }
+        .joinToString(", ") { "${it.key}: ${it.value}" }
+    return "${d.groupId}:${d.artifactId} → mostly $dominant, except {$exceptions}"
+}
+
 fun deduplicateFrameworks(frameworks: List<TestFramework>): List<TestFramework> =
     frameworks.distinctBy { it.name to it.version }
 
 fun normalizeSourceRoots(roots: List<String>): List<SourceRootTemplate> {
     if (roots.isEmpty()) return emptyList()
 
-    val absoluteRoots = roots.filter { it.startsWith("/") }
-    val relativeRoots = roots.filter { !it.startsWith("/") }
+    val filtered = roots.filter { root ->
+        root.split("/").filter { it.isNotEmpty() }.none { it in BUILD_OUTPUT_SEGMENTS }
+    }
 
-    val templates = mutableMapOf<String, Int>()
+    if (filtered.isEmpty()) return emptyList()
 
-    if (absoluteRoots.size == 1) {
-        val template = absoluteRoots[0].trimStart('/')
-        templates[template] = (templates[template] ?: 0) + 1
-    } else if (absoluteRoots.size > 1) {
-        val splitPaths = absoluteRoots.map { it.split("/").filter { s -> s.isNotEmpty() } }
+    val resultPaths = mutableSetOf<String>()
+    val unrecognizedAbsolute = mutableListOf<String>()
 
+    for (root in filtered) {
+        val cleanRoot = root.trimEnd('/')
+        val suffix = RECOGNIZED_TEST_SUFFIXES.firstOrNull { cleanRoot.endsWith(it) }
+        when {
+            suffix != null -> resultPaths.add(suffix)
+            cleanRoot.startsWith("/") -> unrecognizedAbsolute.add(cleanRoot)
+            else -> resultPaths.add(cleanRoot)
+        }
+    }
+
+    if (unrecognizedAbsolute.isNotEmpty()) {
+        val splitPaths = unrecognizedAbsolute.map { it.split("/").filter { s -> s.isNotEmpty() } }
         val minLen = splitPaths.minOf { it.size }
         var lcpLength = 0
         for (i in 0 until minLen) {
             if (splitPaths.all { it[i] == splitPaths[0][i] }) lcpLength++ else break
         }
-
-        val partialRelative = splitPaths.map { segs -> segs.drop(lcpLength).joinToString("/") }
-        val splitPartials = partialRelative.map { it.split("/").filter { s -> s.isNotEmpty() } }
-
-        val hasEmpty = splitPartials.any { it.isEmpty() }
-        var suffixLength = 0
-        if (!hasEmpty) {
-            val minSufLen = splitPartials.minOf { it.size }
-            for (i in 0 until minSufLen) {
-                val last = splitPartials[0][splitPartials[0].size - 1 - i]
-                if (splitPartials.all { it[it.size - 1 - i] == last }) suffixLength++ else break
-            }
-        }
-
-        if (suffixLength > 0) {
-            val commonSuffix = splitPartials[0].takeLast(suffixLength).joinToString("/")
-            for (root in absoluteRoots) {
-                templates[commonSuffix] = (templates[commonSuffix] ?: 0) + 1
-            }
-        } else {
-            for (partial in partialRelative) {
-                templates[partial] = (templates[partial] ?: 0) + 1
-            }
+        for (segs in splitPaths) {
+            val afterLcp = segs.drop(lcpLength)
+            // first segment after LCP is typically the module name; drop it for the tail
+            val tail = if (afterLcp.size > 1) afterLcp.drop(1) else afterLcp
+            val path = tail.joinToString("/").ifEmpty { afterLcp.joinToString("/") }
+            if (path.isNotEmpty()) resultPaths.add(path)
         }
     }
 
-    for (root in relativeRoots) {
-        templates[root] = (templates[root] ?: 0) + 1
-    }
-
-    return templates.entries
-        .sortedBy { it.key }
-        .map { (path, count) -> SourceRootTemplate(path, count) }
+    return resultPaths.sorted().map { SourceRootTemplate(it) }
 }

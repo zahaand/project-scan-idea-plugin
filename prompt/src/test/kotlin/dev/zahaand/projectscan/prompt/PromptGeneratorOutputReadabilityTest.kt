@@ -29,6 +29,11 @@ class PromptGeneratorOutputReadabilityTest {
         stack = SectionResult.Ok(StackInfo(dependencies = deps)),
     )
 
+    private fun stackAndStructureResult(deps: List<Dependency>, modules: List<Module>) = emptyScanResult().copy(
+        stack = SectionResult.Ok(StackInfo(dependencies = deps)),
+        structure = SectionResult.Ok(StructureInfo(modules = modules)),
+    )
+
     private fun structureResult(modules: List<Module>, packageSegments: List<String> = emptyList()) =
         emptyScanResult().copy(
             structure = SectionResult.Ok(StructureInfo(modules = modules, packageSegments = packageSegments)),
@@ -132,7 +137,7 @@ class PromptGeneratorOutputReadabilityTest {
     }
 
     @Test
-    fun `US2 scenario 2 - differing version artifact appears in discrepancy block`() {
+    fun `US2 scenario 2 - differing version artifact appears with dominant-version format`() {
         val modules = listOf(
             Module("api", listOf(Dependency("org.mapstruct", "mapstruct", "1.5.5"))),
             Module("core", listOf(Dependency("org.mapstruct", "mapstruct", "1.6.0"))),
@@ -140,8 +145,8 @@ class PromptGeneratorOutputReadabilityTest {
         val section = structureSection(structureResult(modules))
 
         assertTrue(section.contains("org.mapstruct:mapstruct"), "Discrepancy entry present")
-        assertTrue(section.contains("api: 1.5.5") || section.contains("api:1.5.5") || section.contains("api"), "api version present")
-        assertTrue(section.contains("core: 1.6.0") || section.contains("core:1.6.0") || section.contains("core"), "core version present")
+        assertTrue(section.contains("mostly"), "Dominant-version format present")
+        assertTrue(section.contains("except"), "Exceptions present")
     }
 
     @Test
@@ -156,7 +161,7 @@ class PromptGeneratorOutputReadabilityTest {
     }
 
     @Test
-    fun `US2 scenario 4 - modules with moduleDependencies render inter-module graph`() {
+    fun `US2 scenario 4 - modules rendered without inter-module dependency graph`() {
         val modules = listOf(
             Module("api", moduleDependencies = listOf("core", "shared")),
             Module("core", moduleDependencies = emptyList()),
@@ -167,7 +172,7 @@ class PromptGeneratorOutputReadabilityTest {
         assertTrue(section.contains("api"), "api module present")
         assertTrue(section.contains("core"), "core module present")
         assertTrue(section.contains("shared"), "shared module present")
-        assertTrue(section.contains("→") || section.contains("->"), "inter-module graph arrow present")
+        assertFalse(section.contains("api → ["), "inter-module graph must not be rendered")
     }
 
     @Test
@@ -212,7 +217,7 @@ class PromptGeneratorOutputReadabilityTest {
     }
 
     @Test
-    fun `US3 scenario 2 - two absolute paths with same suffix collapse to one template line`() {
+    fun `US3 scenario 2 - two absolute paths with same recognized suffix collapse to one template line`() {
         val roots = listOf(
             "/home/ci/workspace/myapp/api/src/test/java",
             "/home/ci/workspace/myapp/core/src/test/java",
@@ -221,8 +226,8 @@ class PromptGeneratorOutputReadabilityTest {
 
         val lines = section.lines().filter { it.contains("src/test/java") }
         assertEquals(1, lines.size, "Exactly one source-root line for src/test/java")
-        assertTrue(lines[0].contains("2 modules"), "Line contains '2 modules'")
         assertFalse(section.contains("/home/ci/workspace"), "Absolute prefix not in output")
+        assertFalse(section.contains("modules"), "No module count in output")
     }
 
     @Test
@@ -252,13 +257,70 @@ class PromptGeneratorOutputReadabilityTest {
     }
 
     @Test
-    fun `US3 scenario 5 - single source root renders relative path without count suffix`() {
+    fun `US3 scenario 5 - single source root renders tail template without count suffix`() {
         val roots = listOf("/home/ci/workspace/myapp/api/src/test/java")
         val section = testingSection(testResult(sourceRoots = roots))
 
         val sourceRootLines = section.lines().filter { it.contains("src/test/java") }
         assertEquals(1, sourceRootLines.size, "Exactly one source-root line")
-        assertFalse(sourceRootLines[0].contains("modules"), "Count suffix must not appear for count == 1")
+        assertFalse(sourceRootLines[0].contains("modules"), "No count suffix ever")
         assertFalse(section.contains("/home/ci/workspace"), "Absolute prefix not in output")
+    }
+
+    // === Change 1: internal module filtering in Tech Stack ===
+
+    @Test
+    fun `Change 1 - internal module names excluded from Tech Stack`() {
+        val modules = listOf(Module("document-engine-spi"), Module("api"))
+        val deps = listOf(
+            Dependency("com.example", "document-engine-spi", "1.0"),
+            Dependency("org.spring", "spring-web", "6.0"),
+        )
+        val section = techStackSection(stackAndStructureResult(deps, modules))
+
+        assertFalse(section.contains("document-engine-spi"), "Internal module dep must not appear in Tech Stack")
+        assertTrue(section.contains("spring-web"), "External dep must remain")
+    }
+
+    @Test
+    fun `Change 1 - no modules means all deps shown`() {
+        val deps = listOf(
+            Dependency("com.example", "my-lib", "1.0"),
+            Dependency("org.spring", "spring-web", "6.0"),
+        )
+        val section = techStackSection(stackResult(deps))
+
+        assertTrue(section.contains("my-lib"), "All deps shown when no modules to filter")
+        assertTrue(section.contains("spring-web"))
+    }
+
+    // === Change 2: build-output source root filtering ===
+
+    @Test
+    fun `Change 2 - target generated-test-sources excluded from Testing section`() {
+        val roots = listOf(
+            "/project/api/src/test/java",
+            "/project/api/target/generated-test-sources/test-annotations",
+        )
+        val section = testingSection(testResult(sourceRoots = roots))
+
+        assertFalse(section.contains("generated-test-sources"), "Build-output path must not appear")
+        assertTrue(section.contains("src/test/java"), "Real test root must appear")
+    }
+
+    // === Change 5: dominant-version format ===
+
+    @Test
+    fun `Change 5 - dominant version shown with majority and exceptions listed`() {
+        val modules = listOf(
+            Module("api", listOf(Dependency("org.example", "lib", "2.0"))),
+            Module("core", listOf(Dependency("org.example", "lib", "2.0"))),
+            Module("svc", listOf(Dependency("org.example", "lib", "1.0"))),
+        )
+        val section = structureSection(structureResult(modules))
+
+        assertTrue(section.contains("mostly 2.0"), "Majority version is dominant")
+        assertTrue(section.contains("svc: 1.0"), "Exception module listed")
+        assertFalse(section.contains("api: "), "Dominant-version modules not in exceptions")
     }
 }

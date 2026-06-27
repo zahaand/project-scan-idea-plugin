@@ -8,21 +8,25 @@ import dev.zahaand.projectscan.model.StackInfo
 import dev.zahaand.projectscan.model.StructureInfo
 import dev.zahaand.projectscan.model.TestInfo
 import dev.zahaand.projectscan.prompt.ConstitutionPrompt
-import dev.zahaand.projectscan.shared.detectVersionDiscrepancies
 import dev.zahaand.projectscan.shared.deduplicateFrameworks
+import dev.zahaand.projectscan.shared.detectVersionDiscrepancies
+import dev.zahaand.projectscan.shared.filterInternalDependencies
 import dev.zahaand.projectscan.shared.groupDependencies
 import dev.zahaand.projectscan.shared.normalizeSourceRoots
+import dev.zahaand.projectscan.shared.renderVersionDiscrepancyLine
 
 object ScanResultRenderer {
     fun render(
         scanResult: ScanResult,
         constitutionPrompt: ConstitutionPrompt,
-    ): List<UiSection> =
-        listOf(
+    ): List<UiSection> {
+        val internalModuleNames = (scanResult.structure as? SectionResult.Ok)
+            ?.data?.modules?.map { it.name }?.toSet() ?: emptySet()
+        return listOf(
             section(
                 titleKey = "section.TechStack.title",
                 result = scanResult.stack,
-                render = ::renderStack,
+                render = { renderStack(it, internalModuleNames) },
             ),
             section(
                 titleKey = "section.CodeStyle.title",
@@ -51,6 +55,7 @@ object ScanResultRenderer {
                 collapsedByDefault = true,
             ),
         )
+    }
 
     private fun <T> section(
         titleKey: String,
@@ -85,12 +90,12 @@ object ScanResultRenderer {
         }
     }
 
-    internal fun renderStack(info: StackInfo): String? {
+    internal fun renderStack(info: StackInfo, internalModuleNames: Set<String> = emptySet()): String? {
         val lines = mutableListOf<String>()
         info.buildSystem?.let { lines += "Build system: $it" }
         info.jdkVersion?.let { lines += "JDK version: $it" }
         info.languageLevel?.let { lines += "Language level: $it" }
-        groupDependencies(info.dependencies).forEach { group ->
+        groupDependencies(filterInternalDependencies(info.dependencies, internalModuleNames)).forEach { group ->
             if (group.sharedVersion != null) {
                 lines += "${group.groupId}:* @ ${group.sharedVersion}"
                 group.artifacts.forEach { dep -> lines += "  ${dep.artifactId}" }
@@ -121,8 +126,7 @@ object ScanResultRenderer {
             lines += "Framework: ${fw.name}$ver"
         }
         normalizeSourceRoots(info.sourceRoots).forEach { t ->
-            val suffix = if (t.count > 1) " — ${t.count} modules" else ""
-            lines += "Source root: ${t.relativePath}$suffix"
+            lines += "Source root: ${t.relativePath}"
         }
         info.namingSuffixes.forEach { lines += "Naming suffix: $it" }
         info.coverageThreshold?.let { lines += "Coverage threshold: $it" }
@@ -133,9 +137,6 @@ object ScanResultRenderer {
         val lines = mutableListOf<String>()
         info.modules.forEach { mod ->
             lines += "Module: ${mod.name}"
-            if (mod.moduleDependencies.isNotEmpty()) {
-                lines += "  ${mod.name} → [${mod.moduleDependencies.joinToString(", ")}]"
-            }
         }
         if (info.packageSegments.isNotEmpty()) {
             lines += "Package segments: ${info.packageSegments.joinToString(", ")}"
@@ -148,8 +149,7 @@ object ScanResultRenderer {
             lines += "  none"
         } else {
             discrepancies.forEach { d ->
-                val versions = d.versions.entries.sortedBy { it.key }.joinToString(", ") { "${it.key}: ${it.value}" }
-                lines += "  ${d.groupId}:${d.artifactId} → {$versions}"
+                lines += "  ${renderVersionDiscrepancyLine(d)}"
             }
         }
         return lines.joinToString("\n")

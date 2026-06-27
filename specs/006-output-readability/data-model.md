@@ -1,6 +1,6 @@
 # Data Model: Output Readability for Large Projects
 
-**Feature**: `006-output-readability` | **Date**: 2026-06-27 | **Updated**: 2026-06-27 (CHK032 — :shared module)
+**Feature**: `006-output-readability` | **Date**: 2026-06-27 | **Updated**: 2026-06-27 (CHK032 — :shared module; monorepo refinements)
 
 ## Existing Model (unchanged)
 
@@ -67,16 +67,22 @@ data class VersionDiscrepancy(
     val versions: Map<String, String>,   // moduleName → version
 )
 
-/** A normalised source-root path template with its occurrence count. */
+/** A recognised test-layout suffix extracted from a source-root path. */
 data class SourceRootTemplate(
     val relativePath: String,
-    val count: Int,
 )
 ```
 
 ## Transformation Functions
 
 All functions are **pure** (no side effects, no IntelliJ API calls).
+
+### `filterInternalDependencies(deps: List<Dependency>, internalModuleNames: Set<String>): List<Dependency>`
+
+- Returns `deps` with any `Dependency` removed whose `artifactId` is contained in `internalModuleNames`.
+- Matching is exact, case-sensitive.
+- If `internalModuleNames` is empty, returns `deps` unchanged.
+- Called before `groupDependencies` when rendering Tech Stack. The caller derives `internalModuleNames` from `StructureInfo.modules.map { it.name }.toSet()`; if `StructureInfo` is Empty/Error, passes `emptySet()`.
 
 ### `groupDependencies(deps: List<Dependency>): List<DependencyGroup>`
 
@@ -92,6 +98,14 @@ All functions are **pure** (no side effects, no IntelliJ API calls).
 - Intra-module duplicate: when the same `(groupId, artifactId)` coordinate is declared more than once within a single module, the last-declared `resolvedVersion` for that coordinate within the module is used; earlier occurrences are discarded.
 - Result is sorted by `groupId`, then `artifactId` for deterministic output.
 
+### `renderVersionDiscrepancyLine(d: VersionDiscrepancy): String`
+
+- Renders a single discrepancy entry in the dominant-version-plus-exceptions format.
+- Computes the dominant version: the version appearing in the most `VersionDiscrepancy.versions` values. On a tie, the lexicographically smallest version string wins.
+- Exceptions: all module-version pairs where the version is NOT the dominant version, sorted lexicographically by module name.
+- Format: `groupId:artifactId → mostly <dominantVersion>, except {moduleName: version, ...}`
+- Both consumers call this function (SC-006 preserved).
+
 ### `deduplicateFrameworks(frameworks: List<TestFramework>): List<TestFramework>`
 
 - Returns frameworks with distinct `(name, version)` pairs, preserving order of first occurrence.
@@ -100,11 +114,10 @@ All functions are **pure** (no side effects, no IntelliJ API calls).
 ### `normalizeSourceRoots(roots: List<String>): List<SourceRootTemplate>`
 
 - Returns empty list if `roots` is empty.
-- When there are no absolute-path entries, the LCP computation is skipped and all inputs are treated as relative templates directly.
-- Computes the longest common absolute path prefix (split by `/`; prefix must end at a directory boundary).
-- Strips the prefix (and leading `/`) from each root to obtain a relative template.
-- Groups identical relative templates and counts occurrences.
-- Returns sorted list by relative template string for deterministic output.
+- **Build-output filter (FR-009)**: excludes any path that contains a segment exactly equal to `target` or `build` (split on `/`, filter empty). This removes Maven and Gradle build-output paths before template extraction.
+- **Tail-template extraction (FR-009)**: for each remaining path, checks if it ends with any recognized test-layout suffix (see FR-009 for the full list). If yes, records that suffix. If no recognized suffix matches and the path is absolute, applies LCP-then-module-strip fallback; relative unrecognized paths are used as-is.
+- Collapses duplicates; returns unique recognized suffixes (and fallback tails) sorted lexicographically.
+- No count is stored or emitted.
 
 ## State Transitions
 
@@ -114,4 +127,4 @@ No state transitions — all entities are immutable value objects produced on de
 
 - `DependencyGroup.artifacts` is never empty (guaranteed by construction).
 - `VersionDiscrepancy.versions` always has ≥ 2 entries (guaranteed by construction).
-- `SourceRootTemplate.count` is always ≥ 1.
+- `SourceRootTemplate.relativePath` is never empty (guaranteed by construction).
