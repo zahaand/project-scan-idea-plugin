@@ -1,8 +1,9 @@
 # Contract: OutputFormatters API
 
-**Module**: `:model` — `dev.zahaand.projectscan.model`  
-**File**: `OutputFormatters.kt`  
+**Module**: `:shared` — `dev.zahaand.projectscan.shared`
+**File**: `OutputFormatters.kt`
 **Consumers**: `:prompt` (`PromptGenerator`), root project (`ScanResultRenderer`)
+**Updated**: 2026-06-27 (CHK032 — moved from :model to :shared; CHK001/CHK008/CHK023/CHK026 format fixes)
 
 ## Function Signatures
 
@@ -20,17 +21,20 @@ fun normalizeSourceRoots(roots: List<String>): List<SourceRootTemplate>
 
 | Section | Rendering rule |
 |---------|---------------|
-| Tech Stack — uniform group | `groupId:* @ version` (one line per group) |
-| Tech Stack — mixed group | One line per artifact: `groupId:artifactId:version` (or no version if null) |
-| Module graph | `moduleName → [dep1, dep2]` per module; omit modules with empty `moduleDependencies` |
-| Version discrepancies | `groupId:artifactId → {moduleName: version, moduleName: version}` per discrepancy |
-| Testing — framework | `Framework: name version` (deduplicated) |
-| Testing — source root | `src/test/java — N modules` (N from `SourceRootTemplate.count`) |
+| Tech Stack — uniform group (>1 artifact, all same non-null version) | `groupId:* @ version` header; then `artifactId` per artifact (no version) |
+| Tech Stack — per-artifact (single artifact, mixed versions, or any null version) | `groupId:artifactId:version` or `groupId:artifactId` if version null |
+| Module graph | `moduleName → [dep1, dep2]` per module; omit modules with no `moduleDependencies` |
+| Version discrepancies — entry | `groupId:artifactId → {moduleName: version, ...}` (modules sorted lexicographically) |
+| Version discrepancies — no discrepancies | explicit `none` notice (block not omitted) |
+| Package segments | `Package segments: seg1, seg2, ...` (comma-separated); omit if empty |
+| Testing — framework | `Framework: name version` (deduplicated by (name, version)) |
+| Testing — source root | `src/test/java — N modules` (N = raw `sourceRoots` entries normalising to that template) |
 
 ## Invariants
 
-- `groupDependencies` preserves the order of first-occurrence `groupId` from the input list.
-- `detectVersionDiscrepancies` result is sorted (`groupId` asc, then `artifactId` asc).
-- `normalizeSourceRoots` result is sorted by `relativePath` asc.
+- `groupDependencies` outputs groups in lexicographic order by `groupId` (FR-001).
+- `detectVersionDiscrepancies` result is sorted lexicographically by `groupId`, then `artifactId`; module names within each entry sorted lexicographically (FR-006).
+- `normalizeSourceRoots` result is sorted by `relativePath` asc; count = raw entry occurrences (FR-009).
 - All functions return empty collections (not null) for empty inputs.
 - No function throws for any valid model input.
+- Same non-empty `ScanResult` → byte-identical section body from both consumers (NFR-001, SC-006). Empty/error wrapper strings are excluded from this invariant per FR-011.

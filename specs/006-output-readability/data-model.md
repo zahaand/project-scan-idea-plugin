@@ -1,6 +1,6 @@
 # Data Model: Output Readability for Large Projects
 
-**Feature**: `006-output-readability` | **Date**: 2026-06-27
+**Feature**: `006-output-readability` | **Date**: 2026-06-27 | **Updated**: 2026-06-27 (CHK032 — :shared module)
 
 ## Existing Model (unchanged)
 
@@ -39,10 +39,10 @@ data class TestInfo(
 
 ## New Types: OutputFormatters.kt
 
-Located at: `model/src/main/kotlin/dev/zahaand/projectscan/model/OutputFormatters.kt`
+Located at: `shared/src/main/kotlin/dev/zahaand/projectscan/shared/OutputFormatters.kt`
 
 ```kotlin
-package dev.zahaand.projectscan.model
+package dev.zahaand.projectscan.shared
 
 /** A groupId bucket produced by groupDependencies(). */
 data class DependencyGroup(

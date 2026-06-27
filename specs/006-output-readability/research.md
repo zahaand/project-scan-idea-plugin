@@ -6,40 +6,43 @@
 
 ### 1. Shared utility placement
 
-**Decision**: Add a new file `OutputFormatters.kt` to `:model` submodule.
+**Decision**: Create a new `:shared` Gradle submodule containing `OutputFormatters.kt`. `:shared` declares only `:model` as a dependency.
 
-**Rationale**: The spec clarification (2026-06-27) explicitly names `:model` as the preferred location. `:model` is already the shared contract between all consumers; pure data-transformation functions (no rendering) naturally live there. No outgoing dependencies are introduced, so the module stays cohesive.
+**Rationale**: FR-013 (added 2026-06-27 via checklist amendment) mandates the `:shared` module. FR-010 explicitly prohibits modifying `:model`; the earlier informal preference for placing utilities in `:model` was superseded by the FR-010 amendment. A dedicated `:shared` module is also cleaner architecturally — it keeps `:model` a pure data contract and `:shared` the pure-logic tier.
 
 **Alternatives considered**:
-- New `:shared` submodule — Clean, but adds build complexity (new `build.gradle.kts`, `settings.gradle.kts` entry) for a small set of functions. The spec says `:model` is preferred.
-- Duplicate logic in both `:prompt` and root project — Rejected by spec (SC-006 forbids drift between consumers).
-- Place in `:prompt`, have root project use it — Root project already imports `ConstitutionPrompt` from `:prompt`, so this works technically, but puts rendering-adjacent logic in the wrong layer.
+- Add `OutputFormatters.kt` to `:model` — Rejected: FR-010 prohibits modifying `:model`; the FR-013 mandate settles the question.
+- Duplicate logic in both `:prompt` and root project — Rejected by spec (SC-006 and NFR-001 forbid drift between consumers).
+- Place in `:prompt`, have root project use it — Root project already depends on `:prompt` only for `ConstitutionPrompt`; mixing rendering utilities there blurs layer boundaries.
 
 ### 2. Utility function strategy: data transformation vs. text rendering
 
-**Decision**: `OutputFormatters.kt` exposes **data-transformation functions only** — it returns structured types (`DependencyGroup`, `VersionDiscrepancy`, `SourceRootTemplate`). Text rendering stays inside each consumer.
+**Decision**: `OutputFormatters.kt` in `:shared` exposes **data-transformation functions only** — it returns structured types (`DependencyGroup`, `VersionDiscrepancy`, `SourceRootTemplate`). Text rendering stays inside each consumer.
 
-**Rationale**: Keeps `:model` format-agnostic (the constitution's intent). Both consumers produce identical text strings, fulfilling SC-006, but the "how to render" knowledge stays in the consumer layer.
+**Rationale**: Keeps `:shared` format-agnostic. Both consumers produce byte-identical text strings (NFR-001, SC-006), but the "how to render" knowledge stays in the consumer layer where it belongs.
 
 **Alternatives considered**:
-- Shared text-rendering functions in `:model` — Violates the separation of concerns: model shouldn't know about output format.
-- Shared text-rendering in a new `:shared` module — Possible but over-engineered for the current scope.
+- Shared text-rendering functions in `:shared` — Places format knowledge in the wrong layer; `:shared` should be concerned with data transformation only.
+- Shared text-rendering in a new `:format` module — Over-engineered for the current scope.
 
 ### 3. Source-root normalization algorithm
 
-**Decision**: Strip the longest common absolute prefix from `TestInfo.sourceRoots`, then group identical relative paths with a count.
+**Decision**: Strip the longest common absolute prefix from absolute-path entries in `TestInfo.sourceRoots`; relative-path entries are used as-is. Then group identical templates with a count.
 
 **Algorithm**:
 1. If `sourceRoots` is empty, return empty.
-2. Find the longest common path prefix across all roots (split by `/` to avoid partial directory matches).
-3. Subtract the prefix from each root to get a relative template.
-4. Group by relative template and count.
+2. Partition entries into absolute (starts with `/`) and relative.
+3. Find the longest common directory prefix across the absolute entries only (split by `/`).
+4. Strip that prefix from each absolute entry to get a relative template.
+5. Relative entries become their own template unchanged.
+6. Group all templates and count raw occurrences; sort by template string.
 
-**Edge cases handled**:
-- All roots already relative (no common absolute prefix): common prefix is empty string; each root is used as-is.
+**Edge cases handled** (per FR-009 and spec edge cases):
+- All roots already relative: absolute set is empty; no prefix is computed; each root is its own template.
 - Single root: count = 1.
-- Roots with no shared prefix: each becomes its own template with count = 1.
-- `resolvedVersion == null` on `Dependency`: excluded from version-discrepancy detection; rendered without version in Tech Stack.
+- Roots with no shared absolute prefix: each becomes its own template with count = 1.
+- Mixed absolute/relative: absolute and relative paths handled independently (no cross-type prefix computation).
+- `resolvedVersion == null` on `Dependency`: excluded from version-discrepancy detection; rendered without version in Tech Stack per-artifact format.
 
 ### 4. Version-discrepancy detection scope
 
@@ -51,11 +54,11 @@ A module with a single artifact declaration and no other module declaring it nev
 
 **Rationale**: Matches spec edge cases exactly (FR-007, edge case for single-module artifacts).
 
-### 5. FR-010 conflict resolution
+### 5. FR-010 resolution
 
-**Decision**: Interpret FR-010 ("`:scan` and `:model` MUST NOT be modified") as applying to existing model data class files. Adding a new utility file to `:model` is a controlled extension, not a modification, and is explicitly sanctioned by the spec's Clarifications.
+**Decision**: FR-010 is satisfied by using a new `:shared` module. FR-010 has been formally amended (2026-06-27) to state that `:shared`'s creation is additive and does not modify `:model` or `:scan`.
 
-**Rationale**: The Clarifications section was written after FR-010 and directly addresses the placement question. The spec's Assumptions section restates this as fact ("will be extracted to `:model`"). Treating FR-010 as an absolute block on any file addition would contradict the spec's own authoritative resolution.
+**Rationale**: The earlier informal interpretation ("adding a file to `:model` is not a modification") was invalidated by the checklist review (CHK032). The clean resolution is FR-013: all shared logic goes into `:shared`, which depends only on `:model`. Neither `:model` nor `:scan` is touched. No interpretation ambiguity remains.
 
 ### 6. Test strategy for ScanResultRenderer
 
