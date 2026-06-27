@@ -246,4 +246,25 @@ class OutputFormattersTest {
         assertEquals(1, result.size)
         assertEquals(80, result[0].count)
     }
+
+    @Test
+    fun `normalizeSourceRoots - single source root produces count of 1`() {
+        val roots = listOf("src/test/java")
+        val result = normalizeSourceRoots(roots)
+        assertEquals(1, result.size)
+        assertEquals(1, result[0].count)
+        assertEquals("src/test/java", result[0].relativePath)
+    }
+
+    @Test
+    fun `deduplicateFrameworks - null version is distinct from non-null version with same name`() {
+        val frameworks = listOf(
+            TestFramework("JUnit Jupiter", null),
+            TestFramework("JUnit Jupiter", "5.10.2"),
+        )
+        val result = deduplicateFrameworks(frameworks)
+        assertEquals(2, result.size)
+        assertEquals(null, result[0].version)
+        assertEquals("5.10.2", result[1].version)
+    }
 }

@@ -52,6 +52,7 @@ data class DependencyGroup(
     /**
      * Non-null when every artifact in the group has the same non-null resolvedVersion.
      * Null when versions are mixed or any artifact has resolvedVersion == null.
+     * Single-artifact groups always have sharedVersion = null (no group header is emitted for a group of one).
      */
     val sharedVersion: String?,
 )
@@ -88,15 +89,18 @@ All functions are **pure** (no side effects, no IntelliJ API calls).
 - Collects `(groupId, artifactId) → Map<moduleName, resolvedVersion>` across all modules.
 - Only retains entries where `resolvedVersion != null` in the module.
 - Returns a `VersionDiscrepancy` for each coordinate that maps to **two or more distinct version strings** across different modules.
+- Intra-module duplicate: when the same `(groupId, artifactId)` coordinate is declared more than once within a single module, the last-declared `resolvedVersion` for that coordinate within the module is used; earlier occurrences are discarded.
 - Result is sorted by `groupId`, then `artifactId` for deterministic output.
 
 ### `deduplicateFrameworks(frameworks: List<TestFramework>): List<TestFramework>`
 
 - Returns frameworks with distinct `(name, version)` pairs, preserving order of first occurrence.
+- A `null` version is distinct from any non-null version; `(name, null)` and `(name, "5.0")` are treated as two different entries.
 
 ### `normalizeSourceRoots(roots: List<String>): List<SourceRootTemplate>`
 
 - Returns empty list if `roots` is empty.
+- When there are no absolute-path entries, the LCP computation is skipped and all inputs are treated as relative templates directly.
 - Computes the longest common absolute path prefix (split by `/`; prefix must end at a directory boundary).
 - Strips the prefix (and leading `/`) from each root to obtain a relative template.
 - Groups identical relative templates and counts occurrences.

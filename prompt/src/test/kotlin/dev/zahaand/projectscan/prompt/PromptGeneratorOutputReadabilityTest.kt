@@ -250,4 +250,15 @@ class PromptGeneratorOutputReadabilityTest {
         assertEquals(1, section.lines().count { it.contains("JUnit Jupiter") }, "JUnit Jupiter appears once")
         assertEquals(1, section.lines().count { it.contains("Mockito") }, "Mockito appears once")
     }
+
+    @Test
+    fun `US3 scenario 5 - single source root renders relative path without count suffix`() {
+        val roots = listOf("/home/ci/workspace/myapp/api/src/test/java")
+        val section = testingSection(testResult(sourceRoots = roots))
+
+        val sourceRootLines = section.lines().filter { it.contains("src/test/java") }
+        assertEquals(1, sourceRootLines.size, "Exactly one source-root line")
+        assertFalse(sourceRootLines[0].contains("modules"), "Count suffix must not appear for count == 1")
+        assertFalse(section.contains("/home/ci/workspace"), "Absolute prefix not in output")
+    }
 }
