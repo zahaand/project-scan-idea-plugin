@@ -1,0 +1,135 @@
+# Feature Specification: Sprint 7 — Usability Rework: Tech Stack & Testing Collection Layer
+
+**Feature Branch**: `007-tech-stack-usability`  
+**Created**: 2026-06-28  
+**Status**: Draft  
+**Input**: Sprint 7 feature description — usability rework of the collection layer for Tech Stack and Testing output
+
+## User Scenarios & Testing *(mandatory)*
+
+### User Story 1 — Concise Inverted Tech Stack on a Large Monorepo (Priority: P1)
+
+A developer scans a Maven monorepo with 130+ modules and ~250 resolved dependencies. Instead of a ~150-line list of every module's resolved classpath (the Sprint 6 output), the plugin now shows a compact inverted view: each external technology appears once, with its version(s) and — only when versions differ across modules — the carrier modules grouped by reactor topology. A uniform dependency is shown as a single line with a count.
+
+**Why this priority**: The previous output was technically correct but not usable at scale. The inverted representation is the primary deliverable of this sprint and the foundation for all other improvements.
+
+**Independent Test**: Scan the real Maven monorepo; verify that the Tech Stack section contains at most one entry per groupId:artifactId coordinate and that each entry fits on one to three lines for the majority of dependencies.
+
+**Acceptance Scenarios**:
+
+1. **Given** a Maven monorepo where `spring-core:6.1.0` is declared directly in all 40 leaf modules, **When** the plugin runs, **Then** the Tech Stack entry for `spring-core` shows `6.1.0` with a count or "all modules" label and does NOT list individual module names.
+2. **Given** a Maven monorepo where `testcontainers` is declared at `1.19.8` in group A's modules and `1.20.1` in group B's modules, **When** the plugin runs, **Then** the Tech Stack entry for `testcontainers` shows both versions, each followed by its carrier modules grouped by aggregator, on separate lines.
+3. **Given** a dependency (`asm`, `objenesis`, `listenablefuture`) that is pulled in only transitively and never declared directly in any module's POM, **When** the plugin runs, **Then** that artifact does NOT appear in the Tech Stack section.
+
+---
+
+### User Story 2 — Clean Testing Section with Only Key Frameworks (Priority: P2)
+
+A developer reviews the Testing section and sees only the test frameworks they actively chose to use (JUnit 5, AssertJ, Mockito, Testcontainers), grouped by family with a "Frameworks:" header. Transitive service artifacts (Hamcrest, opentest4j, apiguardian-api) are absent. Version skew across modules is shown inline as a discrepancy, not as repeated lines.
+
+**Why this priority**: The Testing section has the same noise problem as Tech Stack — transitive artifacts dominate the resolved classpath. Cleaning it up follows directly from the same direct-vs-transitive classification already applied to Tech Stack.
+
+**Independent Test**: Scan a Maven project that uses JUnit 5 + Mockito + Testcontainers; verify the Testing section contains only those families, no Hamcrest/opentest4j/apiguardian-api entries, and that a version difference in `mockito-core` across modules appears as a single discrepancy line rather than two separate mockito lines.
+
+**Acceptance Scenarios**:
+
+1. **Given** a project with JUnit 5 declared directly and `opentest4j` pulled in transitively, **When** the plugin runs, **Then** the Testing section lists `junit-jupiter` (or its family name) but NOT `opentest4j`.
+2. **Given** a project where `mockito-core:4.8.0` is used in module A and `mockito-core:5.11.0` in module B, **When** the plugin runs, **Then** the Testing section shows a single Mockito entry with a version-skew discrepancy indicator, not two separate Mockito lines.
+3. **Given** a project with test frameworks grouped as JUnit, AssertJ, Mockito, Testcontainers, **When** the plugin runs, **Then** the Testing section shows a "Frameworks:" header followed by an indented list sorted by family name.
+
+---
+
+### User Story 3 — Removal of Low-Value Project Structure and Package Outputs (Priority: P3)
+
+A developer runs the plugin and does not see a "Project Structure" block or package/root-package segment values in the output. Both were identified as low-value on real projects (developers read module topology in the IDE; package patterns were garbage on multi-module Maven builds).
+
+**Why this priority**: These removals reduce output noise and eliminate confusing/incorrect values, but they are secondary to the positive value added by stories 1 and 2.
+
+**Independent Test**: Scan any Maven project; verify that neither "Project Structure" nor any package/root-package field appears anywhere in the plugin's generated prompt or UI tool window output.
+
+**Acceptance Scenarios**:
+
+1. **Given** any Maven or Gradle project, **When** the plugin runs, **Then** no "Project Structure" section or block appears in the generated output.
+2. **Given** any project, **When** the plugin runs, **Then** no `rootPackages` or `secondLevelSegments` field or value appears in the output.
+3. **Given** a project that would previously have shown package tree data, **When** the plugin runs, **Then** the output is shorter by exactly the removed Project Structure block, with no other sections affected.
+
+---
+
+### Edge Cases
+
+- What happens when a Maven module declares zero direct external dependencies? — It contributes nothing to Tech Stack; it still appears in carrier-module groupings for other dependencies it is a carrier of (if any).
+- What happens when all modules use the same version of every dependency? — Tech Stack shows one line per technology with a count; no module names are listed anywhere.
+- What happens when a module has no Maven model (Gradle project)? — A thin denylist of clearly-synthetic artifacts is applied; direct-vs-transitive distinction is not available; all non-denylisted resolved dependencies are included.
+- What happens when an aggregator module itself declares a direct dependency? — It appears as a carrier module in the Tech Stack entry, listed first before its submodules per reactor topology.
+- What happens when a module's aggregator cannot be determined? — The `aggregator` field is null; the module appears ungrouped (top-level) in any version-discrepancy listing.
+- What happens when the Testing section has no key frameworks after filtering? — A "Frameworks: none detected" or equivalent empty-state message is shown, consistent with Sprint 6 behavior for "not detected" sections.
+
+## Requirements *(mandatory)*
+
+### Functional Requirements
+
+**Model layer**:
+
+- **FR-001**: The module descriptor MUST include an `aggregator` field (`String?`) containing the name of the Maven aggregator module that directly lists this module, or null for root/top-level modules.
+- **FR-002**: The `PackageTreeData` structure (fields: `rootPackages`, `secondLevelSegments`) MUST be removed from the data model, and all consumers and tests MUST be updated accordingly.
+
+**Scan / collection layer**:
+
+- **FR-003**: For Maven projects, the scan adapter MUST return only directly-declared dependencies per module (identity = declared-direct set, version = resolved value from parent/dependencyManagement if not explicitly stated in the module's POM).
+- **FR-004**: For Maven projects, the scan adapter MUST extract each module's aggregator name from the Maven reactor topology and populate the `aggregator` field in the module descriptor.
+- **FR-005**: Package-tree collection (`getPackageTree()`) MUST be removed from the scan adapter and its port/interface.
+- **FR-006**: For Gradle projects, the scan adapter MUST apply a thin denylist of clearly-synthetic artifacts (e.g., asm, objenesis, paranamer, listenablefuture, failureaccess, j2objc-annotations, checker-qual, aopalliance) and exclude matching artifacts from the dependency output; no precise direct-slice is required.
+
+**Shared / representation layer**:
+
+- **FR-007**: The shared module MUST build an inverted Tech Stack representation: a mapping from technology coordinate (`groupId:artifactId`) to an ordered list of (version, carrier-modules) pairs.
+- **FR-008**: When a technology has a single version across all modules, the representation MUST record a count or "all modules" indicator WITHOUT storing or rendering individual module names.
+- **FR-009**: When a technology has multiple versions across modules, the representation MUST store carrier modules per version, grouped by Maven reactor topology (aggregator first, then its submodules; each aggregator group on a separate line in the rendered output).
+- **FR-010**: The shared module MUST build a Testing representation that retains only key test-framework families (JUnit, AssertJ, Mockito, Testcontainers, and equivalents) and filters transitive service artifacts (Hamcrest, opentest4j, apiguardian-api, and equivalents).
+- **FR-011**: The Testing representation MUST group frameworks by family, sorted alphabetically, under a "Frameworks:" header with indented entries.
+- **FR-012**: Version skew of a single test framework across modules MUST be recorded as a single discrepancy entry (one family line with multiple versions noted), not as separate repeated family lines.
+- **FR-013**: The inversion and grouping logic MUST reside exclusively in the shared module so that both the prompt consumer and the UI consumer derive output from a single shared source.
+
+**Prompt / UI layer**:
+
+- **FR-014**: Both the prompt generator and the UI tool window MUST consume the shared inverted Tech Stack and Testing representations, producing byte-identical Tech Stack and Testing content (SC-006 parity retained).
+- **FR-015**: The Project Structure block MUST be removed from the prompt output and the UI tool window output.
+- **FR-016**: Package and root-package values MUST be removed from the prompt output and the UI tool window output.
+
+**Out of scope (explicit non-requirements)**:
+
+- **FR-N1**: A precise Gradle direct slice via a custom Gradle Tooling model builder is NOT required in this sprint.
+- **FR-N2**: Human-readable dependency names (e.g., "log4j 2.23.1") are NOT required; Maven coordinates are used throughout.
+- **FR-N3**: The Constitution text is NOT modified in this sprint.
+- **FR-N4**: Code Style and Linters sections are NOT changed.
+
+### Key Entities
+
+- **ModuleDescriptor**: Represents a single project module; gains the `aggregator: String?` field; loses `packageTree: PackageTreeData`; retains `externalDependencies` (now populated with direct-only slice for Maven).
+- **DirectDependency**: A dependency declared directly in a module's build file, with identity from the declared set and version resolved from the effective model (parent/BOM).
+- **InvertedTechStack**: The cross-module view: technology coordinate → list of `(version, List<CarrierModule>)` entries; CarrierModule carries module name and its aggregator for grouping.
+- **TestingRepresentation**: Filtered list of test-framework families → versions; built from the direct-only slice after applying framework-family classification and denylist.
+- **AggregatorGroup**: Logical grouping used in rendering: aggregator module name → ordered list of submodule names present in a given version's carrier set.
+
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: Tech Stack output for a 130-module Maven monorepo is reduced from ~150 lines to ≤ 40 lines, with the majority of lines representing single-version technologies shown compactly.
+- **SC-002**: No transitive-only artifact (asm, objenesis, listenablefuture, checker-qual, aopalliance, paranamer, failureaccess, j2objc-annotations, or similar) appears in the Tech Stack or Testing output for any Maven project.
+- **SC-003**: Testing section contains only explicitly key test-framework families; transitive service artifacts (Hamcrest, opentest4j, apiguardian-api) are absent.
+- **SC-004**: Version discrepancies for both Tech Stack and Testing are embedded inline within their respective entries; no standalone "Discrepancies" block exists in the output.
+- **SC-005**: Tech Stack and Testing content is byte-identical between the generated LLM prompt and the UI tool window for the same project scan (SC-006 parity retained).
+- **SC-006**: Project Structure block and package/root-package values are absent from all output for every supported project type.
+- **SC-007**: For a Maven project, the resolved version of a dependency that omits `<version>` in its POM (inheriting from parent or dependencyManagement) is correctly shown as the resolved version, not blank or "unknown".
+
+## Assumptions
+
+- The Maven IntelliJ project model exposes the declared-direct dependency set per module separately from the fully-resolved classpath; this is the model used for FR-003.
+- The `aggregator` field stores a flat module name string (not a path or nested structure); consumer logic reconstructs the grouping from this flat field at render time.
+- Removal of `PackageTreeData` is a deliberate breaking model change accepted by the team; restoration from git history is trivial if a better implementation is designed later.
+- Constitution wording changes resulting from the architectural decision to classify dependencies inside the collection layer are deferred to a Sprint 9 Constitution-amendment package and are NOT part of this sprint's scope.
+- Source-root compaction introduced in Sprint 6 remains unchanged and is not revisited.
+- Code Style and Linters sections remain unchanged; their "not detected" behavior on the reference test project is preserved.
+- The Gradle denylist is a static, maintained list of known synthetic/shading artifacts; it does not require dynamic discovery.
+- The reference test project for validation is the real Maven monorepo (130+ modules, ~11 aggregator groups, ~250 resolved dependencies) used in Sprint 6 manual testing.
