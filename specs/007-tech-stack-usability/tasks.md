@@ -106,9 +106,10 @@
 **Purpose**: Final compilation check, parity verification, and success-criteria sign-off
 
 - [ ] T034 [P] Run `./gradlew build` from repository root and fix any remaining compilation errors not resolved in story phases
-- [ ] T035 Verify SC-005 parity: scan any project and confirm Tech Stack and Testing content is byte-identical between the generated LLM prompt and the UI tool window for the same scan; if not identical, trace which consumer is re-implementing formatting instead of calling `renderInvertedTechStack`
+- [ ] T035 Verify SC-005 and SC-004: (a) scan any project and confirm Tech Stack and Testing content is byte-identical between the generated LLM prompt and the UI tool window for the same scan — if not identical, trace which consumer is re-implementing formatting instead of calling `renderInvertedTechStack`; (b) confirm Tech Stack version discrepancies (for multi-version deps) appear inline within each entry and no standalone "Discrepancies" block exists in the output (SC-004)
 - [ ] T036 [P] Verify SC-002: confirm no transitive-only artifact (`asm`, `objenesis`, `listenablefuture`, `failureaccess`, `j2objc-annotations`, `checker-qual`, `aopalliance`, `paranamer`) appears in Tech Stack or Testing output for any Maven project
-- [ ] T037 Verify SC-001: scan the 130-module Maven monorepo and confirm Tech Stack output is ≤ 40 lines
+- [ ] T037 Verify SC-001: scan the 130-module Maven monorepo and confirm Tech Stack output is ≤ 40 lines (preamble lines excluded from count — dependency entry lines only)
+- [ ] T038 Record the Sprint 9 constitution-amendment obligation for the `shared` component: constitution §Project Structure must add `shared` to the component table with its dependency rules (`prompt` and `ui` MAY depend on `shared`; `scan` MUST NOT depend on `shared`). This is a tracking-only marker; the amendment lands in the Sprint 9 constitution package. No constitution edit in Sprint 7 (FR-N3).
 
 ---
 

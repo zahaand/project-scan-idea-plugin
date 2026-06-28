@@ -110,7 +110,7 @@ A developer runs the plugin and does not see a "Project Structure" block or pack
 
 **Prompt / UI layer**:
 
-- **FR-014**: Both the prompt generator and the UI tool window MUST consume the shared inverted Tech Stack and Testing representations, producing byte-identical Tech Stack and Testing content (SC-006 parity retained).
+- **FR-014**: Both the prompt generator and the UI tool window MUST consume the shared inverted Tech Stack and Testing representations, producing byte-identical Tech Stack and Testing content (SC-005 parity retained).
 - **FR-015**: The Project Structure block MUST be removed from the prompt output and the UI tool window output.
 - **FR-016**: Package and root-package values MUST be removed from the prompt output and the UI tool window output.
 
@@ -136,11 +136,11 @@ A developer runs the plugin and does not see a "Project Structure" block or pack
 
 ### Measurable Outcomes
 
-- **SC-001**: Tech Stack output for a 130-module Maven monorepo is reduced from ~150 lines to ≤ 40 lines, with the majority of lines representing single-version technologies shown compactly.
+- **SC-001**: Tech Stack output for a 130-module Maven monorepo is reduced from ~150 lines to ≤ 40 lines, with the majority of lines representing single-version technologies shown compactly. Preamble lines (Build System, JDK Version, Language Level) are NOT counted toward the 40-line limit; only dependency entry lines count.
 - **SC-002**: No transitive-only artifact (asm, objenesis, listenablefuture, checker-qual, aopalliance, paranamer, failureaccess, j2objc-annotations, or similar) appears in the Tech Stack or Testing output for any Maven project.
 - **SC-003**: Testing section contains exactly: test coverage threshold (or "not detected"), test source roots, and naming pattern. No framework list or "Frameworks:" header appears in the Testing section for any project.
-- **SC-004**: Version discrepancies for both Tech Stack and Testing are embedded inline within their respective entries; no standalone "Discrepancies" block exists in the output.
-- **SC-005**: Tech Stack and Testing content is byte-identical between the generated LLM prompt and the UI tool window for the same project scan (SC-006 parity retained).
+- **SC-004**: Version discrepancies for Tech Stack are embedded inline within each entry; no standalone "Discrepancies" block exists in the output.
+- **SC-005**: Tech Stack and Testing content is byte-identical between the generated LLM prompt and the UI tool window for the same project scan (byte-identical parity from the prior sprint is retained).
 - **SC-006**: Project Structure block and package/root-package values are absent from all output for every supported project type.
 - **SC-007**: For a Maven project, the resolved version of a dependency that omits `<version>` in its POM (inheriting from parent or dependencyManagement) is correctly shown as the resolved version, not blank or "unknown".
 

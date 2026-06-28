@@ -77,7 +77,7 @@ scan/src/main/kotlin/dev/zahaand/projectscan/scan/
 shared/src/main/kotlin/dev/zahaand/projectscan/shared/
 └── OutputFormatters.kt          # ADD: InvertedTechStack/TechEntry/VersionEntry/AggregatorGroup/CarrierModule
                                  # ADD: buildInvertedTechStack(modules, internalNames): InvertedTechStack
-                                 # ADD: renderInvertedTechStack(InvertedTechStack): String
+                                 # ADD: renderInvertedTechStack(stack: InvertedTechStack, buildSystem: BuildSystem?, jdkVersion: String?, languageLevel: String?): String
                                  # REMOVE: DependencyGroup, groupDependencies, deduplicateFrameworks,
                                  #         detectVersionDiscrepancies, renderVersionDiscrepancyLine,
                                  #         filterInternalDependencies, VersionDiscrepancy
