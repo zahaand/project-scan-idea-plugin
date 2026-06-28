@@ -89,7 +89,7 @@ prompt/src/main/kotlin/dev/zahaand/projectscan/prompt/
                                  # DELETE buildProjectStructureBlock
                                  # generate(): remove "Project Structure" PromptBlock entry
 
-src/main/kotlin/dev/zahaand/projectscan/ui/
+ui/src/main/kotlin/dev/zahaand/projectscan/ui/
 └── ScanResultRenderer.kt        # renderStack: call buildInvertedTechStack + renderInvertedTechStack from shared
                                  # renderTests: remove framework rendering
                                  # DELETE renderStructure
