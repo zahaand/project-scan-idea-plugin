@@ -16,6 +16,9 @@ object ScanResultRenderer {
     @Suppress("UnusedParameter")
     fun render(
         scanResult: ScanResult,
+        // Intentionally retained: PromptGenerator still builds this and the call-site passes it
+        // through so the generation chain stays intact. The UI section is hidden for Sprint 7
+        // and will be restored in the dedicated Constitution-prompt sprint.
         constitutionPrompt: ConstitutionPrompt,
     ): List<UiSection> {
         val modules = (scanResult.structure as? SectionResult.Ok)?.data?.modules ?: emptyList()
