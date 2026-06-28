@@ -27,7 +27,7 @@ Rework the collection and representation layers for Tech Stack and Testing to pr
 Inverted Tech Stack building logic moves to `shared`, which is the single contract layer between `scan` producers and `prompt`/`ui` consumers. `scan` gains no dependency on `prompt` or `ui`. Dependency direction remains: `scan` → `model`; `shared` → `model`; `prompt` → `model` + `shared`; `ui` → `model` + `shared` + `prompt`. The `model` layer is not modified for generation purposes.
 
 ### Principle II — Read Through IntelliJ Project Model Only ✓ (confirmed via R1/R2)
-FR-003 (direct-only Maven deps): uses intersection of `MavenProject.mavenModel.dependencies` (declared coordinate set) with `MavenProject.dependencies` (resolved versions). Both accessed through IntelliJ's Maven plugin; no POM text parsing.
+FR-003 (direct-only Maven deps): resolved via the prioritized fallback chain documented in spec §Assumptions: (1) `MavenProject.mavenModel.dependencies` coordinate set intersected with `MavenProject.dependencies` (resolved versions) — primary path; (2) root-level nodes of the resolved dependency tree — first fallback; (3) resolved set minus computed transitives — last resort. All paths access IntelliJ's Maven plugin; no POM text parsing. Exact path confirmed against 2025.3.5 classpath at implement time.
 FR-004 (aggregator): derived from `MavenProject.mavenModel.modules` (each project's `<modules>` list) by building a reverse directory→aggregatorName map at collection time.
 FR-006 (Gradle denylist): applied to results from `ExternalSystemApiUtil.findAll(..., ProjectKeys.LIBRARY_DEPENDENCY)`.
 
@@ -112,3 +112,13 @@ scan/src/test/kotlin/dev/zahaand/projectscan/scan/
 ## Complexity Tracking
 
 > No constitution violations requiring justification in this sprint.
+
+## Task Generation Requirements (for /speckit-tasks)
+
+When generating `tasks.md`, ensure the task list explicitly covers:
+
+- **Deleted files**: An explicit task for each of the four files being deleted — `DependencyPort.kt`, `IjDependencyAdapter.kt`, `FakeDependencyPort.kt`, `IjDependencyAdapterTest.kt`.
+- **Wiring change**: The `ScanService` / `ScanServiceFactory` / `ProjectScanPanel` constructor change when `DependencyPort` is removed from `StackCollector`'s constructor.
+- **Signature change**: `renderStack()` in `ScanResultRenderer` — new signature accepting `List<Module>` or pre-built `InvertedTechStack`; all call sites updated.
+- **Consumer audit**: Verify the complete consumer list for removed fields (`StructureInfo.rootPackages`, `StructureInfo.packageSegments`, `StackInfo.dependencies`, `TestInfo.frameworks`, `TestInfo.unknownTestDependencies`) before marking removal tasks complete; the list in the project structure section is assumed but not exhaustively verified.
+- **FR-003 fallback chain**: The task implementing `IjModuleStructureAdapter.mavenModules()` direct-only slice MUST verify which API path succeeds against the 2025.3.5 classpath and document the result in a code comment; it is not complete until the path is confirmed.

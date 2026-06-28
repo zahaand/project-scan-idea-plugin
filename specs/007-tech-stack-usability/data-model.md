@@ -195,6 +195,11 @@ interface TestInfoPort {
 
 1. **`mavenModules()`** — direct-only deps (FR-003):
 ```kotlin
+// Primary path: intersect declared-coordinate set with the resolved dependency list.
+// If mavenModel.dependencies returns empty unexpectedly, implementation MUST try:
+//   Fallback 1: root-level nodes of getDependencyTree() (= direct deps by tree position)
+//   Fallback 2: resolved set minus computed transitives
+// Exact path confirmed against MavenProject API at implementation time.
 val declaredCoordinates = mp.mavenModel.dependencies
     .map { "${it.groupId}:${it.artifactId}" }
     .toSet()
@@ -318,6 +323,8 @@ fun renderInvertedTechStack(
     languageLevel: String?,
 ): String
 ```
+
+**This is the sole rendering function for Tech Stack content.** Both `PromptGenerator` and `ScanResultRenderer` call this function directly; neither re-implements formatting. This structural guarantee enforces SC-005 byte-identical parity.
 
 **Rendering format**:
 

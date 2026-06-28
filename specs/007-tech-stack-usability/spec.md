@@ -63,6 +63,10 @@ A developer runs the plugin and does not see a "Project Structure" block or pack
 - What happens when an aggregator module itself declares a direct dependency? — It appears as a carrier module in the Tech Stack entry, listed first before its submodules per reactor topology.
 - What happens when a module's aggregator cannot be determined? — The `aggregator` field is null; the module appears ungrouped (top-level) in any version-discrepancy listing.
 - What happens when no coverage plugin (e.g., JaCoCo) is configured? — The coverage threshold field shows "not detected", consistent with Sprint 6 behavior for absent configurations. No framework list is ever shown in Testing regardless of coverage presence.
+- What happens when a directly-declared dependency's resolved version is null or blank after parent/BOM resolution? — The dependency REMAINS in the output with its version field omitted (not "unknown", not dropped). Consistent with the never-fabricate principle; the coordinate is still surfaced.
+- What happens when `buildInvertedTechStack` receives an empty modules list and all preamble metadata (JDK, language level, build system) is null? — `renderInvertedTechStack` returns `"not detected"`, consistent with the never-fabricate principle applied to absent data.
+- What happens when a module appears in multiple aggregators' `<modules>` lists (pathological reactor configuration)? — The implementation resolves this deterministically using a fixed rule (last aggregator encountered in iteration order wins). This is a pathological configuration; the result is implementation-defined but must not crash or produce non-deterministic output.
+- **Deferred**: Robustness of the aggregator `canonicalPath` map to filesystem case-sensitivity and symlinks is to be verified during real-project testing. Not blocking for this sprint.
 
 ## Clarifications
 
@@ -78,21 +82,29 @@ A developer runs the plugin and does not see a "Project Structure" block or pack
 
 **Model layer**:
 
-- **FR-001**: The module descriptor MUST include an `aggregator` field (`String?`) containing the name of the Maven aggregator module that directly lists this module, or null for root/top-level modules.
+- **FR-001**: The module descriptor MUST include an `aggregator` field (`String?`) containing the `artifactId` of the Maven aggregator module that directly lists this module (`displayName` is used as fallback only when `artifactId` is unavailable), or null for root/top-level modules.
 - **FR-002**: The `PackageTreeData` structure (fields: `rootPackages`, `secondLevelSegments`) MUST be removed from the data model, and all consumers and tests MUST be updated accordingly.
 
 **Scan / collection layer**:
 
-- **FR-003**: For Maven projects, the scan adapter MUST return only directly-declared dependencies per module (identity = declared-direct set, version = resolved value from parent/dependencyManagement if not explicitly stated in the module's POM).
+- **FR-003**: For Maven projects, the scan adapter MUST return only directly-declared dependencies per module (identity = declared-direct set, version = resolved effective value). The following rules govern membership in the declared-direct set:
+  - **Parent-inherited dependencies**: a dependency declared in a parent POM's own `<dependencies>` block (NOT `<dependencyManagement>`) is inherited by every child module and MUST be counted as direct for each child (it is present in the child's effective declared set). Distinguishing the declaration origin — parent vs. local — is explicitly out of scope (tech debt); only presence in the effective declared set matters.
+  - **BOM imports**: an artifact imported as a BOM (`<type>pom</type>` with `<scope>import</scope>`) is a version-management mechanism, not a dependency. BOM-import artifacts MUST be excluded from the direct slice.
+  - **Optional dependencies**: a dependency with `<optional>true</optional>` IS included in the direct slice. Optional affects transitive propagation, not membership in the declared set.
+  - **Version precedence**: if the same coordinate is declared in both a child POM and its parent with different versions, the resolved effective version is always used (nearest wins — child overrides parent). There is at most one resolved version per coordinate per module.
 - **FR-004**: For Maven projects, the scan adapter MUST extract each module's aggregator name from the Maven reactor topology and populate the `aggregator` field in the module descriptor.
 - **FR-005**: Package-tree collection (`getPackageTree()`) MUST be removed from the scan adapter and its port/interface.
-- **FR-006**: For Gradle projects, the scan adapter MUST apply a thin denylist of clearly-synthetic artifacts (e.g., asm, objenesis, paranamer, listenablefuture, failureaccess, j2objc-annotations, checker-qual, aopalliance) and exclude matching artifacts from the dependency output; no precise direct-slice is required.
+- **FR-006**: For Gradle projects, the scan adapter MUST apply a thin denylist of clearly-synthetic artifacts and exclude matching artifacts from the dependency output; no precise direct-slice is required. Matching strategy: exact `groupId:artifactId` coordinate match for known artifacts (objenesis, paranamer, listenablefuture, failureaccess, j2objc-annotations, checker-qual, aopalliance); groupId match for `org.ow2.asm` (covers all asm coordinates). The denylist is a static, manually-maintained list; dynamic discovery or automated maintenance is NOT required (see FR-N6).
 
 **Shared / representation layer**:
 
-- **FR-007**: The shared module MUST build an inverted Tech Stack representation covering **all** direct external dependencies regardless of Maven scope (compile, runtime, test, provided): a mapping from technology coordinate (`groupId:artifactId`) to an ordered list of (version, carrier-modules) pairs, sorted alphabetically by `groupId:artifactId`. Test-framework coordinates (JUnit, Mockito, Testcontainers, AssertJ, etc.) appear in Tech Stack only; they are NOT duplicated in the Testing section.
-- **FR-008**: When a technology has a single version across all modules, the representation MUST record a count or "all modules" indicator WITHOUT storing or rendering individual module names.
-- **FR-009**: When a technology has multiple versions across modules, the representation MUST store carrier modules per version, grouped by Maven reactor topology (aggregator first, then its submodules; each aggregator group on a separate line in the rendered output).
+- **FR-007**: The shared module MUST build an inverted Tech Stack representation covering **all** direct external dependencies regardless of Maven scope: a mapping from technology coordinate (`groupId:artifactId`) to an ordered list of (version, carrier-modules) pairs, sorted alphabetically by `groupId:artifactId`. "All direct" refers to the same slice produced by FR-003 — "regardless of scope" means no scope-based filtering is applied (compile, runtime, test, and provided are all included); it does NOT expand the set beyond FR-003's declared-direct dependencies. A dependency is **external** when its coordinate is NOT an internal project module: neither its `artifactId` nor its `groupId:artifactId` matches any entry in `internalModuleNames`. Test-framework coordinates (JUnit, Mockito, Testcontainers, AssertJ, etc.) appear in Tech Stack only; they are NOT duplicated in the Testing section.
+- **FR-008**: When a technology has a single version across all modules, the representation MUST render that entry as a single line with the exact format `coordinate:version [N modules]` (where N is the carrier-module count), WITHOUT storing or rendering individual module names. This format is a firm contract: SC-005 byte-identical parity is structurally guaranteed because `renderInvertedTechStack` in the shared module is the sole rendering function — neither the prompt generator nor the UI tool window re-implements formatting.
+- **FR-009**: When a technology has multiple versions across modules, the representation MUST store carrier modules per version, grouped by Maven reactor topology, with the following ordering rules:
+  - Aggregator groups within a version entry are ordered: named aggregators alphabetically, with the null-aggregator (ungrouped/top-level) group LAST.
+  - Module names within an aggregator group are sorted alphabetically.
+  - Each aggregator group is rendered on a separate line.
+  - Null-aggregator behavior is consistent across the spec: `aggregator = null` means a root/top-level module; it renders ungrouped and appears last in any multi-version entry.
 - **FR-010**: The shared module MUST build a Testing representation that carries: (a) test coverage threshold sourced from build configuration (e.g., JaCoCo minimum line/branch coverage setting), or the literal string "not detected" if no coverage plugin is configured; (b) test source root paths, already compacted per Sprint 6 behavior; (c) test naming pattern, already implemented. No framework list, family grouping, or framework denylist is produced in this representation.
 - **FR-013**: The inversion and grouping logic MUST reside exclusively in the shared module so that both the prompt consumer and the UI consumer derive output from a single shared source.
 
@@ -109,6 +121,8 @@ A developer runs the plugin and does not see a "Project Structure" block or pack
 - **FR-N3**: The Constitution text is NOT modified in this sprint.
 - **FR-N4**: Code Style and Linters sections are NOT changed.
 - **FR-N5**: A "Frameworks:" header or test-framework family list is NOT produced in the Testing section; framework identity is communicated via Tech Stack coordinates alone.
+- **FR-N6**: Dynamic discovery or automated maintenance of the Gradle denylist is NOT required; it is a static list maintained with plugin releases.
+- **FR-N7**: Performance or latency requirements for `buildInvertedTechStack` at 130-module × 250-dependency scale are NOT specified this sprint. SC-001 (≤40 lines) is validated empirically against the reference monorepo, not derived from a formula.
 
 ### Key Entities
 
@@ -132,7 +146,7 @@ A developer runs the plugin and does not see a "Project Structure" block or pack
 
 ## Assumptions
 
-- The Maven IntelliJ project model exposes the declared-direct dependency set per module separately from the fully-resolved classpath; this is the model used for FR-003.
+- FR-003's direct slice is obtained via a prioritized fallback chain: (1) the declared-direct set from the Maven project model (primary path: `mavenModel.dependencies` coordinate set intersected with the resolved dependency list); (2) root-level nodes of the resolved dependency tree, which correspond to direct dependencies by tree position (first fallback); (3) resolved set minus computed transitives (last resort). The implementation confirms which path succeeds against the IntelliJ 2025.3.5 classpath at implement time; the spec does not assume a single hardcoded method succeeds.
 - The `aggregator` field stores a flat module name string (not a path or nested structure); consumer logic reconstructs the grouping from this flat field at render time.
 - Removal of `PackageTreeData` is a deliberate breaking model change accepted by the team; restoration from git history is trivial if a better implementation is designed later.
 - Constitution wording changes resulting from the architectural decision to classify dependencies inside the collection layer are deferred to a Sprint 9 Constitution-amendment package and are NOT part of this sprint's scope.
