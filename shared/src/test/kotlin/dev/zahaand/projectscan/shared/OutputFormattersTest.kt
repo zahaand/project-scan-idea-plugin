@@ -4,6 +4,7 @@ import dev.zahaand.projectscan.model.BuildSystem
 import dev.zahaand.projectscan.model.Dependency
 import dev.zahaand.projectscan.model.Module
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -226,6 +227,62 @@ class OutputFormattersTest {
         val result = renderInvertedTechStack(InvertedTechStack(emptyList()), BuildSystem.MAVEN, null, null)
         assertTrue(result.contains("Build System: MAVEN"))
         assertTrue(!result.contains("not detected"))
+    }
+
+    // F2 edge case: empty entries + non-null JDK version → preamble only, no "not detected" sentinel.
+    // Prevents a silent "not detected" on Gradle projects that have JDK/build-system data but zero
+    // non-denylisted dependencies (e.g., a project with only system-scoped or denylist-filtered deps).
+    @Test
+    fun `renderInvertedTechStack - F2 empty entries non-null jdkVersion renders preamble without sentinel`() {
+        val result = renderInvertedTechStack(InvertedTechStack(emptyList()), null, "21", null)
+        assertTrue(result.contains("JDK Version: 21"), "JDK Version preamble line must appear")
+        assertFalse(result.contains("not detected"), "not detected sentinel must be absent when preamble is non-empty")
+    }
+
+    @Test
+    fun `renderInvertedTechStack - F2 empty entries non-null languageLevel renders preamble without sentinel`() {
+        val result = renderInvertedTechStack(InvertedTechStack(emptyList()), null, null, "17")
+        assertTrue(result.contains("Language Level: 17"), "Language Level preamble line must appear")
+        assertFalse(result.contains("not detected"), "not detected sentinel must be absent when preamble is non-empty")
+    }
+
+    // SC-002: known transitive-only artifact coordinates must not appear in the inverted stack
+    // when built from a direct-only input set (i.e., after IjModuleStructureAdapter filtering).
+    // These artifacts are excluded by the Gradle denylist and Maven direct-only slice;
+    // this test documents that a properly filtered input never surfaces them.
+    @Test
+    fun `SC-002 - known transitive-only artifacts are absent from direct-only input stack`() {
+        val directOnlyModules =
+            listOf(
+                Module(
+                    "api",
+                    listOf(
+                        Dependency("org.springframework", "spring-core", "6.1.4"),
+                        Dependency("com.fasterxml.jackson.core", "jackson-databind", "2.17.0"),
+                    ),
+                ),
+            )
+        val stack = buildInvertedTechStack(directOnlyModules, emptySet())
+        val coordinates = stack.entries.map { it.coordinate }.toSet()
+
+        val knownTransitiveOnlyArtifacts =
+            listOf(
+                "org.ow2.asm:asm",
+                "org.objenesis:objenesis",
+                "com.google.guava:listenablefuture",
+                "com.google.guava:failureaccess",
+                "com.google.j2objc:j2objc-annotations",
+                "org.checkerframework:checker-qual",
+                "aopalliance:aopalliance",
+                "com.thoughtworks.paranamer:paranamer",
+            )
+
+        for (artifact in knownTransitiveOnlyArtifacts) {
+            assertFalse(
+                artifact in coordinates,
+                "SC-002: transitive-only artifact $artifact must not appear in direct-only stack",
+            )
+        }
     }
 
     @Test

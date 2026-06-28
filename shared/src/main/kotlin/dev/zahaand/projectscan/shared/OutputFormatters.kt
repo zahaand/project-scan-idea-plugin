@@ -133,7 +133,10 @@ private fun renderEntry(entry: TechEntry): List<String> {
 //                         - version  module1, module2                   (null aggregator — rendered
 //                                                                         last within the entry)
 //   Module names within a group are alphabetical.
-//   Returns "not detected" when entries is empty and all preamble values are null.
+//   Returns "not detected" ONLY when entries is empty AND all preamble values are null.
+//   When entries is empty but at least one preamble value is non-null, preamble lines are rendered
+//   and "not detected" is omitted (prevents a silent sentinel on Gradle projects that have JDK/
+//   build-system data but zero non-denylisted dependencies).
 fun renderInvertedTechStack(
     stack: InvertedTechStack,
     buildSystem: BuildSystem?,
@@ -147,8 +150,7 @@ fun renderInvertedTechStack(
 
     if (stack.entries.isEmpty() && preambleLines.isEmpty()) return "not detected"
 
-    val lines = preambleLines + stack.entries.flatMap { renderEntry(it) }
-    return if (lines.isEmpty()) "not detected" else lines.joinToString("\n")
+    return (preambleLines + stack.entries.flatMap { renderEntry(it) }).joinToString("\n")
 }
 
 // --- normalizeSourceRoots (retained) ---

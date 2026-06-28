@@ -66,10 +66,13 @@ class IjModuleStructureAdapter(private val project: Project) : ModuleStructurePo
             // available — MavenProject has no getMavenModel() in this API version.
             // Working path: root-level nodes of mp.dependencyTree (parent==null nodes = direct deps).
             // BOM-import artifacts (type=pom, scope=import) excluded per spec.
+            // System-scoped deps excluded: they reference local filesystem JARs not resolved through
+            // the Maven repository and must not appear in the direct slice (FR-007).
             val externalDeps =
                 mp.dependencyTree
                     .map { it.artifact }
                     .filter { !(it.type == "pom" && it.scope == "import") }
+                    .filter { it.scope != "system" }
                     .filter { "${it.groupId}:${it.artifactId}" !in moduleCoordinates }
                     .map { it.toDependency() }
 

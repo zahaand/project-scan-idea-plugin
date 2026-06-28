@@ -2,7 +2,7 @@
 
 **Feature Branch**: `007-tech-stack-usability`  
 **Created**: 2026-06-28  
-**Status**: Draft  
+**Status**: Implemented  
 **Input**: Sprint 7 feature description — usability rework of the collection layer for Tech Stack and Testing output
 
 ## User Scenarios & Testing *(mandatory)*
@@ -65,6 +65,7 @@ A developer runs the plugin and does not see a "Project Structure" block or pack
 - What happens when no coverage plugin (e.g., JaCoCo) is configured? — The coverage threshold field shows "not detected", consistent with Sprint 6 behavior for absent configurations. No framework list is ever shown in Testing regardless of coverage presence.
 - What happens when a directly-declared dependency's resolved version is null or blank after parent/BOM resolution? — The dependency REMAINS in the output with its version field omitted (not "unknown", not dropped). Consistent with the never-fabricate principle; the coordinate is still surfaced.
 - What happens when `buildInvertedTechStack` receives an empty modules list and all preamble metadata (JDK, language level, build system) is null? — `renderInvertedTechStack` returns `"not detected"`, consistent with the never-fabricate principle applied to absent data.
+- What happens when entries are empty but at least one preamble value (Build System, JDK Version, Language Level) is non-null? — `renderInvertedTechStack` renders the non-null preamble lines only and omits the `"not detected"` sentinel. `"not detected"` is returned only when both entries and all preamble values are null. This prevents a silent sentinel on Gradle projects that have JDK/build-system data but zero non-denylisted dependencies.
 - What happens when a module appears in multiple aggregators' `<modules>` lists (pathological reactor configuration)? — The implementation resolves this deterministically using a fixed rule (last aggregator encountered in iteration order wins). This is a pathological configuration; the result is implementation-defined but must not crash or produce non-deterministic output.
 - **Deferred**: Robustness of the aggregator `canonicalPath` map to filesystem case-sensitivity and symlinks is to be verified during real-project testing. Not blocking for this sprint.
 
@@ -98,7 +99,7 @@ A developer runs the plugin and does not see a "Project Structure" block or pack
 
 **Shared / representation layer**:
 
-- **FR-007**: The shared module MUST build an inverted Tech Stack representation covering **all** direct external dependencies regardless of Maven scope: a mapping from technology coordinate (`groupId:artifactId`) to an ordered list of (version, carrier-modules) pairs, sorted alphabetically by `groupId:artifactId`. "All direct" refers to the same slice produced by FR-003 — "regardless of scope" means no scope-based filtering is applied (compile, runtime, test, and provided are all included); it does NOT expand the set beyond FR-003's declared-direct dependencies. A dependency is **external** when its coordinate is NOT an internal project module: neither its `artifactId` nor its `groupId:artifactId` matches any entry in `internalModuleNames`. Test-framework coordinates (JUnit, Mockito, Testcontainers, AssertJ, etc.) appear in Tech Stack only; they are NOT duplicated in the Testing section.
+- **FR-007**: The shared module MUST build an inverted Tech Stack representation covering **all** direct external dependencies regardless of Maven scope: a mapping from technology coordinate (`groupId:artifactId`) to an ordered list of (version, carrier-modules) pairs, sorted alphabetically by `groupId:artifactId`. "All direct" refers to the same slice produced by FR-003 — "regardless of scope" means no scope-based filtering is applied (compile, runtime, test, and provided are all included); it does NOT expand the set beyond FR-003's declared-direct dependencies. System-scoped dependencies are excluded from the direct slice (they reference local filesystem JARs not resolved through the Maven repository). A dependency is **external** when its coordinate is NOT an internal project module: neither its `artifactId` nor its `groupId:artifactId` matches any entry in `internalModuleNames`. Test-framework coordinates (JUnit, Mockito, Testcontainers, AssertJ, etc.) appear in Tech Stack only; they are NOT duplicated in the Testing section.
 - **FR-008**: When a technology has a single version across all modules, the representation MUST render that entry as a single line with the exact format `coordinate:version [N modules]` (where N is the carrier-module count), WITHOUT storing or rendering individual module names. This format is a firm contract: SC-005 byte-identical parity is structurally guaranteed because `renderInvertedTechStack` in the shared module is the sole rendering function — neither the prompt generator nor the UI tool window re-implements formatting.
 - **FR-009**: When a technology has multiple versions across modules, the representation MUST store carrier modules per version, grouped by Maven reactor topology, with the following ordering rules:
   - Aggregator groups within a version entry are ordered: named aggregators alphabetically, with the null-aggregator (ungrouped/top-level) group LAST.
@@ -106,6 +107,8 @@ A developer runs the plugin and does not see a "Project Structure" block or pack
   - Each aggregator group is rendered on a separate line.
   - Null-aggregator behavior is consistent across the spec: `aggregator = null` means a root/top-level module; it renders ungrouped and appears last in any multi-version entry.
 - **FR-010**: The shared module MUST build a Testing representation that carries: (a) test coverage threshold sourced from build configuration (e.g., JaCoCo minimum line/branch coverage setting), or the literal string "not detected" if no coverage plugin is configured; (b) test source root paths, already compacted per Sprint 6 behavior; (c) test naming pattern, already implemented. No framework list, family grouping, or framework denylist is produced in this representation.
+- **FR-011** — Removed 2026-06-28 (superseded by the repurposing of the Testing section; see §Clarifications).
+- **FR-012** — Removed 2026-06-28 (same).
 - **FR-013**: The inversion and grouping logic MUST reside exclusively in the shared module so that both the prompt consumer and the UI consumer derive output from a single shared source.
 
 **Prompt / UI layer**:

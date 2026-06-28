@@ -8,6 +8,8 @@ import dev.zahaand.projectscan.model.StackInfo
 import dev.zahaand.projectscan.model.StructureInfo
 import dev.zahaand.projectscan.model.TestInfo
 import dev.zahaand.projectscan.prompt.PromptGenerator
+import dev.zahaand.projectscan.shared.buildInvertedTechStack
+import dev.zahaand.projectscan.shared.renderInvertedTechStack
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -128,5 +130,69 @@ class ScanResultRendererSmokeTest {
 
         assertTrue("jackson entry in prompt", promptStackSection.contains("jackson-databind"))
         assertTrue("jackson entry in renderer", rendererOutput.contains("jackson-databind"))
+    }
+
+    // SC-005 byte-identical parity test: both PromptGenerator.buildTechStackBlock() and
+    // ScanResultRenderer.renderStack() must call renderInvertedTechStack() from the shared module
+    // and produce byte-identical Tech Stack content. This test verifies the contract without a
+    // running IDE. Testing parity is NOT byte-identical (C1 tracked deviation, deferred to Sprint 9).
+    @Test
+    fun `SC-005 byte-identical - tech stack content from renderer equals shared renderInvertedTechStack directly`() {
+        val modules =
+            listOf(
+                Module(
+                    "api",
+                    listOf(
+                        Dependency("org.springframework", "spring-core", "6.1.4"),
+                        Dependency("com.fasterxml.jackson.core", "jackson-databind", "2.17.0"),
+                    ),
+                ),
+                Module(
+                    "svc",
+                    listOf(
+                        Dependency("org.springframework", "spring-core", "6.0.0"),
+                        Dependency("com.fasterxml.jackson.core", "jackson-databind", "2.17.0"),
+                    ),
+                ),
+            )
+        val stackInfo = StackInfo()
+        val internalNames = modules.map { it.name }.toSet()
+
+        // Ground truth: call renderInvertedTechStack directly (the shared canonical function)
+        val expected =
+            renderInvertedTechStack(
+                buildInvertedTechStack(modules, internalNames),
+                stackInfo.buildSystem,
+                stackInfo.jdkVersion,
+                stackInfo.languageLevel,
+            )
+
+        // ScanResultRenderer must return the same string
+        val rendererOutput = ScanResultRenderer.renderStack(stackInfo, modules, internalNames)!!
+        assertEquals(
+            "SC-005: renderer output must be byte-identical to shared renderInvertedTechStack",
+            expected,
+            rendererOutput,
+        )
+
+        // PromptGenerator must embed the same string in the Tech Stack block
+        val structureInfo = StructureInfo(modules = modules)
+        val scanResult =
+            ScanResult(
+                stack = SectionResult.Ok(stackInfo),
+                structure = SectionResult.Ok(structureInfo),
+                tests = SectionResult.Empty,
+                codeStyle = SectionResult.Empty,
+                linters = SectionResult.Empty,
+            )
+        val promptText = PromptGenerator().generate(scanResult, emptyList()).render()
+        val blockStart = promptText.indexOf("## Tech Stack\n\n") + "## Tech Stack\n\n".length
+        val blockEnd = promptText.indexOf("\n\n## ", blockStart).takeIf { it > 0 } ?: promptText.length
+        val promptStackContent = promptText.substring(blockStart, blockEnd)
+        assertEquals(
+            "SC-005: prompt tech stack content must be byte-identical to shared renderInvertedTechStack",
+            expected,
+            promptStackContent,
+        )
     }
 }
