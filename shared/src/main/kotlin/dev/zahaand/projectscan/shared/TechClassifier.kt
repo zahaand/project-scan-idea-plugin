@@ -27,7 +27,7 @@ private data class AllowlistEntryDto(
 private data class TechConfigDto(
     @SerialName("schemaVersion") val schemaVersion: Int,
     @SerialName("denylist") val denylist: List<String>,
-    @SerialName("springCoreArtifactFamilies") val springCoreArtifactFamilies: Map<String, String>,
+    @SerialName("artifactIdFamilies") val artifactIdFamilies: Map<String, Map<String, String>>,
     @SerialName("allowlist") val allowlist: List<AllowlistEntryDto>,
 )
 
@@ -37,7 +37,8 @@ internal data class AllowlistEntry(val groupIdPrefix: String, val name: String)
 
 internal class TechConfig(
     val denylist: Set<String>,
-    val springCoreArtifactFamilies: Map<String, String>,
+    // groupId → (artifactId → displayName); unknown artifactId → Other dependencies.
+    val artifactIdFamilies: Map<String, Map<String, String>>,
     // Preserved in JSON order; longest-prefix resolution applied at classify time.
     val allowlist: List<AllowlistEntry>,
 )
@@ -57,15 +58,13 @@ internal object TechClassifierLoader {
         val dto = jsonParser.decodeFromString<TechConfigDto>(stream.bufferedReader().readText())
         return TechConfig(
             denylist = dto.denylist.toHashSet(),
-            springCoreArtifactFamilies = dto.springCoreArtifactFamilies,
+            artifactIdFamilies = dto.artifactIdFamilies,
             allowlist = dto.allowlist.map { AllowlistEntry(it.groupIdPrefix, it.name) },
         )
     }
 }
 
 // --- Classification ---
-
-private const val SPRING_BASE_GROUP = "org.springframework"
 
 // Null return = unrecognized (→ Other dependencies).
 // DENIED sentinel = entry is in the denylist (→ drop entirely).
@@ -78,9 +77,8 @@ private fun findFamilyOrDenied(
 ): Any? =
     when {
         "$groupId:$artifactId" in config.denylist -> DENIED
-        groupId == SPRING_BASE_GROUP ->
-            // Null means this org.springframework artifact is not in any sub-family → Other.
-            config.springCoreArtifactFamilies[artifactId]
+        groupId in config.artifactIdFamilies ->
+            config.artifactIdFamilies[groupId]?.get(artifactId)
         else ->
             config.allowlist
                 .filter { e -> groupId == e.groupIdPrefix || groupId.startsWith("${e.groupIdPrefix}.") }

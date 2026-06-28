@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "denylist": [
     "org.jetbrains:annotations",
     "com.google.code.findbugs:jsr305",
@@ -17,21 +17,33 @@
     "aopalliance:aopalliance",
     "org.intellij.lang:annotations"
   ],
-  "springCoreArtifactFamilies": {
-    "spring-web": "Spring Web",
-    "spring-webmvc": "Spring Web",
-    "spring-webflux": "Spring Web",
-    "spring-context": "Spring Core",
-    "spring-beans": "Spring Core",
-    "spring-core": "Spring Core",
-    "spring-tx": "Spring Core",
-    "spring-aop": "Spring Core",
-    "spring-aspects": "Spring Core",
-    "spring-expression": "Spring Core",
-    "spring-jcl": "Spring Core",
-    "spring-jdbc": "Spring Core",
-    "spring-messaging": "Spring Core",
-    "spring-test": "Spring Core"
+  "artifactIdFamilies": {
+    "org.springframework": {
+      "spring-web": "Spring Web",
+      "spring-webmvc": "Spring Web",
+      "spring-webflux": "Spring Web",
+      "spring-context": "Spring Core",
+      "spring-beans": "Spring Core",
+      "spring-core": "Spring Core",
+      "spring-tx": "Spring Core",
+      "spring-aop": "Spring Core",
+      "spring-aspects": "Spring Core",
+      "spring-expression": "Spring Core",
+      "spring-jcl": "Spring Core",
+      "spring-jdbc": "Spring Core",
+      "spring-messaging": "Spring Core",
+      "spring-test": "Spring Core"
+    },
+    "io.micrometer": {
+      "micrometer-core": "Micrometer Core",
+      "micrometer-commons": "Micrometer Core",
+      "micrometer-observation": "Micrometer Core",
+      "micrometer-jakarta9": "Micrometer Core",
+      "micrometer-registry-prometheus": "Micrometer Registry",
+      "micrometer-tracing": "Micrometer Tracing",
+      "micrometer-tracing-bridge-brave": "Micrometer Tracing",
+      "context-propagation": "Micrometer Tracing"
+    }
   },
   "allowlist": [
     {"groupIdPrefix": "org.springframework.boot", "name": "Spring Boot"},
@@ -125,7 +137,6 @@
     {"groupIdPrefix": "com.google.code.gson", "name": "Gson"},
     {"groupIdPrefix": "com.google.protobuf", "name": "Protocol Buffers"},
     {"groupIdPrefix": "org.apache.avro", "name": "Apache Avro"},
-    {"groupIdPrefix": "org.json", "name": "JSON"},
     {"groupIdPrefix": "com.alibaba", "name": "Fastjson"},
     {"groupIdPrefix": "org.yaml", "name": "SnakeYAML"},
     {"groupIdPrefix": "org.junit", "name": "JUnit"},
@@ -145,7 +156,6 @@
     {"groupIdPrefix": "org.openjdk.jmh", "name": "JMH"},
     {"groupIdPrefix": "org.seleniumhq.selenium", "name": "Selenium"},
     {"groupIdPrefix": "io.cucumber", "name": "Cucumber"},
-    {"groupIdPrefix": "io.micrometer", "name": "Micrometer"},
     {"groupIdPrefix": "io.opentelemetry", "name": "OpenTelemetry"},
     {"groupIdPrefix": "ch.qos.logback", "name": "Logback"},
     {"groupIdPrefix": "org.apache.logging.log4j", "name": "Log4j 2"},
@@ -156,9 +166,8 @@
     {"groupIdPrefix": "com.google.dagger", "name": "Dagger"},
     {"groupIdPrefix": "org.projectlombok", "name": "Lombok"},
     {"groupIdPrefix": "org.mapstruct", "name": "MapStruct"},
-    {"groupIdPrefix": "com.google.guava", "name": "Guava"},
-    {"groupIdPrefix": "org.apache.commons", "name": "Apache Commons"},
     {"groupIdPrefix": "org.bouncycastle", "name": "Bouncy Castle"},
+    {"groupIdPrefix": "ru.mkskom.jcp", "name": "КриптоПро JCP"},
     {"groupIdPrefix": "com.nimbusds", "name": "Nimbus JOSE+JWT"},
     {"groupIdPrefix": "io.jsonwebtoken", "name": "JJWT"},
     {"groupIdPrefix": "org.keycloak", "name": "Keycloak"},
