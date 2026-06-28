@@ -15,7 +15,7 @@ class IjModuleStructureAdapterTest : BasePlatformTestCase() {
         assertTrue("Expected empty module list for bare test fixture", modules.isEmpty())
     }
 
-    fun testNoDepHasBlankOrUnknownVersion_SC007() {
+    fun testNoDepHasBlankOrUnknownVersionSC007() {
         // SC-007: a dep declared without explicit <version> (inherited from parent POM or
         // dependencyManagement) must surface as the resolved effective version — not blank or
         // "unknown". Runs over all modules returned by the adapter; trivially passes when the

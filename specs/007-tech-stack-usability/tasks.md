@@ -93,10 +93,10 @@
 
 ### Implementation for User Story 3
 
-- [ ] T030 [US3] Update `scan/src/main/kotlin/dev/zahaand/projectscan/scan/collector/StructureCollector.kt`: remove `getPackageTree()` call; propagate `aggregator` field from `ModuleDescriptor` to `Module` (i.e., `Module(name = ..., aggregator = descriptor.aggregator, ...)`); fix `StructureInfo` construction to omit removed `rootPackages`/`packageSegments` fields
-- [ ] T031 [P] [US3] Update `scan/src/test/kotlin/dev/zahaand/projectscan/scan/collector/StructureCollectorTest.kt`: remove `rootPackages`/`packageSegments` assertions; add test cases verifying `aggregator` field is propagated from `ModuleDescriptor` to `Module`
-- [ ] T032 [US3] Update `prompt/src/main/kotlin/dev/zahaand/projectscan/prompt/PromptGenerator.kt`: delete `buildProjectStructureBlock()` method; remove the `PromptBlock("Project Structure", ...)` (or equivalent) entry from `generate()`
-- [ ] T033 [US3] Update `src/main/kotlin/dev/zahaand/projectscan/ui/ScanResultRenderer.kt`: delete `renderStructure()` method; remove the `section(titleKey = "section.Structure.title", ...)` call (or equivalent) from `render()`
+- [X] T030 [US3] Update `scan/src/main/kotlin/dev/zahaand/projectscan/scan/collector/StructureCollector.kt`: remove `getPackageTree()` call; propagate `aggregator` field from `ModuleDescriptor` to `Module` (i.e., `Module(name = ..., aggregator = descriptor.aggregator, ...)`); fix `StructureInfo` construction to omit removed `rootPackages`/`packageSegments` fields
+- [X] T031 [P] [US3] Update `scan/src/test/kotlin/dev/zahaand/projectscan/scan/collector/StructureCollectorTest.kt`: remove `rootPackages`/`packageSegments` assertions; add test cases verifying `aggregator` field is propagated from `ModuleDescriptor` to `Module`
+- [X] T032 [US3] Update `prompt/src/main/kotlin/dev/zahaand/projectscan/prompt/PromptGenerator.kt`: delete `buildProjectStructureBlock()` method; remove the `PromptBlock("Project Structure", ...)` (or equivalent) entry from `generate()`
+- [X] T033 [US3] Update `src/main/kotlin/dev/zahaand/projectscan/ui/ScanResultRenderer.kt`: delete `renderStructure()` method; remove the `section(titleKey = "section.Structure.title", ...)` call (or equivalent) from `render()`
 
 **Checkpoint**: US3 complete — verify no "Project Structure" section in any output; output is shorter by exactly that block (SC-006)
 
