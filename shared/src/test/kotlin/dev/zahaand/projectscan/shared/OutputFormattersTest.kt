@@ -150,6 +150,69 @@ class OutputFormattersTest {
         }
     }
 
+    // T039 (b): named aggregators alphabetical, null-aggregator group last, modules alphabetical within group
+    @Test
+    fun `buildInvertedTechStack - multi-version named aggregators are sorted alphabetically`() {
+        val modules =
+            listOf(
+                Module("api", listOf(Dependency("org.spring", "core", "6.1.4")), aggregator = "zeta-agg"),
+                Module("svc", listOf(Dependency("org.spring", "core", "6.1.4")), aggregator = "alpha-agg"),
+                Module("web", listOf(Dependency("org.spring", "core", "6.0.0")), aggregator = "beta-agg"),
+            )
+        val stack = buildInvertedTechStack(modules, emptySet())
+        val entry = stack.entries[0]
+        val v614 = entry.versions.first { it.version == "6.1.4" }
+        val aggNames = v614.groups.mapNotNull { it.aggregator }
+        assertEquals(listOf("alpha-agg", "zeta-agg"), aggNames)
+    }
+
+    @Test
+    fun `buildInvertedTechStack - null-aggregator group appears last in multi-version entry`() {
+        val modules =
+            listOf(
+                Module("api", listOf(Dependency("org.spring", "core", "6.1.4")), aggregator = "alpha-agg"),
+                Module("root", listOf(Dependency("org.spring", "core", "6.1.4")), aggregator = null),
+                Module("svc", listOf(Dependency("org.spring", "core", "6.0.0")), aggregator = null),
+            )
+        val stack = buildInvertedTechStack(modules, emptySet())
+        val entry = stack.entries[0]
+        val v614 = entry.versions.first { it.version == "6.1.4" }
+        assertTrue(v614.groups.last().aggregator == null, "null-aggregator group must be last")
+    }
+
+    @Test
+    fun `buildInvertedTechStack - module names within an aggregator group are sorted alphabetically`() {
+        val dep = Dependency("org.spring", "core", "6.1.4")
+        val modules =
+            listOf(
+                Module("z-module", listOf(dep), aggregator = "parent"),
+                Module("a-module", listOf(dep), aggregator = "parent"),
+                Module("m-module", listOf(dep), aggregator = "parent"),
+                Module("other", listOf(Dependency("org.spring", "core", "6.0.0")), aggregator = "parent"),
+            )
+        val stack = buildInvertedTechStack(modules, emptySet())
+        val entry = stack.entries[0]
+        val v614 = entry.versions.first { it.version == "6.1.4" }
+        val group = v614.groups.first { it.aggregator == "parent" }
+        assertEquals(listOf("a-module", "m-module", "z-module"), group.moduleNames)
+    }
+
+    // T039 (e): SC-007 — dependency with version resolved from parent shows that version, not blank
+    @Test
+    fun `buildInvertedTechStack - SC-007 dep with resolved-from-parent version appears with that version`() {
+        // resolvedVersion is non-null (resolved via parent/BOM); no explicit version on the declaring module
+        val modules =
+            listOf(
+                Module("api", listOf(Dependency("org.springframework", "spring-core", "5.3.39"))),
+            )
+        val stack = buildInvertedTechStack(modules, emptySet())
+        assertEquals(1, stack.entries.size)
+        val entry = stack.entries[0]
+        assertEquals("org.springframework:spring-core", entry.coordinate)
+        assertEquals("5.3.39", entry.versions[0].version)
+        assertTrue(entry.versions[0].isUniform)
+    }
+
     // === renderInvertedTechStack ===
 
     @Test

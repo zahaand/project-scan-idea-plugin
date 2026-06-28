@@ -122,6 +122,18 @@ private fun renderEntry(entry: TechEntry): List<String> {
     return lines
 }
 
+// SC-005 byte-identical contract: both PromptGenerator and ScanResultRenderer MUST call this
+// function and MUST NOT re-implement formatting. Canonical line formats:
+//   Preamble:           - Build System: X  /  - JDK Version: X  /  - Language Level: X
+//   Uniform entry:      - groupId:artifactId:version [N modules]
+//   Multi-version hdr:  - groupId:artifactId
+//   Multi-version line:   - version  aggregatorName: module1, module2   (named aggregators
+//                                                                         alphabetical; each group
+//                                                                         on its own line)
+//                         - version  module1, module2                   (null aggregator — rendered
+//                                                                         last within the entry)
+//   Module names within a group are alphabetical.
+//   Returns "not detected" when entries is empty and all preamble values are null.
 fun renderInvertedTechStack(
     stack: InvertedTechStack,
     buildSystem: BuildSystem?,

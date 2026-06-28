@@ -4,6 +4,23 @@
 
 ## [Unreleased]
 
+### Pending Constitution Amendment — Sprint 9 (PENDING)
+
+The following constitution changes are owed as a single amendment package in Sprint 9.
+The constitution version is NOT bumped in Sprint 7 (FR-N3); the full amendment lands together.
+
+- **(a) Add `:shared` to §Project Structure component table**: Sprint 7 introduces `shared` as the
+  central rendering component consumed by both `:prompt` and `:ui`. The constitution's component
+  table and dependency direction rules must be updated to reflect this: `:prompt` and `:ui` MAY
+  depend on `:shared`; `:scan` MUST NOT depend on `:shared`.
+
+- **(e) Legitimise `:ui` as composition root**: `:ui` currently depends on `:scan`, `:baseline`,
+  and `:prompt` in its role as the plugin's composition root (wiring `ScanService →
+  BaselineRuleProvider → PromptGenerator → render`). The constitution's blanket "scan, prompt, and
+  ui MUST NOT depend on each other" must be narrowed to prohibit only the `scan ↔ prompt` coupling;
+  the `ui → scan/baseline/prompt` wiring must be explicitly permitted. Tracked as a deliberate
+  deviation in `specs/007-tech-stack-usability/plan.md §Tracked Deviations`.
+
 ### Breaking Changes (Sprint 2 — `002-scan-collectors`)
 
 The following `:model` changes are **deliberate breaking changes** documented per SC-006 and

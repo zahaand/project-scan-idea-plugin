@@ -59,6 +59,7 @@
 - [X] T020 [US1] Update `src/main/kotlin/dev/zahaand/projectscan/ui/ScanResultRenderer.kt` `renderStack()`: change signature to accept `List<Module>` and `Set<String>` (internal module names) instead of relying on `StackInfo.dependencies`; call `buildInvertedTechStack` + `renderInvertedTechStack` from shared; run `grep -rn "renderStack"` to find and update all call sites before marking complete (depends on T016, T017, T018)
 - [X] T021 [P] [US1] Update `scan/src/test/kotlin/dev/zahaand/projectscan/scan/adapter/IjModuleStructureAdapterTest.kt`: add integration tests covering direct-only dep extraction (FR-003) and aggregator field population (FR-004); remove `getPackageTree()` test cases
 - [X] T022 [P] [US1] Update `scan/src/test/kotlin/dev/zahaand/projectscan/scan/collector/StackCollectorTest.kt`: remove dependency-related test cases; update constructor invocation to reflect removed `DependencyPort` parameter
+- [X] T039 [P] [US1] Add unit tests in `shared/src/test/kotlin/dev/zahaand/projectscan/shared/OutputFormattersTest.kt` for `buildInvertedTechStack()` and `renderInvertedTechStack()` covering: (a) uniform single-version entry renders as `- coord:version [N modules]` with no module names; (b) multi-version ordering — named aggregators alphabetical, null-aggregator group last, module names alphabetical within group; (c) empty modules list / empty stack returns 'not detected'; (d) internal module names excluded from stack; (e) SC-007 — a dependency with a non-null resolved version (resolved from parent/BOM) appears with that version, not blank
 
 **Checkpoint**: US1 complete — run against 130-module monorepo; confirm ≤ 40 Tech Stack lines, no transitives, byte-identical output between prompt and UI (SC-001, SC-002, SC-005)
 
@@ -110,6 +111,9 @@
 - [ ] T036 [P] Verify SC-002: confirm no transitive-only artifact (`asm`, `objenesis`, `listenablefuture`, `failureaccess`, `j2objc-annotations`, `checker-qual`, `aopalliance`, `paranamer`) appears in Tech Stack or Testing output for any Maven project
 - [ ] T037 Verify SC-001: scan the 130-module Maven monorepo and confirm Tech Stack output is ≤ 40 lines (preamble lines excluded from count — dependency entry lines only)
 - [ ] T038 Record the Sprint 9 constitution-amendment obligation for the `shared` component: constitution §Project Structure must add `shared` to the component table with its dependency rules (`prompt` and `ui` MAY depend on `shared`; `scan` MUST NOT depend on `shared`). This is a tracking-only marker; the amendment lands in the Sprint 9 constitution package. No constitution edit in Sprint 7 (FR-N3).
+- [ ] T040 Verify SC-006: scan any Maven project; confirm no "Project Structure" section and no `rootPackages`/`secondLevelSegments` value appears anywhere in the prompt or UI tool window output.
+- [ ] T041 Verify SC-003: scan any project; confirm the Testing section has no "Frameworks:" header and no framework name entries, and that coverage threshold, test source roots, and naming pattern fields are present.
+- [ ] T042 Verify SC-007: confirm a dependency whose `<version>` is absent in the module POM (managed by parent or dependencyManagement) shows its resolved version in the Tech Stack output, not blank or "unknown".
 
 ---
 

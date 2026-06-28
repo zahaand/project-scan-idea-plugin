@@ -136,7 +136,7 @@ A developer runs the plugin and does not see a "Project Structure" block or pack
 
 ### Measurable Outcomes
 
-- **SC-001**: Tech Stack output for a 130-module Maven monorepo is reduced from ~150 lines to ≤ 40 lines, with the majority of lines representing single-version technologies shown compactly. Preamble lines (Build System, JDK Version, Language Level) are NOT counted toward the 40-line limit; only dependency entry lines count.
+- **SC-001**: Tech Stack output for a 130-module Maven monorepo is reduced from ~150 lines to ≤ 40 dependency entry lines. Preamble lines (Build System, JDK Version, Language Level) are NOT counted toward the 40-line limit.
 - **SC-002**: No transitive-only artifact (asm, objenesis, listenablefuture, checker-qual, aopalliance, paranamer, failureaccess, j2objc-annotations, or similar) appears in the Tech Stack or Testing output for any Maven project.
 - **SC-003**: Testing section contains exactly: test coverage threshold (or "not detected"), test source roots, and naming pattern. No framework list or "Frameworks:" header appears in the Testing section for any project.
 - **SC-004**: Version discrepancies for Tech Stack are embedded inline within each entry; no standalone "Discrepancies" block exists in the output.

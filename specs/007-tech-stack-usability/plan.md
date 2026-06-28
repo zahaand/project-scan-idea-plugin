@@ -109,6 +109,12 @@ scan/src/test/kotlin/dev/zahaand/projectscan/scan/
 
 **Structure Decision**: Single Gradle multi-project build. No new submodules needed. `shared` already exists and is the correct home for inversion logic (FR-013, Constitution I).
 
+## Tracked Deviations
+
+| Deviation | Description |
+|-----------|-------------|
+| `:ui` → `:prompt` dependency | `:ui` depends on `:scan`, `:baseline`, `:prompt`, and `:model`, which the constitution's §Project Structure currently forbids for prompt/ui ("scan, prompt, and ui MUST NOT depend on each other"). `:ui` is the composition root that wires `ScanService → BaselineRuleProvider → PromptGenerator → render`; this coupling is deliberate and necessary. Origin: Sprint 5 (introduced when the composition root was established). Sprint 7 neither introduces nor worsens this dependency. Resolution target: Sprint 9 constitution-amendment package — item (e) legitimise `:ui` as composition root (`ui` MAY depend on `scan`, `baseline`, and `prompt`; narrow the mutual-exclusion ban to `scan ↔ prompt` only). To be recorded in `TECH_DEBT.md` when that file is created in Sprint 9. |
+
 ## Complexity Tracking
 
 > No constitution violations requiring justification in this sprint.
