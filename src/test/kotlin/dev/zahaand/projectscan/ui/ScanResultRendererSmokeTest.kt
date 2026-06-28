@@ -18,7 +18,7 @@ import org.junit.Test
 
 class ScanResultRendererSmokeTest {
     @Test
-    fun `renderStack - single module single dep renders coordinate-version-count format`() {
+    fun `renderStack - spring-core dep rendered as Spring Core in Technologies block`() {
         val modules =
             listOf(
                 Module(
@@ -30,16 +30,19 @@ class ScanResultRendererSmokeTest {
             )
         val output = ScanResultRenderer.renderStack(StackInfo(), modules)
         assertNotNull(output)
-        assertTrue("Uniform entry must appear", output!!.contains("org.springframework:spring-core:6.1.4 [1 modules]"))
+        assertTrue("Spring Core entry must appear", output!!.contains("Spring Core 6.1.4"))
+        assertFalse("Raw coordinate must not appear", output.contains("org.springframework:spring-core"))
     }
 
     @Test
-    fun `renderStack - same dep in two modules at same version shows count 2`() {
+    fun `renderStack - same spring-core dep in two modules still renders as one Technologies entry`() {
         val dep = Dependency("org.springframework", "spring-core", "6.1.4")
         val modules = listOf(Module("api", listOf(dep)), Module("svc", listOf(dep)))
         val output = ScanResultRenderer.renderStack(StackInfo(), modules)
         assertNotNull(output)
-        assertTrue("Count-2 entry must appear", output!!.contains("org.springframework:spring-core:6.1.4 [2 modules]"))
+        assertTrue("Spring Core entry must appear", output!!.contains("Spring Core 6.1.4"))
+        val occurrences = output.lines().count { it.contains("Spring Core") }
+        assertEquals("Exactly one Spring Core line expected (family folded)", 1, occurrences)
     }
 
     @Test
@@ -59,15 +62,12 @@ class ScanResultRendererSmokeTest {
         val output = ScanResultRenderer.renderStack(StackInfo(), modules, internalNames)
         assertNotNull(output)
         assertFalse("Internal dep must not appear", output!!.contains("document-engine-spi"))
-        assertTrue("External dep must appear", output.contains("spring-web"))
+        assertTrue("External dep must appear somewhere", output.contains("spring-web"))
     }
 
     @Test
-    fun `renderStack - empty modules and null preamble returns null`() {
+    fun `renderStack - empty modules and null preamble returns not detected`() {
         val output = ScanResultRenderer.renderStack(StackInfo(), emptyList())
-        // renderStack returns null when rendered string is blank
-        // StackInfo with no fields → preamble empty → entries empty → "not detected" → not blank → non-null
-        // "not detected" is non-blank, so renderStack returns it
         assertNotNull(output)
         assertTrue("not detected expected", output!!.contains("not detected"))
     }
@@ -125,17 +125,18 @@ class ScanResultRendererSmokeTest {
 
         val rendererOutput = ScanResultRenderer.renderStack(stackInfo, modules, internalNames)!!
 
-        assertTrue("spring-core entry in prompt", promptStackSection.contains("org.springframework:spring-core"))
-        assertTrue("spring-core entry in renderer", rendererOutput.contains("org.springframework:spring-core"))
+        assertTrue("Spring Core entry in prompt", promptStackSection.contains("Spring Core"))
+        assertTrue("Spring Core entry in renderer", rendererOutput.contains("Spring Core"))
 
-        assertTrue("jackson entry in prompt", promptStackSection.contains("jackson-databind"))
-        assertTrue("jackson entry in renderer", rendererOutput.contains("jackson-databind"))
+        assertTrue("Spring Web entry in prompt", promptStackSection.contains("Spring Web"))
+        assertTrue("Spring Web entry in renderer", rendererOutput.contains("Spring Web"))
+
+        assertTrue("Jackson entry in prompt", promptStackSection.contains("Jackson"))
+        assertTrue("Jackson entry in renderer", rendererOutput.contains("Jackson"))
     }
 
-    // SC-005 byte-identical parity test: both PromptGenerator.buildTechStackBlock() and
-    // ScanResultRenderer.renderStack() must call renderInvertedTechStack() from the shared module
-    // and produce byte-identical Tech Stack content. This test verifies the contract without a
-    // running IDE. Testing parity is NOT byte-identical (C1 tracked deviation, deferred to Sprint 9).
+    // SC-005 byte-identical parity test: ScanResultRenderer.renderStack() and
+    // renderInvertedTechStack() from shared must produce byte-identical Tech Stack content.
     @Test
     fun `SC-005 byte-identical - tech stack content from renderer equals shared renderInvertedTechStack directly`() {
         val modules =
@@ -158,7 +159,6 @@ class ScanResultRendererSmokeTest {
         val stackInfo = StackInfo()
         val internalNames = modules.map { it.name }.toSet()
 
-        // Ground truth: call renderInvertedTechStack directly (the shared canonical function)
         val expected =
             renderInvertedTechStack(
                 buildInvertedTechStack(modules, internalNames),
@@ -167,7 +167,6 @@ class ScanResultRendererSmokeTest {
                 stackInfo.languageLevel,
             )
 
-        // ScanResultRenderer must return the same string
         val rendererOutput = ScanResultRenderer.renderStack(stackInfo, modules, internalNames)!!
         assertEquals(
             "SC-005: renderer output must be byte-identical to shared renderInvertedTechStack",
@@ -175,7 +174,6 @@ class ScanResultRendererSmokeTest {
             rendererOutput,
         )
 
-        // PromptGenerator must embed the same string in the Tech Stack block
         val structureInfo = StructureInfo(modules = modules)
         val scanResult =
             ScanResult(

@@ -201,7 +201,6 @@ class OutputFormattersTest {
     // T039 (e): SC-007 — dependency with version resolved from parent shows that version, not blank
     @Test
     fun `buildInvertedTechStack - SC-007 dep with resolved-from-parent version appears with that version`() {
-        // resolvedVersion is non-null (resolved via parent/BOM); no explicit version on the declaring module
         val modules =
             listOf(
                 Module("api", listOf(Dependency("org.springframework", "spring-core", "5.3.39"))),
@@ -214,42 +213,8 @@ class OutputFormattersTest {
         assertTrue(entry.versions[0].isUniform)
     }
 
-    // === renderInvertedTechStack ===
-
-    @Test
-    fun `renderInvertedTechStack - empty stack and all null preamble returns not detected`() {
-        val result = renderInvertedTechStack(InvertedTechStack(emptyList()), null, null, null)
-        assertEquals("not detected", result)
-    }
-
-    @Test
-    fun `renderInvertedTechStack - empty stack with preamble returns preamble only`() {
-        val result = renderInvertedTechStack(InvertedTechStack(emptyList()), BuildSystem.MAVEN, null, null)
-        assertTrue(result.contains("Build System: MAVEN"))
-        assertTrue(!result.contains("not detected"))
-    }
-
-    // F2 edge case: empty entries + non-null JDK version → preamble only, no "not detected" sentinel.
-    // Prevents a silent "not detected" on Gradle projects that have JDK/build-system data but zero
-    // non-denylisted dependencies (e.g., a project with only system-scoped or denylist-filtered deps).
-    @Test
-    fun `renderInvertedTechStack - F2 empty entries non-null jdkVersion renders preamble without sentinel`() {
-        val result = renderInvertedTechStack(InvertedTechStack(emptyList()), null, "21", null)
-        assertTrue(result.contains("JDK Version: 21"), "JDK Version preamble line must appear")
-        assertFalse(result.contains("not detected"), "not detected sentinel must be absent when preamble is non-empty")
-    }
-
-    @Test
-    fun `renderInvertedTechStack - F2 empty entries non-null languageLevel renders preamble without sentinel`() {
-        val result = renderInvertedTechStack(InvertedTechStack(emptyList()), null, null, "17")
-        assertTrue(result.contains("Language Level: 17"), "Language Level preamble line must appear")
-        assertFalse(result.contains("not detected"), "not detected sentinel must be absent when preamble is non-empty")
-    }
-
     // SC-002: known transitive-only artifact coordinates must not appear in the inverted stack
     // when built from a direct-only input set (i.e., after IjModuleStructureAdapter filtering).
-    // These artifacts are excluded by the Gradle denylist and Maven direct-only slice;
-    // this test documents that a properly filtered input never surfaces them.
     @Test
     fun `SC-002 - known transitive-only artifacts are absent from direct-only input stack`() {
         val directOnlyModules =
@@ -285,87 +250,46 @@ class OutputFormattersTest {
         }
     }
 
+    // === renderInvertedTechStack — sentinel and preamble behaviour ===
+
     @Test
-    fun `renderInvertedTechStack - uniform single-version entry renders coordinate-version-count format`() {
-        val stack =
-            buildInvertedTechStack(
-                listOf(Module("api", listOf(Dependency("org.spring", "core", "6.1.4")))),
-                emptySet(),
-            )
-        val result = renderInvertedTechStack(stack, null, null, null)
-        assertTrue(result.contains("- org.spring:core:6.1.4 [1 modules]"), "Actual: $result")
+    fun `renderInvertedTechStack - empty stack and all null preamble returns not detected`() {
+        val result = renderInvertedTechStack(InvertedTechStack(emptyList()), null, null, null)
+        assertEquals("not detected", result)
     }
 
     @Test
-    fun `renderInvertedTechStack - uniform two-module entry shows count 2`() {
-        val dep = Dependency("org.spring", "core", "6.1.4")
-        val stack =
-            buildInvertedTechStack(
-                listOf(Module("api", listOf(dep)), Module("svc", listOf(dep))),
-                emptySet(),
-            )
-        val result = renderInvertedTechStack(stack, null, null, null)
-        assertTrue(result.contains("- org.spring:core:6.1.4 [2 modules]"), "Actual: $result")
+    fun `renderInvertedTechStack - empty stack with preamble returns preamble only`() {
+        val result = renderInvertedTechStack(InvertedTechStack(emptyList()), BuildSystem.MAVEN, null, null)
+        assertTrue(result.contains("Build System: MAVEN"))
+        assertFalse(result.contains("not detected"))
+    }
+
+    // F2: empty entries + non-null JDK version → preamble only, no "not detected" sentinel.
+    @Test
+    fun `renderInvertedTechStack - F2 empty entries non-null jdkVersion renders preamble without sentinel`() {
+        val result = renderInvertedTechStack(InvertedTechStack(emptyList()), null, "21", null)
+        assertTrue(result.contains("JDK Version: 21"), "JDK Version preamble line must appear")
+        assertFalse(result.contains("not detected"), "Sentinel must be absent when preamble is non-empty")
     }
 
     @Test
-    fun `renderInvertedTechStack - multi-version entry renders coordinate header then indented version lines`() {
-        val stack =
-            buildInvertedTechStack(
-                listOf(
-                    Module("api", listOf(Dependency("org.spring", "core", "6.1.4"))),
-                    Module("svc", listOf(Dependency("org.spring", "core", "6.0.0"))),
-                ),
-                emptySet(),
-            )
-        val result = renderInvertedTechStack(stack, null, null, null)
-        val lines = result.lines()
-        val headerIdx = lines.indexOfFirst { it == "- org.spring:core" }
-        assertTrue(headerIdx >= 0, "Header line expected. Actual:\n$result")
-        val indented = lines.drop(headerIdx + 1).filter { it.startsWith("  - ") }
-        assertTrue(indented.isNotEmpty(), "Expected indented version lines. Actual:\n$result")
-    }
-
-    @Test
-    fun `renderInvertedTechStack - named aggregator group rendered with aggregator prefix`() {
-        val stack =
-            buildInvertedTechStack(
-                listOf(
-                    Module("api", listOf(Dependency("org.spring", "core", "6.1.4")), aggregator = "parent"),
-                    Module("svc", listOf(Dependency("org.spring", "core", "6.0.0")), aggregator = "parent"),
-                ),
-                emptySet(),
-            )
-        val result = renderInvertedTechStack(stack, null, null, null)
-        assertTrue(result.contains("parent: "), "Expected 'parent: ' in output. Actual:\n$result")
-    }
-
-    @Test
-    fun `renderInvertedTechStack - null aggregator group renders version then module list without prefix`() {
-        val stack =
-            buildInvertedTechStack(
-                listOf(
-                    Module("api", listOf(Dependency("org.spring", "core", "6.1.4"))),
-                    Module("svc", listOf(Dependency("org.spring", "core", "6.0.0"))),
-                ),
-                emptySet(),
-            )
-        val result = renderInvertedTechStack(stack, null, null, null)
-        val versionLines = result.lines().filter { it.trimStart().startsWith("- 6.") }
-        assertTrue(versionLines.isNotEmpty(), "Expected version lines. Actual:\n$result")
+    fun `renderInvertedTechStack - F2 empty entries non-null languageLevel renders preamble without sentinel`() {
+        val result = renderInvertedTechStack(InvertedTechStack(emptyList()), null, null, "17")
+        assertTrue(result.contains("Language Level: 17"), "Language Level preamble line must appear")
+        assertFalse(result.contains("not detected"), "Sentinel must be absent when preamble is non-empty")
     }
 
     @Test
     fun `renderInvertedTechStack - all preamble fields rendered when non-null`() {
-        val stack = InvertedTechStack(emptyList())
-        val result = renderInvertedTechStack(stack, BuildSystem.GRADLE, "21", "21")
+        val result = renderInvertedTechStack(InvertedTechStack(emptyList()), BuildSystem.GRADLE, "21", "21")
         assertTrue(result.contains("Build System: GRADLE"), "Actual: $result")
         assertTrue(result.contains("JDK Version: 21"), "Actual: $result")
         assertTrue(result.contains("Language Level: 21"), "Actual: $result")
     }
 
     @Test
-    fun `renderInvertedTechStack - preamble appears before dependency entries`() {
+    fun `renderInvertedTechStack - preamble appears before dependency blocks`() {
         val stack =
             buildInvertedTechStack(
                 listOf(Module("api", listOf(Dependency("org.spring", "core", "6.1.4")))),

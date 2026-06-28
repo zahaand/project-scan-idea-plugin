@@ -103,55 +103,81 @@ fun buildInvertedTechStack(
 
 // --- renderInvertedTechStack (T017) ---
 
-private fun renderGroup(
-    version: String,
-    group: AggregatorGroup,
-): String {
-    val prefix = "  - $version"
-    val moduleList = group.moduleNames.joinToString(", ")
-    return if (group.aggregator != null) "$prefix  ${group.aggregator}: $moduleList" else "$prefix  $moduleList"
-}
-
-private fun renderEntry(entry: TechEntry): List<String> {
-    val ve = entry.versions.singleOrNull()
-    if (ve != null && ve.isUniform) {
-        return listOf("- ${entry.coordinate}:${ve.version} [${ve.uniformModuleCount} modules]")
-    }
-    val lines = mutableListOf("- ${entry.coordinate}")
-    entry.versions.forEach { v -> v.groups.forEach { g -> lines += renderGroup(v.version, g) } }
+private fun buildPreambleLines(
+    buildSystem: BuildSystem?,
+    jdkVersion: String?,
+    languageLevel: String?,
+): List<String> {
+    val lines = mutableListOf<String>()
+    buildSystem?.let { lines += "- Build System: ${it.name}" }
+    jdkVersion?.let { lines += "- JDK Version: $it" }
+    languageLevel?.let { lines += "- Language Level: $it" }
     return lines
 }
 
+private fun renderVersionBlock(
+    name: String,
+    versions: List<String>,
+): String =
+    if (versions.size == 1) {
+        "$name ${versions[0]}"
+    } else {
+        buildString {
+            append(name)
+            versions.forEach { v -> append("\n  $v") }
+        }
+    }
+
+private fun renderClassifiedBlocks(
+    preambleLines: List<String>,
+    classified: ClassifiedTechStack,
+): String {
+    val hasTech = classified.technologies.isNotEmpty()
+    val hasOthers = classified.others.isNotEmpty()
+    return when {
+        preambleLines.isEmpty() && !hasTech && !hasOthers -> "not detected"
+        !hasTech && !hasOthers -> preambleLines.joinToString("\n")
+        else ->
+            buildString {
+                if (preambleLines.isNotEmpty()) {
+                    append(preambleLines.joinToString("\n"))
+                    append("\n\n")
+                }
+                if (hasTech) {
+                    append("Technologies:")
+                    classified.technologies.forEach { tech ->
+                        append("\n${renderVersionBlock(tech.name, tech.versions)}")
+                    }
+                }
+                if (hasTech && hasOthers) append("\n\n")
+                if (hasOthers) {
+                    append("Other dependencies:")
+                    classified.others.forEach { dep ->
+                        append("\n${renderVersionBlock(dep.coordinate, dep.versions)}")
+                    }
+                }
+            }
+    }
+}
+
 // SC-005 byte-identical contract: both PromptGenerator and ScanResultRenderer MUST call this
-// function and MUST NOT re-implement formatting. Canonical line formats:
-//   Preamble:           - Build System: X  /  - JDK Version: X  /  - Language Level: X
-//   Uniform entry:      - groupId:artifactId:version [N modules]
-//   Multi-version hdr:  - groupId:artifactId
-//   Multi-version line:   - version  aggregatorName: module1, module2   (named aggregators
-//                                                                         alphabetical; each group
-//                                                                         on its own line)
-//                         - version  module1, module2                   (null aggregator — rendered
-//                                                                         last within the entry)
-//   Module names within a group are alphabetical.
-//   Returns "not detected" ONLY when entries is empty AND all preamble values are null.
-//   When entries is empty but at least one preamble value is non-null, preamble lines are rendered
-//   and "not detected" is omitted (prevents a silent sentinel on Gradle projects that have JDK/
-//   build-system data but zero non-denylisted dependencies).
+// function and MUST NOT re-implement formatting.
+//
+// Output structure (preamble then two classified blocks):
+//   Preamble lines:     - Build System: X  /  - JDK Version: X  /  - Language Level: X
+//   Technologies block: one line per family — "Name version" (single version) or
+//                       "Name\n  ver1\n  ver2" (multiple versions); sorted by family name.
+//   Other dependencies: one line per unrecognized coordinate — "g:a version" or
+//                       "g:a\n  ver1\n  ver2"; sorted by coordinate.
+//   Returns "not detected" ONLY when classified result is empty AND all preamble values are null.
+//   When classified result is empty but at least one preamble value is non-null, preamble lines
+//   are rendered and "not detected" is omitted (F2 partial-preamble branch).
 fun renderInvertedTechStack(
     stack: InvertedTechStack,
     buildSystem: BuildSystem?,
     jdkVersion: String?,
     languageLevel: String?,
-): String {
-    val preambleLines = mutableListOf<String>()
-    buildSystem?.let { preambleLines += "- Build System: ${it.name}" }
-    jdkVersion?.let { preambleLines += "- JDK Version: $it" }
-    languageLevel?.let { preambleLines += "- Language Level: $it" }
-
-    if (stack.entries.isEmpty() && preambleLines.isEmpty()) return "not detected"
-
-    return (preambleLines + stack.entries.flatMap { renderEntry(it) }).joinToString("\n")
-}
+): String = renderClassifiedBlocks(buildPreambleLines(buildSystem, jdkVersion, languageLevel), classify(stack))
 
 // --- normalizeSourceRoots (retained) ---
 

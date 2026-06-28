@@ -61,27 +61,28 @@ class PromptGeneratorOutputReadabilityTest {
     // === Tech Stack (inverted format) ===
 
     @Test
-    fun `inverted stack - single module single dep renders coord-version-count format`() {
+    fun `inverted stack - single module single dep renders classified family name and version`() {
         val modules =
             listOf(
                 Module("api", listOf(Dependency("org.springframework", "spring-core", "6.1.4"))),
             )
         val section = techStackSection(techStackFromModules(modules))
 
-        assertTrue(section.contains("org.springframework:spring-core:6.1.4 [1 modules]"), "Actual: $section")
+        assertTrue(section.contains("Spring Core 6.1.4"), "Actual: $section")
     }
 
     @Test
-    fun `inverted stack - same dep in two modules at same version shows count 2`() {
+    fun `inverted stack - same dep in two modules at same version renders single family entry`() {
         val dep = Dependency("org.springframework", "spring-core", "6.1.4")
         val modules = listOf(Module("api", listOf(dep)), Module("svc", listOf(dep)))
         val section = techStackSection(techStackFromModules(modules))
 
-        assertTrue(section.contains("org.springframework:spring-core:6.1.4 [2 modules]"), "Actual: $section")
+        assertTrue(section.contains("Spring Core 6.1.4"), "Actual: $section")
+        assertEquals(1, section.lines().count { it.contains("Spring Core") }, "Exactly one family line expected")
     }
 
     @Test
-    fun `inverted stack - same coord at two different versions renders multi-version entry`() {
+    fun `inverted stack - same coord at two different versions renders multi-version family entry`() {
         val modules =
             listOf(
                 Module("api", listOf(Dependency("org.springframework", "spring-core", "6.1.4"))),
@@ -90,10 +91,10 @@ class PromptGeneratorOutputReadabilityTest {
         val section = techStackSection(techStackFromModules(modules))
 
         val lines = section.lines()
-        val headerIdx = lines.indexOfFirst { it.contains("org.springframework:spring-core") && !it.contains("[") }
-        assertTrue(headerIdx >= 0, "Coordinate header expected. Actual:\n$section")
-        val indented = lines.drop(headerIdx + 1).filter { it.trimStart().startsWith("- ") }
-        assertTrue(indented.isNotEmpty(), "Indented version lines expected. Actual:\n$section")
+        val headerIdx = lines.indexOfFirst { it.trimEnd() == "Spring Core" }
+        assertTrue(headerIdx >= 0, "Spring Core multi-version header expected. Actual:\n$section")
+        val indented = lines.drop(headerIdx + 1).filter { it.startsWith("  ") }
+        assertTrue(indented.isNotEmpty(), "Indented version lines expected after family header. Actual:\n$section")
     }
 
     @Test
