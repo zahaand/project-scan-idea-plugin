@@ -72,13 +72,13 @@
 
 ### Implementation for User Story 2
 
-- [ ] T023 [US2] Update `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/IjTestInfoAdapter.kt`: remove `getTestScopedDependencies()` implementation
-- [ ] T024 [P] [US2] Update `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeTestInfoPort.kt`: remove `getTestScopedDependencies()` implementation
-- [ ] T025 [US2] Update `scan/src/main/kotlin/dev/zahaand/projectscan/scan/collector/TestCollector.kt`: remove the framework detection loop and `matchFramework()` helper; retain `getTestSourceRoots()`, `getTestClassNames()`, and `getCoverageThreshold()` collection paths
-- [ ] T026 [P] [US2] Update `scan/src/test/kotlin/dev/zahaand/projectscan/scan/adapter/IjTestInfoAdapterTest.kt`: remove test cases for `getTestScopedDependencies()`
-- [ ] T027 [P] [US2] Update `scan/src/test/kotlin/dev/zahaand/projectscan/scan/collector/TestCollectorTest.kt`: remove framework detection test cases
-- [ ] T028 [US2] Update `prompt/src/main/kotlin/dev/zahaand/projectscan/prompt/PromptGenerator.kt` `buildTestingBlock()`: remove `deduplicateFrameworks(info.frameworks).forEach { ... }` and all framework rendering lines; retain coverage, source roots, and naming pattern rendering
-- [ ] T029 [US2] Update `src/main/kotlin/dev/zahaand/projectscan/ui/ScanResultRenderer.kt` `renderTests()`: remove all framework rendering lines; retain coverage, source roots, and naming pattern rendering
+- [X] T023 [US2] Update `scan/src/main/kotlin/dev/zahaand/projectscan/scan/adapter/IjTestInfoAdapter.kt`: remove `getTestScopedDependencies()` implementation
+- [X] T024 [P] [US2] Update `scan/src/test/kotlin/dev/zahaand/projectscan/scan/fake/FakeTestInfoPort.kt`: remove `getTestScopedDependencies()` implementation
+- [X] T025 [US2] Update `scan/src/main/kotlin/dev/zahaand/projectscan/scan/collector/TestCollector.kt`: remove the framework detection loop and `matchFramework()` helper; retain `getTestSourceRoots()`, `getTestClassNames()`, and `getCoverageThreshold()` collection paths
+- [X] T026 [P] [US2] Update `scan/src/test/kotlin/dev/zahaand/projectscan/scan/adapter/IjTestInfoAdapterTest.kt`: remove test cases for `getTestScopedDependencies()`
+- [X] T027 [P] [US2] Update `scan/src/test/kotlin/dev/zahaand/projectscan/scan/collector/TestCollectorTest.kt`: remove framework detection test cases
+- [X] T028 [US2] Update `prompt/src/main/kotlin/dev/zahaand/projectscan/prompt/PromptGenerator.kt` `buildTestingBlock()`: remove `deduplicateFrameworks(info.frameworks).forEach { ... }` and all framework rendering lines; retain coverage, source roots, and naming pattern rendering
+- [X] T029 [US2] Update `src/main/kotlin/dev/zahaand/projectscan/ui/ScanResultRenderer.kt` `renderTests()`: remove all framework rendering lines; retain coverage, source roots, and naming pattern rendering
 
 **Checkpoint**: US2 complete — verify no "Frameworks:" header on any project; coverage shows "not detected" on reference monorepo (SC-003)
 

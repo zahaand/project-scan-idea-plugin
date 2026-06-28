@@ -28,10 +28,9 @@ class IjModuleStructureAdapterTest : BasePlatformTestCase() {
                     "SC-007: ${dep.groupId}:${dep.artifactId} has blank resolvedVersion",
                     dep.resolvedVersion.isNullOrBlank(),
                 )
-                assertNotEquals(
+                assertFalse(
                     "SC-007: ${dep.groupId}:${dep.artifactId} must not have 'unknown' resolvedVersion",
-                    "unknown",
-                    dep.resolvedVersion,
+                    dep.resolvedVersion == "unknown",
                 )
             }
         }
