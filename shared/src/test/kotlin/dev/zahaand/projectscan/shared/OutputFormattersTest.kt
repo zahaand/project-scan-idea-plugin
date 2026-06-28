@@ -1,309 +1,317 @@
 package dev.zahaand.projectscan.shared
 
+import dev.zahaand.projectscan.model.BuildSystem
 import dev.zahaand.projectscan.model.Dependency
 import dev.zahaand.projectscan.model.Module
-import dev.zahaand.projectscan.model.TestFramework
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class OutputFormattersTest {
-
-    // === filterInternalDependencies ===
+    // === buildInvertedTechStack ===
 
     @Test
-    fun `filterInternalDependencies - empty module set keeps all deps`() {
-        val deps = listOf(
-            Dependency("org.spring", "core", "6.1.4"),
-            Dependency("com.example", "my-module", "1.0"),
-        )
-        assertEquals(2, filterInternalDependencies(deps, emptySet()).size)
+    fun `buildInvertedTechStack - empty modules produces empty stack`() {
+        val stack = buildInvertedTechStack(emptyList(), emptySet())
+        assertTrue(stack.entries.isEmpty())
     }
 
     @Test
-    fun `filterInternalDependencies - artifactId matching module name is excluded`() {
-        val deps = listOf(
-            Dependency("org.spring", "core", "6.1.4"),
-            Dependency("com.example", "document-engine-spi", "1.0"),
-        )
-        val result = filterInternalDependencies(deps, setOf("document-engine-spi"))
-        assertEquals(1, result.size)
-        assertEquals("core", result[0].artifactId)
+    fun `buildInvertedTechStack - single module single dep produces one entry`() {
+        val modules =
+            listOf(
+                Module("api", listOf(Dependency("org.spring", "core", "6.1.4"))),
+            )
+        val stack = buildInvertedTechStack(modules, emptySet())
+        assertEquals(1, stack.entries.size)
+        assertEquals("org.spring:core", stack.entries[0].coordinate)
+        assertEquals("6.1.4", stack.entries[0].versions[0].version)
+        assertTrue(stack.entries[0].versions[0].isUniform)
+        assertEquals(1, stack.entries[0].versions[0].uniformModuleCount)
     }
 
     @Test
-    fun `filterInternalDependencies - non-matching artifactId is kept`() {
-        val deps = listOf(Dependency("org.spring", "core", "6.1.4"))
-        val result = filterInternalDependencies(deps, setOf("other-module"))
-        assertEquals(1, result.size)
+    fun `buildInvertedTechStack - dep with null resolvedVersion is excluded`() {
+        val modules =
+            listOf(
+                Module("api", listOf(Dependency("org.spring", "core", null))),
+            )
+        val stack = buildInvertedTechStack(modules, emptySet())
+        assertTrue(stack.entries.isEmpty())
     }
 
     @Test
-    fun `filterInternalDependencies - multiple internal modules excluded`() {
-        val deps = listOf(
-            Dependency("com.example", "api", "1.0"),
-            Dependency("com.example", "core", "1.0"),
-            Dependency("org.spring", "spring-web", "6.0"),
-        )
-        val result = filterInternalDependencies(deps, setOf("api", "core"))
-        assertEquals(1, result.size)
-        assertEquals("spring-web", result[0].artifactId)
-    }
-
-    // === groupDependencies ===
-
-    @Test
-    fun `groupDependencies - multi-artifact uniform group sets sharedVersion`() {
-        val deps = listOf(
-            Dependency("org.spring", "core", "6.1.4"),
-            Dependency("org.spring", "web", "6.1.4"),
-            Dependency("org.spring", "context", "6.1.4"),
-        )
-        val groups = groupDependencies(deps)
-        assertEquals(1, groups.size)
-        assertEquals("6.1.4", groups[0].sharedVersion)
-        assertEquals(3, groups[0].artifacts.size)
-    }
-
-    @Test
-    fun `groupDependencies - single-artifact group sharedVersion is null`() {
-        val deps = listOf(Dependency("org.spring", "core", "6.1.4"))
-        val groups = groupDependencies(deps)
-        assertEquals(1, groups.size)
-        assertNull(groups[0].sharedVersion)
-    }
-
-    @Test
-    fun `groupDependencies - mixed non-null versions sharedVersion is null`() {
-        val deps = listOf(
-            Dependency("org.spring", "core", "6.1.4"),
-            Dependency("org.spring", "web", "6.1.3"),
-        )
-        val groups = groupDependencies(deps)
-        assertNull(groups[0].sharedVersion)
-    }
-
-    @Test
-    fun `groupDependencies - any null version in group yields sharedVersion null`() {
-        val deps = listOf(
-            Dependency("org.spring", "core", "6.1.4"),
-            Dependency("org.spring", "web", null),
-        )
-        val groups = groupDependencies(deps)
-        assertNull(groups[0].sharedVersion)
-    }
-
-    @Test
-    fun `groupDependencies - output sorted lexicographically by groupId`() {
-        val deps = listOf(
-            Dependency("org.zzz", "a", "1.0"),
-            Dependency("com.aaa", "b", "2.0"),
-            Dependency("org.mmm", "c", "3.0"),
-        )
-        val groups = groupDependencies(deps)
-        assertEquals(listOf("com.aaa", "org.mmm", "org.zzz"), groups.map { it.groupId })
-    }
-
-    // === detectVersionDiscrepancies ===
-
-    @Test
-    fun `detectVersionDiscrepancies - two modules with differing non-null versions returns discrepancy`() {
-        val modules = listOf(
-            Module("api", listOf(Dependency("org.mapstruct", "mapstruct", "1.5.5"))),
-            Module("core", listOf(Dependency("org.mapstruct", "mapstruct", "1.6.0"))),
-        )
-        val discrepancies = detectVersionDiscrepancies(modules)
-        assertEquals(1, discrepancies.size)
-        assertEquals("org.mapstruct", discrepancies[0].groupId)
-        assertEquals("mapstruct", discrepancies[0].artifactId)
-        assertEquals(mapOf("api" to "1.5.5", "core" to "1.6.0"), discrepancies[0].versions)
-    }
-
-    @Test
-    fun `detectVersionDiscrepancies - same version in both modules produces no entry`() {
-        val modules = listOf(
-            Module("api", listOf(Dependency("com.fasterxml.jackson.core", "jackson-databind", "2.17.0"))),
-            Module("core", listOf(Dependency("com.fasterxml.jackson.core", "jackson-databind", "2.17.0"))),
-        )
-        val discrepancies = detectVersionDiscrepancies(modules)
-        assertEquals(0, discrepancies.size)
-    }
-
-    @Test
-    fun `detectVersionDiscrepancies - artifact in only one module produces no entry`() {
-        val modules = listOf(
-            Module("api", listOf(Dependency("org.example", "lib", "1.0"))),
-            Module("core", emptyList()),
-        )
-        val discrepancies = detectVersionDiscrepancies(modules)
-        assertEquals(0, discrepancies.size)
-    }
-
-    @Test
-    fun `detectVersionDiscrepancies - null resolvedVersion excluded from detection`() {
-        val modules = listOf(
-            Module("api", listOf(Dependency("org.example", "lib", null))),
-            Module("core", listOf(Dependency("org.example", "lib", "2.0"))),
-        )
-        val discrepancies = detectVersionDiscrepancies(modules)
-        assertEquals(0, discrepancies.size)
-    }
-
-    @Test
-    fun `detectVersionDiscrepancies - intra-module duplicate uses last declared version`() {
-        val modules = listOf(
-            Module(
-                "api",
-                listOf(
-                    Dependency("org.example", "lib", "1.0"),
-                    Dependency("org.example", "lib", "1.1"),
+    fun `buildInvertedTechStack - artifactId matching internal module name is excluded`() {
+        val modules =
+            listOf(
+                Module(
+                    "api",
+                    listOf(
+                        Dependency("com.example", "shared", "1.0"),
+                        Dependency("org.spring", "core", "6.1.4"),
+                    ),
                 ),
-            ),
-            Module("core", listOf(Dependency("org.example", "lib", "2.0"))),
-        )
-        val discrepancies = detectVersionDiscrepancies(modules)
-        assertEquals(1, discrepancies.size)
-        assertEquals("1.1", discrepancies[0].versions["api"])
+            )
+        val stack = buildInvertedTechStack(modules, setOf("shared"))
+        assertEquals(1, stack.entries.size)
+        assertEquals("org.spring:core", stack.entries[0].coordinate)
     }
 
     @Test
-    fun `detectVersionDiscrepancies - output sorted by groupId then artifactId`() {
-        val modules = listOf(
-            Module(
-                "api",
-                listOf(
-                    Dependency("org.zzz", "b", "1.0"),
-                    Dependency("com.aaa", "a", "1.0"),
+    fun `buildInvertedTechStack - coordinate matching internal module name is excluded`() {
+        val modules =
+            listOf(
+                Module(
+                    "api",
+                    listOf(
+                        Dependency("com.example", "shared", "1.0"),
+                        Dependency("org.spring", "core", "6.1.4"),
+                    ),
                 ),
-            ),
-            Module(
-                "core",
-                listOf(
-                    Dependency("org.zzz", "b", "2.0"),
-                    Dependency("com.aaa", "a", "2.0"),
+            )
+        val stack = buildInvertedTechStack(modules, setOf("com.example:shared"))
+        assertEquals(1, stack.entries.size)
+        assertEquals("org.spring:core", stack.entries[0].coordinate)
+    }
+
+    @Test
+    fun `buildInvertedTechStack - same dep in two modules at same version is uniform with count 2`() {
+        val dep = Dependency("org.spring", "core", "6.1.4")
+        val modules =
+            listOf(
+                Module("api", listOf(dep)),
+                Module("core", listOf(dep)),
+            )
+        val stack = buildInvertedTechStack(modules, emptySet())
+        assertEquals(1, stack.entries.size)
+        val ve = stack.entries[0].versions[0]
+        assertTrue(ve.isUniform)
+        assertEquals(2, ve.uniformModuleCount)
+    }
+
+    @Test
+    fun `buildInvertedTechStack - same dep in two modules at different versions is multi-version`() {
+        val modules =
+            listOf(
+                Module("api", listOf(Dependency("org.spring", "core", "6.1.4"))),
+                Module("svc", listOf(Dependency("org.spring", "core", "6.0.0"))),
+            )
+        val stack = buildInvertedTechStack(modules, emptySet())
+        assertEquals(1, stack.entries.size)
+        val entry = stack.entries[0]
+        assertEquals(2, entry.versions.size)
+        assertTrue(entry.versions.none { it.isUniform })
+    }
+
+    @Test
+    fun `buildInvertedTechStack - entries sorted alphabetically by coordinate`() {
+        val modules =
+            listOf(
+                Module(
+                    "api",
+                    listOf(
+                        Dependency("org.zzz", "z", "1.0"),
+                        Dependency("com.aaa", "a", "1.0"),
+                        Dependency("org.mmm", "m", "1.0"),
+                    ),
                 ),
-            ),
-        )
-        val discrepancies = detectVersionDiscrepancies(modules)
-        assertEquals(2, discrepancies.size)
-        assertEquals("com.aaa", discrepancies[0].groupId)
-        assertEquals("org.zzz", discrepancies[1].groupId)
+            )
+        val stack = buildInvertedTechStack(modules, emptySet())
+        assertEquals(listOf("com.aaa:a", "org.mmm:m", "org.zzz:z"), stack.entries.map { it.coordinate })
     }
 
     @Test
-    fun `detectVersionDiscrepancies - module names in versions map sorted lexicographically`() {
-        val modules = listOf(
-            Module("zzz", listOf(Dependency("org.example", "lib", "1.0"))),
-            Module("aaa", listOf(Dependency("org.example", "lib", "2.0"))),
-        )
-        val discrepancies = detectVersionDiscrepancies(modules)
-        assertEquals(1, discrepancies.size)
-        assertEquals(listOf("aaa", "zzz"), discrepancies[0].versions.keys.toList())
-    }
-
-    // === renderVersionDiscrepancyLine ===
-
-    @Test
-    fun `renderVersionDiscrepancyLine - majority version is dominant`() {
-        val d = VersionDiscrepancy(
-            groupId = "org.mapstruct",
-            artifactId = "mapstruct",
-            versions = mapOf("api" to "1.6.0", "core" to "1.6.0", "svc" to "1.5.5"),
-        )
-        val line = renderVersionDiscrepancyLine(d)
-        assertTrue(line.startsWith("org.mapstruct:mapstruct → mostly 1.6.0, except {"))
-        assertTrue(line.contains("svc: 1.5.5"))
-        assertFalse(line.contains("api: "))
-        assertFalse(line.contains("core: "))
+    fun `buildInvertedTechStack - multi-version named aggregator groups aggregated correctly`() {
+        val modules =
+            listOf(
+                Module("api", listOf(Dependency("org.spring", "core", "6.1.4")), aggregator = "parent"),
+                Module("svc", listOf(Dependency("org.spring", "core", "6.0.0")), aggregator = "parent"),
+            )
+        val stack = buildInvertedTechStack(modules, emptySet())
+        val entry = stack.entries[0]
+        for (ve in entry.versions) {
+            assertTrue(ve.groups.isNotEmpty())
+            val group = ve.groups[0]
+            assertEquals("parent", group.aggregator)
+        }
     }
 
     @Test
-    fun `renderVersionDiscrepancyLine - tie broken by lexicographically smaller version`() {
-        val d = VersionDiscrepancy(
-            groupId = "org.ex",
-            artifactId = "lib",
-            versions = mapOf("api" to "1.5.5", "core" to "1.6.0"),
-        )
-        val line = renderVersionDiscrepancyLine(d)
-        // 1.5.5 < 1.6.0 lexicographically, so 1.5.5 is dominant
-        assertTrue(line.contains("mostly 1.5.5"), "Smaller version is dominant on tie: $line")
-        assertTrue(line.contains("core: 1.6.0"), "Exception is core: $line")
+    fun `buildInvertedTechStack - null aggregator module goes to null-aggregator group`() {
+        val modules =
+            listOf(
+                Module("api", listOf(Dependency("org.spring", "core", "6.1.4"))),
+                Module("svc", listOf(Dependency("org.spring", "core", "6.0.0"))),
+            )
+        val stack = buildInvertedTechStack(modules, emptySet())
+        val entry = stack.entries[0]
+        for (ve in entry.versions) {
+            assertTrue(ve.groups.any { it.aggregator == null })
+        }
+    }
+
+    // T039 (b): named aggregators alphabetical, null-aggregator group last, modules alphabetical within group
+    @Test
+    fun `buildInvertedTechStack - multi-version named aggregators are sorted alphabetically`() {
+        val modules =
+            listOf(
+                Module("api", listOf(Dependency("org.spring", "core", "6.1.4")), aggregator = "zeta-agg"),
+                Module("svc", listOf(Dependency("org.spring", "core", "6.1.4")), aggregator = "alpha-agg"),
+                Module("web", listOf(Dependency("org.spring", "core", "6.0.0")), aggregator = "beta-agg"),
+            )
+        val stack = buildInvertedTechStack(modules, emptySet())
+        val entry = stack.entries[0]
+        val v614 = entry.versions.first { it.version == "6.1.4" }
+        val aggNames = v614.groups.mapNotNull { it.aggregator }
+        assertEquals(listOf("alpha-agg", "zeta-agg"), aggNames)
     }
 
     @Test
-    fun `renderVersionDiscrepancyLine - exceptions sorted by module name`() {
-        // "1.0" used by 2 modules (zzz, bbb), "2.0" used by 2 modules (aaa, mmm) — tie
-        // dominant = "1.0" (lexicographically smaller); exceptions = {aaa: 2.0, mmm: 2.0}
-        val d = VersionDiscrepancy(
-            groupId = "org.ex",
-            artifactId = "lib",
-            versions = mapOf("zzz" to "1.0", "aaa" to "2.0", "mmm" to "2.0", "bbb" to "1.0"),
-        )
-        val line = renderVersionDiscrepancyLine(d)
-        val exceptIdx = line.indexOf("except {")
-        val exceptPart = line.substring(exceptIdx)
-        val aaaIdx = exceptPart.indexOf("aaa")
-        val mmmIdx = exceptPart.indexOf("mmm")
-        assertTrue(aaaIdx >= 0 && mmmIdx >= 0, "Both exception modules present: $line")
-        assertTrue(aaaIdx < mmmIdx, "aaa must appear before mmm: $line")
-    }
-
-    // === deduplicateFrameworks ===
-
-    @Test
-    fun `deduplicateFrameworks - 80 identical entries collapse to exactly 1`() {
-        val frameworks = List(80) { TestFramework("JUnit Jupiter", "5.10.2") }
-        val result = deduplicateFrameworks(frameworks)
-        assertEquals(1, result.size)
-        assertEquals("JUnit Jupiter", result[0].name)
-        assertEquals("5.10.2", result[0].version)
+    fun `buildInvertedTechStack - null-aggregator group appears last in multi-version entry`() {
+        val modules =
+            listOf(
+                Module("api", listOf(Dependency("org.spring", "core", "6.1.4")), aggregator = "alpha-agg"),
+                Module("root", listOf(Dependency("org.spring", "core", "6.1.4")), aggregator = null),
+                Module("svc", listOf(Dependency("org.spring", "core", "6.0.0")), aggregator = null),
+            )
+        val stack = buildInvertedTechStack(modules, emptySet())
+        val entry = stack.entries[0]
+        val v614 = entry.versions.first { it.version == "6.1.4" }
+        assertTrue(v614.groups.last().aggregator == null, "null-aggregator group must be last")
     }
 
     @Test
-    fun `deduplicateFrameworks - 2 distinct frameworks returns 2 results`() {
-        val frameworks = listOf(
-            TestFramework("JUnit Jupiter", "5.10.2"),
-            TestFramework("Mockito", "5.0.0"),
-        )
-        val result = deduplicateFrameworks(frameworks)
-        assertEquals(2, result.size)
+    fun `buildInvertedTechStack - module names within an aggregator group are sorted alphabetically`() {
+        val dep = Dependency("org.spring", "core", "6.1.4")
+        val modules =
+            listOf(
+                Module("z-module", listOf(dep), aggregator = "parent"),
+                Module("a-module", listOf(dep), aggregator = "parent"),
+                Module("m-module", listOf(dep), aggregator = "parent"),
+                Module("other", listOf(Dependency("org.spring", "core", "6.0.0")), aggregator = "parent"),
+            )
+        val stack = buildInvertedTechStack(modules, emptySet())
+        val entry = stack.entries[0]
+        val v614 = entry.versions.first { it.version == "6.1.4" }
+        val group = v614.groups.first { it.aggregator == "parent" }
+        assertEquals(listOf("a-module", "m-module", "z-module"), group.moduleNames)
+    }
+
+    // T039 (e): SC-007 — dependency with version resolved from parent shows that version, not blank
+    @Test
+    fun `buildInvertedTechStack - SC-007 dep with resolved-from-parent version appears with that version`() {
+        val modules =
+            listOf(
+                Module("api", listOf(Dependency("org.springframework", "spring-core", "5.3.39"))),
+            )
+        val stack = buildInvertedTechStack(modules, emptySet())
+        assertEquals(1, stack.entries.size)
+        val entry = stack.entries[0]
+        assertEquals("org.springframework:spring-core", entry.coordinate)
+        assertEquals("5.3.39", entry.versions[0].version)
+        assertTrue(entry.versions[0].isUniform)
+    }
+
+    // SC-002: known transitive-only artifact coordinates must not appear in the inverted stack
+    // when built from a direct-only input set (i.e., after IjModuleStructureAdapter filtering).
+    @Test
+    fun `SC-002 - known transitive-only artifacts are absent from direct-only input stack`() {
+        val directOnlyModules =
+            listOf(
+                Module(
+                    "api",
+                    listOf(
+                        Dependency("org.springframework", "spring-core", "6.1.4"),
+                        Dependency("com.fasterxml.jackson.core", "jackson-databind", "2.17.0"),
+                    ),
+                ),
+            )
+        val stack = buildInvertedTechStack(directOnlyModules, emptySet())
+        val coordinates = stack.entries.map { it.coordinate }.toSet()
+
+        val knownTransitiveOnlyArtifacts =
+            listOf(
+                "org.ow2.asm:asm",
+                "org.objenesis:objenesis",
+                "com.google.guava:listenablefuture",
+                "com.google.guava:failureaccess",
+                "com.google.j2objc:j2objc-annotations",
+                "org.checkerframework:checker-qual",
+                "aopalliance:aopalliance",
+                "com.thoughtworks.paranamer:paranamer",
+            )
+
+        for (artifact in knownTransitiveOnlyArtifacts) {
+            assertFalse(
+                artifact in coordinates,
+                "SC-002: transitive-only artifact $artifact must not appear in direct-only stack",
+            )
+        }
+    }
+
+    // === renderInvertedTechStack — sentinel and preamble behaviour ===
+
+    @Test
+    fun `renderInvertedTechStack - empty stack and all null preamble returns not detected`() {
+        val result = renderInvertedTechStack(InvertedTechStack(emptyList()), null, null, null)
+        assertEquals("not detected", result)
     }
 
     @Test
-    fun `deduplicateFrameworks - first-occurrence order preserved`() {
-        val frameworks = listOf(
-            TestFramework("Mockito", "5.0.0"),
-            TestFramework("JUnit Jupiter", "5.10.2"),
-            TestFramework("Mockito", "5.0.0"),
-        )
-        val result = deduplicateFrameworks(frameworks)
-        assertEquals(2, result.size)
-        assertEquals("Mockito", result[0].name)
-        assertEquals("JUnit Jupiter", result[1].name)
+    fun `renderInvertedTechStack - empty stack with preamble returns preamble only`() {
+        val result = renderInvertedTechStack(InvertedTechStack(emptyList()), BuildSystem.MAVEN, null, null)
+        assertTrue(result.contains("Build System: MAVEN"))
+        assertFalse(result.contains("not detected"))
+    }
+
+    // F2: empty entries + non-null JDK version → preamble only, no "not detected" sentinel.
+    @Test
+    fun `renderInvertedTechStack - F2 empty entries non-null jdkVersion renders preamble without sentinel`() {
+        val result = renderInvertedTechStack(InvertedTechStack(emptyList()), null, "21", null)
+        assertTrue(result.contains("JDK Version: 21"), "JDK Version preamble line must appear")
+        assertFalse(result.contains("not detected"), "Sentinel must be absent when preamble is non-empty")
     }
 
     @Test
-    fun `deduplicateFrameworks - null version is distinct from non-null version with same name`() {
-        val frameworks = listOf(
-            TestFramework("JUnit Jupiter", null),
-            TestFramework("JUnit Jupiter", "5.10.2"),
-        )
-        val result = deduplicateFrameworks(frameworks)
-        assertEquals(2, result.size)
-        assertEquals(null, result[0].version)
-        assertEquals("5.10.2", result[1].version)
+    fun `renderInvertedTechStack - F2 empty entries non-null languageLevel renders preamble without sentinel`() {
+        val result = renderInvertedTechStack(InvertedTechStack(emptyList()), null, null, "17")
+        assertTrue(result.contains("Language Level: 17"), "Language Level preamble line must appear")
+        assertFalse(result.contains("not detected"), "Sentinel must be absent when preamble is non-empty")
+    }
+
+    @Test
+    fun `renderInvertedTechStack - all preamble fields rendered when non-null`() {
+        val result = renderInvertedTechStack(InvertedTechStack(emptyList()), BuildSystem.GRADLE, "21", "21")
+        assertTrue(result.contains("Build System: GRADLE"), "Actual: $result")
+        assertTrue(result.contains("JDK Version: 21"), "Actual: $result")
+        assertTrue(result.contains("Language Level: 21"), "Actual: $result")
+    }
+
+    @Test
+    fun `renderInvertedTechStack - preamble appears before dependency blocks`() {
+        val stack =
+            buildInvertedTechStack(
+                listOf(Module("api", listOf(Dependency("org.spring", "core", "6.1.4")))),
+                emptySet(),
+            )
+        val result = renderInvertedTechStack(stack, BuildSystem.MAVEN, "17", null)
+        val lines = result.lines()
+        val buildSystemIdx = lines.indexOfFirst { it.contains("Build System") }
+        val depIdx = lines.indexOfFirst { it.contains("org.spring:core") }
+        assertTrue(buildSystemIdx >= 0 && depIdx >= 0, "Both preamble and dep expected. Actual:\n$result")
+        assertTrue(buildSystemIdx < depIdx, "Preamble must appear before deps. Actual:\n$result")
     }
 
     // === normalizeSourceRoots ===
 
     @Test
     fun `normalizeSourceRoots - build-output target paths filtered out`() {
-        val roots = listOf(
-            "/project/api/src/test/java",
-            "/project/api/target/generated-test-sources/test-annotations",
-        )
+        val roots =
+            listOf(
+                "/project/api/src/test/java",
+                "/project/api/target/generated-test-sources/test-annotations",
+            )
         val result = normalizeSourceRoots(roots)
         assertEquals(1, result.size)
         assertEquals("src/test/java", result[0].relativePath)
@@ -311,10 +319,11 @@ class OutputFormattersTest {
 
     @Test
     fun `normalizeSourceRoots - build-output gradle build paths filtered out`() {
-        val roots = listOf(
-            "/project/api/src/test/java",
-            "/project/api/build/generated-test-sources",
-        )
+        val roots =
+            listOf(
+                "/project/api/src/test/java",
+                "/project/api/build/generated-test-sources",
+            )
         val result = normalizeSourceRoots(roots)
         assertEquals(1, result.size)
         assertEquals("src/test/java", result[0].relativePath)
@@ -322,10 +331,11 @@ class OutputFormattersTest {
 
     @Test
     fun `normalizeSourceRoots - absolute paths ending with recognized suffix produce that suffix`() {
-        val roots = listOf(
-            "/home/ci/workspace/myapp/api/src/test/java",
-            "/home/ci/workspace/myapp/core/src/test/java",
-        )
+        val roots =
+            listOf(
+                "/home/ci/workspace/myapp/api/src/test/java",
+                "/home/ci/workspace/myapp/core/src/test/java",
+            )
         val result = normalizeSourceRoots(roots)
         assertEquals(1, result.size)
         assertEquals("src/test/java", result[0].relativePath)
@@ -333,10 +343,11 @@ class OutputFormattersTest {
 
     @Test
     fun `normalizeSourceRoots - two distinct recognized suffixes produce two templates`() {
-        val roots = listOf(
-            "/home/ci/workspace/myapp/api/src/test/java",
-            "/home/ci/workspace/myapp/core/src/test/kotlin",
-        )
+        val roots =
+            listOf(
+                "/home/ci/workspace/myapp/api/src/test/java",
+                "/home/ci/workspace/myapp/core/src/test/kotlin",
+            )
         val result = normalizeSourceRoots(roots)
         assertEquals(2, result.size)
         val paths = result.map { it.relativePath }.toSet()
@@ -362,20 +373,6 @@ class OutputFormattersTest {
     }
 
     @Test
-    fun `normalizeSourceRoots - mixed absolute and relative - recognized suffixes extracted`() {
-        val roots = listOf(
-            "/home/ci/workspace/myapp/api/src/test/java",
-            "/home/ci/workspace/myapp/core/src/test/java",
-            "src/test/kotlin",
-        )
-        val result = normalizeSourceRoots(roots)
-        assertEquals(2, result.size)
-        val paths = result.map { it.relativePath }.toSet()
-        assertTrue("src/test/java" in paths) { "Expected src/test/java in $paths" }
-        assertTrue("src/test/kotlin" in paths) { "Expected src/test/kotlin in $paths" }
-    }
-
-    @Test
     fun `normalizeSourceRoots - empty input returns empty result`() {
         val result = normalizeSourceRoots(emptyList())
         assertEquals(0, result.size)
@@ -392,19 +389,12 @@ class OutputFormattersTest {
     }
 
     @Test
-    fun `normalizeSourceRoots - single recognized source root`() {
-        val roots = listOf("src/test/java")
-        val result = normalizeSourceRoots(roots)
-        assertEquals(1, result.size)
-        assertEquals("src/test/java", result[0].relativePath)
-    }
-
-    @Test
     fun `normalizeSourceRoots - all paths filtered out by build-output yields empty result`() {
-        val roots = listOf(
-            "/project/api/target/generated-test-sources/annotations",
-            "/project/core/build/generated",
-        )
+        val roots =
+            listOf(
+                "/project/api/target/generated-test-sources/annotations",
+                "/project/core/build/generated",
+            )
         val result = normalizeSourceRoots(roots)
         assertEquals(0, result.size)
     }

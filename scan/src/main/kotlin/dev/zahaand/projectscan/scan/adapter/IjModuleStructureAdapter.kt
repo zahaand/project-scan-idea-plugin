@@ -8,17 +8,30 @@ import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
-import com.intellij.openapi.vfs.VirtualFile
 import dev.zahaand.projectscan.model.Dependency
 import dev.zahaand.projectscan.scan.port.ModuleDescriptor
 import dev.zahaand.projectscan.scan.port.ModuleStructurePort
-import dev.zahaand.projectscan.scan.port.PackageTreeData
 import org.jetbrains.idea.maven.model.MavenArtifact
 import org.jetbrains.idea.maven.project.MavenProjectsManager
 import org.jetbrains.jps.model.java.JavaSourceRootType
 import org.jetbrains.plugins.gradle.util.GradleConstants
+import java.io.File
 
 class IjModuleStructureAdapter(private val project: Project) : ModuleStructurePort {
+    companion object {
+        private val GRADLE_DENYLIST_EXACT =
+            setOf(
+                "org.objenesis:objenesis",
+                "com.thoughtworks.paranamer:paranamer",
+                "com.google.guava:listenablefuture",
+                "com.google.guava:failureaccess",
+                "com.google.j2objc:j2objc-annotations",
+                "org.checkerframework:checker-qual",
+                "aopalliance:aopalliance",
+            )
+        private const val GRADLE_DENYLIST_ASM_GROUP = "org.ow2.asm"
+    }
+
     override fun getModules(): List<ModuleDescriptor> {
         val mavenManager = MavenProjectsManager.getInstance(project)
         if (mavenManager.isMavenizedProject) {
@@ -34,35 +47,66 @@ class IjModuleStructureAdapter(private val project: Project) : ModuleStructurePo
                 .map { "${it.mavenId.groupId}:${it.mavenId.artifactId}" }
                 .toSet()
 
+        // Build aggregator reverse map: canonicalPath(childDir) → aggregatorArtifactId.
+        // Uses getModulesPathsAndNames() which maps child module paths to their declared names;
+        // keys may be relative or absolute — File() handles both correctly.
+        val aggregatorByDir = mutableMapOf<String, String>()
+        for (mp in mavenProjects) {
+            val aggregatorName = mp.mavenId.artifactId ?: mp.displayName
+            for (childPath in mp.modulesPathsAndNames.keys) {
+                aggregatorByDir[File(mp.directory, childPath).canonicalPath] = aggregatorName
+            }
+        }
+
         return mavenProjects.map { mp ->
             val name = mp.mavenId.artifactId ?: mp.displayName
-            val allDeps = mp.dependencies
+
+            // FR-003 direct-only dep extraction.
+            // CONFIRMED PATH (IntelliJ 2025.3.5): primary path mp.mavenModel.dependencies is NOT
+            // available — MavenProject has no getMavenModel() in this API version.
+            // Working path: root-level nodes of mp.dependencyTree (parent==null nodes = direct deps).
+            // BOM-import artifacts (type=pom, scope=import) excluded per spec.
+            // System-scoped deps excluded: they reference local filesystem JARs not resolved through
+            // the Maven repository and must not appear in the direct slice (FR-007).
             val externalDeps =
-                allDeps
+                mp.dependencyTree
+                    .map { it.artifact }
+                    .filter { !(it.type == "pom" && it.scope == "import") }
+                    .filter { it.scope != "system" }
                     .filter { "${it.groupId}:${it.artifactId}" !in moduleCoordinates }
                     .map { it.toDependency() }
+
+            val allDeps = mp.dependencies
             val moduleDeps =
                 allDeps
                     .filter { "${it.groupId}:${it.artifactId}" in moduleCoordinates }
                     .map { it.artifactId }
                     .distinct()
+
+            val aggregator = aggregatorByDir[File(mp.directory).canonicalPath]
+
             val ijModule = ModuleManager.getInstance(project).findModuleByName(name)
             val sourceRoots =
                 ijModule?.let {
-                    ModuleRootManager.getInstance(it).getSourceRoots(JavaSourceRootType.SOURCE).map {
-                            root ->
+                    ModuleRootManager.getInstance(it).getSourceRoots(JavaSourceRootType.SOURCE).map { root ->
                         root.path
                     }
                 } ?: emptyList()
+
             ModuleDescriptor(
                 name = name,
                 externalDependencies = externalDeps,
                 moduleDependencies = moduleDeps,
                 sourceRootPaths = sourceRoots,
                 hasSourceRoots = sourceRoots.isNotEmpty(),
+                aggregator = aggregator,
             )
         }
     }
+
+    private fun isDenylisted(dep: Dependency): Boolean =
+        dep.groupId == GRADLE_DENYLIST_ASM_GROUP ||
+            "${dep.groupId}:${dep.artifactId}" in GRADLE_DENYLIST_EXACT
 
     private fun gradleModules(): List<ModuleDescriptor> {
         val result = mutableListOf<ModuleDescriptor>()
@@ -75,6 +119,7 @@ class IjModuleStructureAdapter(private val project: Project) : ModuleStructurePo
                 val externalDeps =
                     ExternalSystemApiUtil.findAll(moduleNode, ProjectKeys.LIBRARY_DEPENDENCY)
                         .mapNotNull { toDependency(it.data.target) }
+                        .filter { !isDenylisted(it) }
 
                 val moduleDeps =
                     ExternalSystemApiUtil.findAll(moduleNode, ProjectKeys.MODULE_DEPENDENCY)
@@ -98,42 +143,6 @@ class IjModuleStructureAdapter(private val project: Project) : ModuleStructurePo
             }
         }
         return result
-    }
-
-    override fun getPackageTree(): PackageTreeData {
-        val rootPackages = mutableSetOf<String>()
-        val secondLevelSegments = mutableSetOf<String>()
-
-        for (module in ModuleManager.getInstance(project).modules) {
-            for (root in ModuleRootManager.getInstance(module).getSourceRoots(JavaSourceRootType.SOURCE)) {
-                collectPackageTree(root, rootPackages, secondLevelSegments)
-            }
-        }
-
-        return PackageTreeData(
-            rootPackages = rootPackages.sorted(),
-            secondLevelSegments = secondLevelSegments.sorted(),
-        )
-    }
-
-    private fun collectPackageTree(
-        root: VirtualFile,
-        rootPackages: MutableSet<String>,
-        secondLevelSegments: MutableSet<String>,
-    ) {
-        for (child in root.children) {
-            if (!child.isDirectory || !isValidJavaIdentifier(child.name)) continue
-            rootPackages += child.name
-            for (grandchild in child.children) {
-                if (!grandchild.isDirectory || !isValidJavaIdentifier(grandchild.name)) continue
-                secondLevelSegments += "${child.name}.${grandchild.name}"
-            }
-        }
-    }
-
-    private fun isValidJavaIdentifier(name: String): Boolean {
-        if (name.isEmpty() || name.startsWith(".") || !name[0].isJavaIdentifierStart()) return false
-        return name.drop(1).all { it.isJavaIdentifierPart() }
     }
 
     private fun toDependency(lib: LibraryData): Dependency? {

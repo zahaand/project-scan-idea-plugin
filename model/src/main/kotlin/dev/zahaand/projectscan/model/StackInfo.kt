@@ -9,7 +9,6 @@ data class Dependency(
 enum class BuildSystem { MAVEN, GRADLE }
 
 data class StackInfo(
-    val dependencies: List<Dependency> = emptyList(),
     val jdkVersion: String? = null,
     val languageLevel: String? = null,
     val buildSystem: BuildSystem? = null,

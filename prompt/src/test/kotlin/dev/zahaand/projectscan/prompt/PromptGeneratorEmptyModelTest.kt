@@ -56,7 +56,7 @@ class PromptGeneratorEmptyModelTest {
     private val generator = PromptGenerator()
 
     @Test
-    fun `scenario 1 - all-empty scan with non-empty baseline yields non-empty prompt with all six headings`() {
+    fun `scenario 1 - all-empty scan with non-empty baseline yields non-empty prompt with all five headings`() {
         val rendered = generator.generate(allEmptyScanResult, twoBaselineRules).render()
 
         assertFalse(rendered.isBlank(), "Rendered prompt must not be blank")
@@ -64,7 +64,6 @@ class PromptGeneratorEmptyModelTest {
         assertTrue(rendered.contains("## Tech Stack"), "Must contain ## Tech Stack")
         assertTrue(rendered.contains("## Code Style & Static Analysis"), "Must contain ## Code Style & Static Analysis")
         assertTrue(rendered.contains("## Testing"), "Must contain ## Testing")
-        assertTrue(rendered.contains("## Project Structure"), "Must contain ## Project Structure")
         assertTrue(rendered.contains("## Governance"), "Must contain ## Governance")
     }
 
@@ -140,7 +139,7 @@ class PromptGeneratorEmptyModelTest {
             return if (nextBlock >= 0) rendered.substring(start, nextBlock) else rendered.substring(start)
         }
 
-        listOf("Tech Stack", "Code Style & Static Analysis", "Testing", "Project Structure").forEach { heading ->
+        listOf("Tech Stack", "Code Style & Static Analysis", "Testing").forEach { heading ->
             val section = extractBlockContent(heading)
             assertTrue(
                 section.contains("not detected"),
@@ -168,7 +167,6 @@ class PromptGeneratorEmptyModelTest {
                     SectionResult.Ok(
                         StructureInfo(
                             modules = listOf(Module("app", emptyList(), emptyList())),
-                            rootPackages = listOf("dev.zahaand.app"),
                         ),
                     ),
             )
@@ -299,8 +297,8 @@ class PromptGeneratorEmptyModelTest {
             return if (nextBlock >= 0) rendered.substring(start, nextBlock) else rendered.substring(start)
         }
 
-        // All four scan-dependent blocks with Ok(empty) must render "not detected" per FR-008
-        listOf("Tech Stack", "Code Style & Static Analysis", "Testing", "Project Structure").forEach { heading ->
+        // All scan-dependent blocks with Ok(empty) must render "not detected" per FR-008
+        listOf("Tech Stack", "Code Style & Static Analysis", "Testing").forEach { heading ->
             val section = extractBlockContent(heading)
             assertTrue(
                 section.contains("not detected"),

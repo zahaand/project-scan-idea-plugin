@@ -18,10 +18,8 @@ import dev.zahaand.projectscan.model.StackInfo
 import dev.zahaand.projectscan.model.StructureInfo
 import dev.zahaand.projectscan.model.StyleSource
 import dev.zahaand.projectscan.model.StyleSourceType
-import dev.zahaand.projectscan.model.TestFramework
 import dev.zahaand.projectscan.model.TestInfo
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -178,12 +176,6 @@ class PromptGeneratorFullModelTest {
                         buildSystem = BuildSystem.GRADLE,
                         jdkVersion = "21",
                         languageLevel = "17",
-                        dependencies =
-                            listOf(
-                                Dependency("org.junit.jupiter", "junit-jupiter", "5.11.0"),
-                                Dependency("org.springframework.boot", "spring-boot-starter", "3.3.0"),
-                                Dependency("com.fasterxml.jackson.core", "jackson-databind", "2.17.0"),
-                            ),
                     ),
                 ),
             codeStyle =
@@ -199,7 +191,6 @@ class PromptGeneratorFullModelTest {
             tests =
                 SectionResult.Ok(
                     TestInfo(
-                        frameworks = listOf(TestFramework("JUnit Jupiter", "5.11.0")),
                         sourceRoots = listOf("src/test/kotlin"),
                         namingSuffixes = listOf("Test"),
                         coverageThreshold = 0.8,
@@ -212,11 +203,14 @@ class PromptGeneratorFullModelTest {
                             listOf(
                                 Module(
                                     "app",
-                                    listOf(Dependency("org.junit.jupiter", "junit-jupiter", "5.11.0")),
+                                    listOf(
+                                        Dependency("org.junit.jupiter", "junit-jupiter", "5.11.0"),
+                                        Dependency("org.springframework.boot", "spring-boot-starter", "3.3.0"),
+                                        Dependency("com.fasterxml.jackson.core", "jackson-databind", "2.17.0"),
+                                    ),
                                     emptyList(),
                                 ),
                             ),
-                        rootPackages = listOf("dev.zahaand.projectscan"),
                     ),
                 ),
         )
@@ -238,7 +232,6 @@ class PromptGeneratorFullModelTest {
         assertTrue(rendered.contains("## Tech Stack"), "Must contain ## Tech Stack")
         assertTrue(rendered.contains("## Code Style & Static Analysis"), "Must contain ## Code Style & Static Analysis")
         assertTrue(rendered.contains("## Testing"), "Must contain ## Testing")
-        assertTrue(rendered.contains("## Project Structure"), "Must contain ## Project Structure")
         assertTrue(rendered.contains("## Governance"), "Must contain ## Governance")
     }
 
@@ -327,16 +320,9 @@ class PromptGeneratorFullModelTest {
         assertTrue(techStackSection.contains("21"), "Tech Stack must contain JDK version 21")
         assertTrue(techStackSection.contains("Language Level"), "Tech Stack must contain language level label")
         assertTrue(techStackSection.contains("17"), "Tech Stack must contain language level value 17")
-        assertTrue(techStackSection.contains("junit-jupiter"), "Tech Stack must contain dependency junit-jupiter")
-        assertTrue(
-            techStackSection.contains("spring-boot-starter"),
-            "Tech Stack must contain dependency spring-boot-starter",
-        )
-        assertTrue(techStackSection.contains("jackson-databind"), "Tech Stack must contain dependency jackson-databind")
-        assertFalse(
-            techStackSection.contains(":* @"),
-            "Single-artifact groups must use per-artifact format (no group headers)",
-        )
+        assertTrue(techStackSection.contains("JUnit"), "Tech Stack must contain JUnit family entry")
+        assertTrue(techStackSection.contains("Spring Boot"), "Tech Stack must contain Spring Boot family entry")
+        assertTrue(techStackSection.contains("Jackson"), "Tech Stack must contain Jackson family entry")
     }
 
     @Test

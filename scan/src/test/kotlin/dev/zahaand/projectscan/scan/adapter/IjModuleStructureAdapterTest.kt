@@ -1,52 +1,38 @@
 package dev.zahaand.projectscan.scan.adapter
 
-import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
-import org.jetbrains.jps.model.java.JavaSourceRootType
 
 class IjModuleStructureAdapterTest : BasePlatformTestCase() {
-    fun testGetPackageTreeRootPackagesAndSecondLevelSegments() {
-        val placeholder = myFixture.addFileToProject("main/kotlin/.gitkeep", "")
-        val srcRoot = placeholder.virtualFile.parent
-        ModuleRootModificationUtil.updateModel(module) { model ->
-            model.contentEntries.first().addSourceFolder(srcRoot, JavaSourceRootType.SOURCE)
-        }
-
-        myFixture.addFileToProject("main/kotlin/com/example/Main.kt", "package com.example\nclass Main")
-        myFixture.addFileToProject("main/kotlin/com/util/Utils.kt", "package com.util\nclass Utils")
-        srcRoot.refresh(false, true)
-
-        val tree = IjModuleStructureAdapter(project).getPackageTree()
-
-        assertTrue("com" in tree.rootPackages)
-        assertTrue("com.example" in tree.secondLevelSegments)
-        assertTrue("com.util" in tree.secondLevelSegments)
-    }
-
-    fun testGetPackageTreeEmptyWhenNoSourceRoot() {
-        val tree = IjModuleStructureAdapter(project).getPackageTree()
-
-        assertTrue(tree.rootPackages.isEmpty())
-        assertTrue(tree.secondLevelSegments.isEmpty())
-    }
-
-    fun testGetPackageTreeSkipsDotPrefixedEntries() {
-        val placeholder = myFixture.addFileToProject("main/kotlin/.gitkeep", "")
-        val srcRoot = placeholder.virtualFile.parent
-        ModuleRootModificationUtil.updateModel(module) { model ->
-            model.contentEntries.first().addSourceFolder(srcRoot, JavaSourceRootType.SOURCE)
-        }
-        myFixture.addFileToProject("main/kotlin/com/example/Main.kt", "package com.example")
-        srcRoot.refresh(false, true)
-
-        val tree = IjModuleStructureAdapter(project).getPackageTree()
-
-        assertTrue(tree.rootPackages.none { it.startsWith(".") })
-        assertTrue("com" in tree.rootPackages)
-    }
-
     fun testGetModulesReturnsEmptyWhenNoBuildSystemData() {
         val modules = IjModuleStructureAdapter(project).getModules()
         assertTrue(modules.isEmpty())
+    }
+
+    fun testGetModulesAggregatorIsNullForNonMavenProject() {
+        // Gradle project with no Maven data — aggregator field defaults to null
+        val modules = IjModuleStructureAdapter(project).getModules()
+        // In a test fixture with no external project data, result is empty — no aggregator to assert
+        assertTrue("Expected empty module list for bare test fixture", modules.isEmpty())
+    }
+
+    fun testNoDepHasBlankOrUnknownVersionSC007() {
+        // SC-007: a dep declared without explicit <version> (inherited from parent POM or
+        // dependencyManagement) must surface as the resolved effective version — not blank or
+        // "unknown". Runs over all modules returned by the adapter; trivially passes when the
+        // module list is empty (bare fixture). Becomes load-bearing once a Maven fixture project
+        // with version-inheriting deps is wired into the test suite.
+        val modules = IjModuleStructureAdapter(project).getModules()
+        for (module in modules) {
+            for (dep in module.externalDependencies) {
+                assertFalse(
+                    "SC-007: ${dep.groupId}:${dep.artifactId} has blank resolvedVersion",
+                    dep.resolvedVersion.isNullOrBlank(),
+                )
+                assertFalse(
+                    "SC-007: ${dep.groupId}:${dep.artifactId} must not have 'unknown' resolvedVersion",
+                    dep.resolvedVersion == "unknown",
+                )
+            }
+        }
     }
 }

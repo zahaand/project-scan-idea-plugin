@@ -43,7 +43,6 @@ class PromptGeneratorLanguageLevelFilterTest {
                         buildSystem = null,
                         jdkVersion = null,
                         languageLevel = languageLevel,
-                        dependencies = emptyList(),
                     ),
                 ),
             codeStyle = SectionResult.Empty,
