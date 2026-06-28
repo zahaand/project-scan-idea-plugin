@@ -23,19 +23,19 @@ A developer scans a Maven monorepo with 130+ modules and ~250 resolved dependenc
 
 ---
 
-### User Story 2 — Clean Testing Section with Only Key Frameworks (Priority: P2)
+### User Story 2 — Repurposed Testing Section: Coverage, Source Roots, Naming (Priority: P2)
 
-A developer reviews the Testing section and sees only the test frameworks they actively chose to use (JUnit 5, AssertJ, Mockito, Testcontainers), grouped by family with a "Frameworks:" header. Transitive service artifacts (Hamcrest, opentest4j, apiguardian-api) are absent. Version skew across modules is shown inline as a discrepancy, not as repeated lines.
+A developer reviews the Testing section and sees test infrastructure configuration: the coverage threshold reported by JaCoCo (or "not detected" if not configured), test source roots (already compacted in Sprint 6), and the test naming pattern (already implemented). Test framework identities — JUnit, Mockito, Testcontainers, AssertJ — are visible in the Tech Stack section as direct dependencies. The Testing section no longer contains a framework list or any family grouping.
 
-**Why this priority**: The Testing section has the same noise problem as Tech Stack — transitive artifacts dominate the resolved classpath. Cleaning it up follows directly from the same direct-vs-transitive classification already applied to Tech Stack.
+**Why this priority**: Repurposing Testing to carry only non-Tech-Stack test configuration (coverage, layout, naming) removes the need for any framework allow-list or denylist. It also aligns with the "never fabricate" principle: the section fills in on projects that do configure coverage, and shows "not detected" otherwise — exactly the behavior already established in Sprint 6 for absent configurations.
 
-**Independent Test**: Scan a Maven project that uses JUnit 5 + Mockito + Testcontainers; verify the Testing section contains only those families, no Hamcrest/opentest4j/apiguardian-api entries, and that a version difference in `mockito-core` across modules appears as a single discrepancy line rather than two separate mockito lines.
+**Independent Test**: Scan the reference Maven monorepo (JaCoCo absent); verify the Testing section shows coverage "not detected", the compacted source root layout from Sprint 6, and the naming pattern — and contains NO framework list or "Frameworks:" header.
 
 **Acceptance Scenarios**:
 
-1. **Given** a project with JUnit 5 declared directly and `opentest4j` pulled in transitively, **When** the plugin runs, **Then** the Testing section lists `junit-jupiter` (or its family name) but NOT `opentest4j`.
-2. **Given** a project where `mockito-core:4.8.0` is used in module A and `mockito-core:5.11.0` in module B, **When** the plugin runs, **Then** the Testing section shows a single Mockito entry with a version-skew discrepancy indicator, not two separate Mockito lines.
-3. **Given** a project with test frameworks grouped as JUnit, AssertJ, Mockito, Testcontainers, **When** the plugin runs, **Then** the Testing section shows a "Frameworks:" header followed by an indented list sorted by family name.
+1. **Given** a project with no JaCoCo plugin configured, **When** the plugin runs, **Then** the Testing section shows coverage threshold as "not detected" and does NOT show a framework list anywhere in that section.
+2. **Given** a project with JaCoCo configured at a minimum coverage of 80%, **When** the plugin runs, **Then** the Testing section shows the coverage threshold as "80%" (or equivalent), sourced from the build configuration.
+3. **Given** any project, **When** the plugin runs, **Then** the Testing section contains no "Frameworks:" header and no test-framework family entries; those coordinates are visible only in the Tech Stack section as direct dependencies.
 
 ---
 
@@ -62,7 +62,15 @@ A developer runs the plugin and does not see a "Project Structure" block or pack
 - What happens when a module has no Maven model (Gradle project)? — A thin denylist of clearly-synthetic artifacts is applied; direct-vs-transitive distinction is not available; all non-denylisted resolved dependencies are included.
 - What happens when an aggregator module itself declares a direct dependency? — It appears as a carrier module in the Tech Stack entry, listed first before its submodules per reactor topology.
 - What happens when a module's aggregator cannot be determined? — The `aggregator` field is null; the module appears ungrouped (top-level) in any version-discrepancy listing.
-- What happens when the Testing section has no key frameworks after filtering? — A "Frameworks: none detected" or equivalent empty-state message is shown, consistent with Sprint 6 behavior for "not detected" sections.
+- What happens when no coverage plugin (e.g., JaCoCo) is configured? — The coverage threshold field shows "not detected", consistent with Sprint 6 behavior for absent configurations. No framework list is ever shown in Testing regardless of coverage presence.
+
+## Clarifications
+
+### Session 2026-06-28
+
+- Q: Do test-framework dependencies (Testcontainers, JUnit, Mockito, AssertJ) appear in the Tech Stack section, the Testing section, or both? → A: **Superseded by Q2** — see below.
+- Q: How does the plugin determine which test-scope dependencies belong in the Testing section? → A: The premise of a Testing framework list is **eliminated**. Test frameworks appear in **Tech Stack only** as direct dependencies, identifiable by their coordinates. The Testing section is repurposed to carry only what Tech Stack does not: (1) test coverage threshold (JaCoCo config, or "not detected"), (2) test source roots (already compacted in Sprint 6), (3) test naming pattern (already implemented). FR-010 is rewritten; FR-011 and FR-012 are removed.
+- Q: How are Tech Stack entries ordered in the output? → A: Alphabetical by `groupId:artifactId` coordinate — deterministic, reproducible across scans.
 
 ## Requirements *(mandatory)*
 
@@ -82,12 +90,10 @@ A developer runs the plugin and does not see a "Project Structure" block or pack
 
 **Shared / representation layer**:
 
-- **FR-007**: The shared module MUST build an inverted Tech Stack representation: a mapping from technology coordinate (`groupId:artifactId`) to an ordered list of (version, carrier-modules) pairs.
+- **FR-007**: The shared module MUST build an inverted Tech Stack representation covering **all** direct external dependencies regardless of Maven scope (compile, runtime, test, provided): a mapping from technology coordinate (`groupId:artifactId`) to an ordered list of (version, carrier-modules) pairs, sorted alphabetically by `groupId:artifactId`. Test-framework coordinates (JUnit, Mockito, Testcontainers, AssertJ, etc.) appear in Tech Stack only; they are NOT duplicated in the Testing section.
 - **FR-008**: When a technology has a single version across all modules, the representation MUST record a count or "all modules" indicator WITHOUT storing or rendering individual module names.
 - **FR-009**: When a technology has multiple versions across modules, the representation MUST store carrier modules per version, grouped by Maven reactor topology (aggregator first, then its submodules; each aggregator group on a separate line in the rendered output).
-- **FR-010**: The shared module MUST build a Testing representation that retains only key test-framework families (JUnit, AssertJ, Mockito, Testcontainers, and equivalents) and filters transitive service artifacts (Hamcrest, opentest4j, apiguardian-api, and equivalents).
-- **FR-011**: The Testing representation MUST group frameworks by family, sorted alphabetically, under a "Frameworks:" header with indented entries.
-- **FR-012**: Version skew of a single test framework across modules MUST be recorded as a single discrepancy entry (one family line with multiple versions noted), not as separate repeated family lines.
+- **FR-010**: The shared module MUST build a Testing representation that carries: (a) test coverage threshold sourced from build configuration (e.g., JaCoCo minimum line/branch coverage setting), or the literal string "not detected" if no coverage plugin is configured; (b) test source root paths, already compacted per Sprint 6 behavior; (c) test naming pattern, already implemented. No framework list, family grouping, or framework denylist is produced in this representation.
 - **FR-013**: The inversion and grouping logic MUST reside exclusively in the shared module so that both the prompt consumer and the UI consumer derive output from a single shared source.
 
 **Prompt / UI layer**:
@@ -102,13 +108,14 @@ A developer runs the plugin and does not see a "Project Structure" block or pack
 - **FR-N2**: Human-readable dependency names (e.g., "log4j 2.23.1") are NOT required; Maven coordinates are used throughout.
 - **FR-N3**: The Constitution text is NOT modified in this sprint.
 - **FR-N4**: Code Style and Linters sections are NOT changed.
+- **FR-N5**: A "Frameworks:" header or test-framework family list is NOT produced in the Testing section; framework identity is communicated via Tech Stack coordinates alone.
 
 ### Key Entities
 
 - **ModuleDescriptor**: Represents a single project module; gains the `aggregator: String?` field; loses `packageTree: PackageTreeData`; retains `externalDependencies` (now populated with direct-only slice for Maven).
 - **DirectDependency**: A dependency declared directly in a module's build file, with identity from the declared set and version resolved from the effective model (parent/BOM).
 - **InvertedTechStack**: The cross-module view: technology coordinate → list of `(version, List<CarrierModule>)` entries; CarrierModule carries module name and its aggregator for grouping.
-- **TestingRepresentation**: Filtered list of test-framework families → versions; built from the direct-only slice after applying framework-family classification and denylist.
+- **TestingRepresentation**: Testing section data — coverage threshold string (or "not detected"), test source root paths, and naming pattern. No framework list or family grouping; test frameworks are represented in InvertedTechStack.
 - **AggregatorGroup**: Logical grouping used in rendering: aggregator module name → ordered list of submodule names present in a given version's carrier set.
 
 ## Success Criteria *(mandatory)*
@@ -117,7 +124,7 @@ A developer runs the plugin and does not see a "Project Structure" block or pack
 
 - **SC-001**: Tech Stack output for a 130-module Maven monorepo is reduced from ~150 lines to ≤ 40 lines, with the majority of lines representing single-version technologies shown compactly.
 - **SC-002**: No transitive-only artifact (asm, objenesis, listenablefuture, checker-qual, aopalliance, paranamer, failureaccess, j2objc-annotations, or similar) appears in the Tech Stack or Testing output for any Maven project.
-- **SC-003**: Testing section contains only explicitly key test-framework families; transitive service artifacts (Hamcrest, opentest4j, apiguardian-api) are absent.
+- **SC-003**: Testing section contains exactly: test coverage threshold (or "not detected"), test source roots, and naming pattern. No framework list or "Frameworks:" header appears in the Testing section for any project.
 - **SC-004**: Version discrepancies for both Tech Stack and Testing are embedded inline within their respective entries; no standalone "Discrepancies" block exists in the output.
 - **SC-005**: Tech Stack and Testing content is byte-identical between the generated LLM prompt and the UI tool window for the same project scan (SC-006 parity retained).
 - **SC-006**: Project Structure block and package/root-package values are absent from all output for every supported project type.

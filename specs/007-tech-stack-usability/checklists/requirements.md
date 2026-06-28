@@ -31,4 +31,9 @@
 
 ## Notes
 
-All checklist items pass. Spec is ready for `/speckit-plan`.
+All checklist items pass. Three clarifications recorded in `/speckit-clarify` session 2026-06-28:
+- Section scope boundary: test frameworks in Tech Stack only (Testing section repurposed)
+- Testing section architecture: carries coverage threshold / source roots / naming pattern; no framework list
+- Tech Stack sort order: alphabetical by groupId:artifactId
+
+Spec is ready for `/speckit-plan`.
