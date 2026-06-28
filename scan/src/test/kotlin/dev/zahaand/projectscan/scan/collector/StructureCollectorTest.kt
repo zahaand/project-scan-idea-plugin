@@ -5,9 +5,8 @@ import dev.zahaand.projectscan.model.SectionResult
 import dev.zahaand.projectscan.model.StructureInfo
 import dev.zahaand.projectscan.scan.fake.FakeModuleStructurePort
 import dev.zahaand.projectscan.scan.port.ModuleDescriptor
-import dev.zahaand.projectscan.scan.port.ModuleStructurePort
-import dev.zahaand.projectscan.scan.port.PackageTreeData
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -42,42 +41,6 @@ class StructureCollectorTest {
     }
 
     @Test
-    fun `root packages land in rootPackages and second-level in packageSegments in dotted notation`() {
-        val tree =
-            PackageTreeData(
-                rootPackages = listOf("com", "org"),
-                secondLevelSegments = listOf("com.example", "com.example.web", "org.utils"),
-            )
-        val result = collector(modules = listOf(moduleDescriptor(":app")), packageTree = tree).collect()
-
-        val ok = assertOk(result)
-        assertEquals(listOf("com", "org"), ok.rootPackages)
-        assertEquals(listOf("com.example", "com.example.web", "org.utils"), ok.packageSegments)
-        assertTrue(
-            ok.rootPackages.none { it.contains("/") },
-            "rootPackages must use dotted notation, not path notation",
-        )
-        assertTrue(
-            ok.packageSegments.none { it.contains("/") },
-            "packageSegments must use dotted notation, not path notation",
-        )
-    }
-
-    @Test
-    fun `root packages are not duplicated in packageSegments`() {
-        val tree =
-            PackageTreeData(
-                rootPackages = listOf("com"),
-                secondLevelSegments = listOf("com.example"),
-            )
-        val result = collector(modules = listOf(moduleDescriptor(":app")), packageTree = tree).collect()
-
-        val ok = assertOk(result)
-        assertTrue("com" !in ok.packageSegments, "root package 'com' must not appear in packageSegments")
-        assertTrue("com.example" in ok.packageSegments)
-    }
-
-    @Test
     fun `single-module project`() {
         val deps = listOf(Dependency("junit", "junit", "4.13.2"))
         val result = collector(modules = listOf(moduleDescriptor(":app", externalDeps = deps))).collect()
@@ -89,7 +52,7 @@ class StructureCollectorTest {
     }
 
     @Test
-    fun `source-less module is included with empty package contribution`() {
+    fun `source-less module is included`() {
         val sourceless =
             ModuleDescriptor(
                 name = ":bom",
@@ -121,20 +84,29 @@ class StructureCollectorTest {
     }
 
     @Test
-    fun `partial failure - package tree throws - section Ok with modules and empty package data`() {
-        val throwingPort =
-            object : ModuleStructurePort {
-                override fun getModules(): List<ModuleDescriptor> = listOf(moduleDescriptor(":core"))
-
-                override fun getPackageTree(): PackageTreeData = throw RuntimeException("package tree unresolvable")
-            }
-        val result = StructureCollector(throwingPort).collect()
+    fun `aggregator field is propagated from descriptor to module`() {
+        val descriptor =
+            ModuleDescriptor(
+                name = "child-module",
+                externalDependencies = emptyList(),
+                moduleDependencies = emptyList(),
+                sourceRootPaths = listOf("src/main/kotlin"),
+                hasSourceRoots = true,
+                aggregator = "parent-aggregator",
+            )
+        val result = collector(modules = listOf(descriptor)).collect()
 
         val ok = assertOk(result)
-        assertEquals(1, ok.modules.size)
-        assertEquals(":core", ok.modules.single().name)
-        assertTrue(ok.rootPackages.isEmpty())
-        assertTrue(ok.packageSegments.isEmpty())
+        assertEquals("parent-aggregator", ok.modules.single().aggregator)
+    }
+
+    @Test
+    fun `null aggregator in descriptor produces null aggregator in module`() {
+        val descriptor = moduleDescriptor(":root")
+        val result = collector(modules = listOf(descriptor)).collect()
+
+        val ok = assertOk(result)
+        assertNull(ok.modules.single().aggregator)
     }
 
     // --- helpers ---
@@ -152,10 +124,7 @@ class StructureCollectorTest {
         hasSourceRoots = hasSourceRoots,
     )
 
-    private fun collector(
-        modules: List<ModuleDescriptor>,
-        packageTree: PackageTreeData = PackageTreeData(emptyList(), emptyList()),
-    ) = StructureCollector(FakeModuleStructurePort(modules, packageTree))
+    private fun collector(modules: List<ModuleDescriptor>) = StructureCollector(FakeModuleStructurePort(modules))
 
     private fun assertOk(result: SectionResult<*>): StructureInfo {
         assertTrue(result is SectionResult.Ok<*>, "Expected Ok but got $result")

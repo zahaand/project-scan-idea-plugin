@@ -8,7 +8,6 @@ import dev.zahaand.projectscan.prompt.PromptGenerator
 import dev.zahaand.projectscan.scan.ScanService
 import dev.zahaand.projectscan.scan.adapter.CheckstyleConfigParser
 import dev.zahaand.projectscan.scan.adapter.IjBuildSystemAdapter
-import dev.zahaand.projectscan.scan.adapter.IjDependencyAdapter
 import dev.zahaand.projectscan.scan.adapter.IjLinterAdapter
 import dev.zahaand.projectscan.scan.adapter.IjModuleStructureAdapter
 import dev.zahaand.projectscan.scan.adapter.IjStyleSourceAdapter
@@ -23,7 +22,6 @@ class ProjectScanToolWindowFactory : ToolWindowFactory {
         val scanService =
             ScanService(
                 buildSystemPort = IjBuildSystemAdapter(project),
-                dependencyPort = IjDependencyAdapter(project),
                 styleSourcePort = IjStyleSourceAdapter(project),
                 linterPort = IjLinterAdapter(project),
                 linterConfigParsers =

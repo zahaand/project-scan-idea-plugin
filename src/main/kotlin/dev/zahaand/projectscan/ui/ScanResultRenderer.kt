@@ -2,31 +2,28 @@ package dev.zahaand.projectscan.ui
 
 import dev.zahaand.projectscan.model.CodeStyleInfo
 import dev.zahaand.projectscan.model.LinterInfo
+import dev.zahaand.projectscan.model.Module
 import dev.zahaand.projectscan.model.ScanResult
 import dev.zahaand.projectscan.model.SectionResult
 import dev.zahaand.projectscan.model.StackInfo
-import dev.zahaand.projectscan.model.StructureInfo
 import dev.zahaand.projectscan.model.TestInfo
 import dev.zahaand.projectscan.prompt.ConstitutionPrompt
-import dev.zahaand.projectscan.shared.deduplicateFrameworks
-import dev.zahaand.projectscan.shared.detectVersionDiscrepancies
-import dev.zahaand.projectscan.shared.filterInternalDependencies
-import dev.zahaand.projectscan.shared.groupDependencies
+import dev.zahaand.projectscan.shared.buildInvertedTechStack
 import dev.zahaand.projectscan.shared.normalizeSourceRoots
-import dev.zahaand.projectscan.shared.renderVersionDiscrepancyLine
+import dev.zahaand.projectscan.shared.renderInvertedTechStack
 
 object ScanResultRenderer {
     fun render(
         scanResult: ScanResult,
         constitutionPrompt: ConstitutionPrompt,
     ): List<UiSection> {
-        val internalModuleNames = (scanResult.structure as? SectionResult.Ok)
-            ?.data?.modules?.map { it.name }?.toSet() ?: emptySet()
+        val modules = (scanResult.structure as? SectionResult.Ok)?.data?.modules ?: emptyList()
+        val internalModuleNames = modules.map { it.name }.toSet()
         return listOf(
             section(
                 titleKey = "section.TechStack.title",
                 result = scanResult.stack,
-                render = { renderStack(it, internalModuleNames) },
+                render = { stackInfo -> renderStack(stackInfo, modules, internalModuleNames) },
             ),
             section(
                 titleKey = "section.CodeStyle.title",
@@ -42,11 +39,6 @@ object ScanResultRenderer {
                 titleKey = "section.Tests.title",
                 result = scanResult.tests,
                 render = ::renderTests,
-            ),
-            section(
-                titleKey = "section.Structure.title",
-                result = scanResult.structure,
-                render = ::renderStructure,
             ),
             UiSection(
                 title = ProjectScanBundle.message("section.Constitution.title"),
@@ -90,23 +82,14 @@ object ScanResultRenderer {
         }
     }
 
-    internal fun renderStack(info: StackInfo, internalModuleNames: Set<String> = emptySet()): String? {
-        val lines = mutableListOf<String>()
-        info.buildSystem?.let { lines += "Build system: $it" }
-        info.jdkVersion?.let { lines += "JDK version: $it" }
-        info.languageLevel?.let { lines += "Language level: $it" }
-        groupDependencies(filterInternalDependencies(info.dependencies, internalModuleNames)).forEach { group ->
-            if (group.sharedVersion != null) {
-                lines += "${group.groupId}:* @ ${group.sharedVersion}"
-                group.artifacts.forEach { dep -> lines += "  ${dep.artifactId}" }
-            } else {
-                group.artifacts.forEach { dep ->
-                    val ver = dep.resolvedVersion?.let { ":$it" } ?: ""
-                    lines += "${dep.groupId}:${dep.artifactId}$ver"
-                }
-            }
-        }
-        return lines.joinToString("\n").ifBlank { null }
+    internal fun renderStack(
+        info: StackInfo,
+        modules: List<Module>,
+        internalModuleNames: Set<String> = emptySet(),
+    ): String? {
+        val invertedStack = buildInvertedTechStack(modules, internalModuleNames)
+        val rendered = renderInvertedTechStack(invertedStack, info.buildSystem, info.jdkVersion, info.languageLevel)
+        return rendered.ifBlank { null }
     }
 
     private fun renderCodeStyle(info: CodeStyleInfo): String? {
@@ -121,37 +104,11 @@ object ScanResultRenderer {
 
     internal fun renderTests(info: TestInfo): String? {
         val lines = mutableListOf<String>()
-        deduplicateFrameworks(info.frameworks).forEach { fw ->
-            val ver = fw.version?.let { " $it" } ?: ""
-            lines += "Framework: ${fw.name}$ver"
-        }
         normalizeSourceRoots(info.sourceRoots).forEach { t ->
             lines += "Source root: ${t.relativePath}"
         }
         info.namingSuffixes.forEach { lines += "Naming suffix: $it" }
         info.coverageThreshold?.let { lines += "Coverage threshold: $it" }
         return lines.joinToString("\n").ifBlank { null }
-    }
-
-    internal fun renderStructure(info: StructureInfo): String? {
-        val lines = mutableListOf<String>()
-        info.modules.forEach { mod ->
-            lines += "Module: ${mod.name}"
-        }
-        if (info.packageSegments.isNotEmpty()) {
-            lines += "Package segments: ${info.packageSegments.joinToString(", ")}"
-        }
-        info.rootPackages.forEach { lines += "Root package: $it" }
-        if (lines.isEmpty()) return null
-        lines += "Version discrepancies:"
-        val discrepancies = detectVersionDiscrepancies(info.modules)
-        if (discrepancies.isEmpty()) {
-            lines += "  none"
-        } else {
-            discrepancies.forEach { d ->
-                lines += "  ${renderVersionDiscrepancyLine(d)}"
-            }
-        }
-        return lines.joinToString("\n")
     }
 }

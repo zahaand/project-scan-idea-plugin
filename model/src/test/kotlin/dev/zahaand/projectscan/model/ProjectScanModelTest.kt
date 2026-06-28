@@ -25,7 +25,6 @@ class ProjectScanModelTest {
     fun `fully-populated model round-trips all fields via data class equality`() {
         val stack =
             StackInfo(
-                dependencies = listOf(Dependency("org.junit.jupiter", "junit-jupiter", "5.11.4")),
                 jdkVersion = "21",
                 languageLevel = "21",
                 buildSystem = BuildSystem.GRADLE,
@@ -40,7 +39,6 @@ class ProjectScanModelTest {
             )
         val tests =
             TestInfo(
-                frameworks = listOf(TestFramework("JUnit", "5.11.4")),
                 sourceRoots = listOf("src/test/kotlin"),
                 namingSuffixes = listOf("Test"),
                 coverageThreshold = 80.0,
@@ -48,8 +46,6 @@ class ProjectScanModelTest {
         val structure =
             StructureInfo(
                 modules = listOf(Module("app")),
-                rootPackages = listOf("dev.zahaand.projectscan"),
-                packageSegments = listOf("dev.zahaand.projectscan.model"),
             )
         val model = ProjectScanModel(stack, codeStyle, linters, tests, structure)
         assertEquals(stack, model.stack)
@@ -67,7 +63,7 @@ class ProjectScanModelTest {
                 codeStyle = CodeStyleInfo(sources = listOf(StyleSource(StyleSourceType.CHECKSTYLE, "checkstyle.xml"))),
                 linters = LinterInfo(),
                 tests = TestInfo(coverageThreshold = 75.0),
-                structure = StructureInfo(rootPackages = listOf("dev.zahaand")),
+                structure = StructureInfo(modules = listOf(Module("app"))),
             )
         val updated = original.copy(stack = StackInfo())
         assertEquals(StackInfo(), updated.stack)

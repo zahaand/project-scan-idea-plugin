@@ -16,23 +16,10 @@ class StructureCollector(private val port: ModuleStructurePort) {
                     name = descriptor.name,
                     declaredDependencies = descriptor.externalDependencies,
                     moduleDependencies = descriptor.moduleDependencies.distinct(),
+                    aggregator = descriptor.aggregator,
                 )
             }
 
-        val (rootPackages, packageSegments) =
-            try {
-                val tree = port.getPackageTree()
-                Pair(tree.rootPackages, tree.secondLevelSegments)
-            } catch (_: Exception) {
-                Pair(emptyList<String>(), emptyList<String>())
-            }
-
-        return SectionResult.Ok(
-            StructureInfo(
-                modules = modules,
-                rootPackages = rootPackages,
-                packageSegments = packageSegments,
-            ),
-        )
+        return SectionResult.Ok(StructureInfo(modules = modules))
     }
 }

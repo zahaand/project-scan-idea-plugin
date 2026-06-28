@@ -5,11 +5,9 @@ import org.junit.jupiter.api.Test
 
 class StructureInfoTest {
     @Test
-    fun `empty-state StructureInfo has empty lists`() {
+    fun `empty-state StructureInfo has empty modules list`() {
         val info = StructureInfo()
         assertTrue(info.modules.isEmpty())
-        assertTrue(info.rootPackages.isEmpty())
-        assertTrue(info.packageSegments.isEmpty())
     }
 
     @Test
@@ -17,9 +15,16 @@ class StructureInfoTest {
         val module = Module(name = "app")
         assertTrue(module.declaredDependencies.isEmpty())
         assertTrue(module.moduleDependencies.isEmpty())
+        assertNull(module.aggregator)
         val info = StructureInfo(modules = listOf(module))
         assertEquals(1, info.modules.size)
         assertEquals("app", info.modules[0].name)
+    }
+
+    @Test
+    fun `module with aggregator set`() {
+        val module = Module(name = "child", aggregator = "parent-aggregator")
+        assertEquals("parent-aggregator", module.aggregator)
     }
 
     @Test
@@ -37,32 +42,11 @@ class StructureInfoTest {
                 declaredDependencies = emptyList(),
                 moduleDependencies = listOf("core"),
             )
-        val info =
-            StructureInfo(
-                modules = listOf(coreModule, appModule),
-                rootPackages = listOf("dev.zahaand.projectscan"),
-            )
+        val info = StructureInfo(modules = listOf(coreModule, appModule))
         assertEquals(2, info.modules.size)
         val app = info.modules.find { it.name == "app" }!!
         assertEquals(listOf("core"), app.moduleDependencies)
         val core = info.modules.find { it.name == "core" }!!
         assertEquals(listOf(dep), core.declaredDependencies)
-    }
-
-    @Test
-    fun `rootPackages is project-wide list`() {
-        val info = StructureInfo(rootPackages = listOf("dev.zahaand.projectscan", "dev.zahaand.util"))
-        assertEquals(2, info.rootPackages.size)
-        assertTrue(info.rootPackages.contains("dev.zahaand.projectscan"))
-    }
-
-    @Test
-    fun `packageSegments holds second-level dotted package paths`() {
-        val info =
-            StructureInfo(
-                packageSegments = listOf("com.example.web", "com.example.domain"),
-            )
-        assertEquals(2, info.packageSegments.size)
-        assertTrue(info.packageSegments.contains("com.example.web"))
     }
 }

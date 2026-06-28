@@ -40,7 +40,7 @@ class PromptGeneratorPriorityHierarchyTest {
         ScanResult(
             stack =
                 SectionResult.Ok(
-                    StackInfo(buildSystem = null, jdkVersion = null, languageLevel = null, dependencies = emptyList()),
+                    StackInfo(buildSystem = null, jdkVersion = null, languageLevel = null),
                 ),
             codeStyle = SectionResult.Empty,
             linters = SectionResult.Ok(LinterInfo(activeRules = linterRules)),

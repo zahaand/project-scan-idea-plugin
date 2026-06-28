@@ -57,8 +57,4 @@ class IjTestInfoAdapterTest : BasePlatformTestCase() {
     fun testGetCoverageThresholdNullForNonMavenProject() {
         assertNull(IjTestInfoAdapter(project).getCoverageThreshold())
     }
-
-    fun testGetTestScopedDependenciesEmptyForNonMavenProject() {
-        assertTrue(IjTestInfoAdapter(project).getTestScopedDependencies().isEmpty())
-    }
 }

@@ -13,7 +13,6 @@ import dev.zahaand.projectscan.scan.ScanService
 fun verifyProductionWiringCompiles(project: Project) {
     ScanService(
         buildSystemPort = IjBuildSystemAdapter(project),
-        dependencyPort = IjDependencyAdapter(project),
         styleSourcePort = IjStyleSourceAdapter(project),
         linterPort = IjLinterAdapter(project),
         linterConfigParsers =

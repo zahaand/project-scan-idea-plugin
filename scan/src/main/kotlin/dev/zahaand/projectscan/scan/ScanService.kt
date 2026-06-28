@@ -13,7 +13,6 @@ import dev.zahaand.projectscan.scan.collector.StackCollector
 import dev.zahaand.projectscan.scan.collector.StructureCollector
 import dev.zahaand.projectscan.scan.collector.TestCollector
 import dev.zahaand.projectscan.scan.port.BuildSystemPort
-import dev.zahaand.projectscan.scan.port.DependencyPort
 import dev.zahaand.projectscan.scan.port.LinterConfigParser
 import dev.zahaand.projectscan.scan.port.LinterPort
 import dev.zahaand.projectscan.scan.port.ModuleStructurePort
@@ -22,7 +21,6 @@ import dev.zahaand.projectscan.scan.port.TestInfoPort
 
 class ScanService(
     private val buildSystemPort: BuildSystemPort,
-    private val dependencyPort: DependencyPort,
     private val styleSourcePort: StyleSourcePort,
     private val linterPort: LinterPort,
     private val linterConfigParsers: Map<String, LinterConfigParser>,
@@ -32,7 +30,7 @@ class ScanService(
     fun scan(): ScanResult {
         val stack: SectionResult<StackInfo> =
             try {
-                StackCollector(buildSystemPort, dependencyPort).collect()
+                StackCollector(buildSystemPort).collect()
             } catch (e: Exception) {
                 SectionResult.Error(e.message)
             }

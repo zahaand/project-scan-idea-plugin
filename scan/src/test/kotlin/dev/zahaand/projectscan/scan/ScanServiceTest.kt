@@ -1,13 +1,11 @@
 package dev.zahaand.projectscan.scan
 
 import dev.zahaand.projectscan.model.BuildSystem
-import dev.zahaand.projectscan.model.Dependency
 import dev.zahaand.projectscan.model.RuleSeverity
 import dev.zahaand.projectscan.model.SectionResult
 import dev.zahaand.projectscan.model.StyleSource
 import dev.zahaand.projectscan.model.StyleSourceType
 import dev.zahaand.projectscan.scan.fake.FakeBuildSystemPort
-import dev.zahaand.projectscan.scan.fake.FakeDependencyPort
 import dev.zahaand.projectscan.scan.fake.FakeLinterConfigParser
 import dev.zahaand.projectscan.scan.fake.FakeLinterPort
 import dev.zahaand.projectscan.scan.fake.FakeModuleStructurePort
@@ -16,7 +14,6 @@ import dev.zahaand.projectscan.scan.fake.FakeTestInfoPort
 import dev.zahaand.projectscan.scan.port.LinterPort
 import dev.zahaand.projectscan.scan.port.LinterToolDescriptor
 import dev.zahaand.projectscan.scan.port.ModuleDescriptor
-import dev.zahaand.projectscan.scan.port.PackageTreeData
 import dev.zahaand.projectscan.scan.port.ParsedRule
 import dev.zahaand.projectscan.scan.port.StyleSourcePort
 import org.junit.jupiter.api.Assertions.assertInstanceOf
@@ -36,19 +33,16 @@ class ScanServiceTest {
     private fun allSucceedService() =
         ScanService(
             buildSystemPort = FakeBuildSystemPort(BuildSystem.MAVEN, mapOf("app" to "17")),
-            dependencyPort = FakeDependencyPort(mapOf("app" to listOf(Dependency("com.example", "lib", "1.0")))),
             styleSourcePort = FakeStyleSourcePort(listOf(StyleSource(StyleSourceType.EDITOR_CONFIG, ".editorconfig"))),
             linterPort = FakeLinterPort(listOf(LinterToolDescriptor("checkstyle", configPath, true))),
             linterConfigParsers = checkstyleParsers(),
             testInfoPort =
                 FakeTestInfoPort(
                     testSourceRoots = listOf("src/test/java"),
-                    testScopedDependencies = listOf(Dependency("org.junit.jupiter", "junit-jupiter", "5.10.0")),
                 ),
             moduleStructurePort =
                 FakeModuleStructurePort(
                     modules = listOf(ModuleDescriptor("app", emptyList(), emptyList(), listOf("src/main/java"), true)),
-                    packageTree = PackageTreeData(listOf("com.example"), listOf("com.example.service")),
                 ),
         )
 
@@ -72,14 +66,12 @@ class ScanServiceTest {
         val service =
             ScanService(
                 buildSystemPort = FakeBuildSystemPort(BuildSystem.MAVEN, mapOf("app" to "17")),
-                dependencyPort = FakeDependencyPort(mapOf("app" to listOf(Dependency("com.example", "lib", "1.0")))),
                 styleSourcePort = throwingStylePort,
                 linterPort = FakeLinterPort(listOf(LinterToolDescriptor("checkstyle", configPath, true))),
                 linterConfigParsers = checkstyleParsers(),
                 testInfoPort =
                     FakeTestInfoPort(
                         testSourceRoots = listOf("src/test/java"),
-                        testScopedDependencies = listOf(Dependency("org.junit.jupiter", "junit-jupiter", "5.10.0")),
                     ),
                 moduleStructurePort =
                     FakeModuleStructurePort(
@@ -87,7 +79,6 @@ class ScanServiceTest {
                             listOf(
                                 ModuleDescriptor("app", emptyList(), emptyList(), listOf("src/main/java"), true),
                             ),
-                        packageTree = PackageTreeData(listOf("com.example"), listOf("com.example.service")),
                     ),
             )
 
@@ -109,12 +100,11 @@ class ScanServiceTest {
         val service =
             ScanService(
                 buildSystemPort = FakeBuildSystemPort(BuildSystem.MAVEN),
-                dependencyPort = FakeDependencyPort(),
                 styleSourcePort = FakeStyleSourcePort(),
                 linterPort = throwingLinterPort,
                 linterConfigParsers = emptyMap(),
                 testInfoPort = FakeTestInfoPort(),
-                moduleStructurePort = FakeModuleStructurePort(emptyList(), PackageTreeData(emptyList(), emptyList())),
+                moduleStructurePort = FakeModuleStructurePort(emptyList()),
             )
 
         val result = service.scan()
@@ -128,12 +118,11 @@ class ScanServiceTest {
         val service =
             ScanService(
                 buildSystemPort = FakeBuildSystemPort(null),
-                dependencyPort = FakeDependencyPort(),
                 styleSourcePort = FakeStyleSourcePort(),
                 linterPort = FakeLinterPort(),
                 linterConfigParsers = emptyMap(),
                 testInfoPort = FakeTestInfoPort(),
-                moduleStructurePort = FakeModuleStructurePort(emptyList(), PackageTreeData(emptyList(), emptyList())),
+                moduleStructurePort = FakeModuleStructurePort(emptyList()),
             )
 
         val result = service.scan()
@@ -146,11 +135,10 @@ class ScanServiceTest {
     }
 
     @Test
-    fun `partial failure in stack collector — build system reads, dep read fails — section is Ok not Error (CHK031)`() {
+    fun `partial failure in stack collector — build system reads ok — section is Ok`() {
         val service =
             ScanService(
                 buildSystemPort = FakeBuildSystemPort(BuildSystem.MAVEN, emptyMap()),
-                dependencyPort = FakeDependencyPort(error = RuntimeException("dep read failed")),
                 styleSourcePort =
                     FakeStyleSourcePort(
                         listOf(StyleSource(StyleSourceType.EDITOR_CONFIG, ".editorconfig")),
@@ -161,16 +149,13 @@ class ScanServiceTest {
                 moduleStructurePort =
                     FakeModuleStructurePort(
                         modules = listOf(ModuleDescriptor("app", emptyList(), emptyList(), emptyList(), false)),
-                        packageTree = PackageTreeData(emptyList(), emptyList()),
                     ),
             )
 
         val result = service.scan()
 
-        val stack = result.stack
-        assertInstanceOf(SectionResult.Ok::class.java, stack, "stack section must be Ok even when dep read fails")
-        val stackData = (stack as SectionResult.Ok).data
-        assert(stackData.dependencies.isEmpty()) { "Expected empty dependencies due to dep read failure" }
+        assertInstanceOf(SectionResult.Ok::class.java, result.stack, "stack section must be Ok")
+        val stackData = (result.stack as SectionResult.Ok).data
         assert(stackData.buildSystem == BuildSystem.MAVEN) { "Build system should still be populated" }
     }
 }
